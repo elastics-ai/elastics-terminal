@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  volatility-filter:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8765:8765"
+    volumes:
+      - ./data:/data
+    environment:
+      - WS_HOST=0.0.0.0
+      - WS_PORT=8765
+      - DB_PATH=/data/volatility_filter.db
+      - AUTO_OPTIMIZE=true
+      - USE_DATABASE=true
+      - BROADCAST_EVENTS=true
+    restart: unless-stopped
+    
+  websocket-client:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    command: python examples/websocket_client.py --host volatility-filter
+    depends_on:
+      - volatility-filter
+    profiles:
+      - client

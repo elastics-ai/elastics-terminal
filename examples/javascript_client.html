@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Volatility Filter WebSocket Client</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        
+        .connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .event {
+            border-left: 4px solid #007bff;
+            padding: 10px;
+            margin: 10px 0;
+            background-color: #f8f9fa;
+        }
+        
+        .breach {
+            border-left-color: #dc3545;
+            background-color: #fff5f5;
+        }
+        
+        .stats {
+            border-left-color: #28a745;
+        }
+        
+        .controls {
+            margin: 20px 0;
+        }
+        
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        
+        #events {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .event-time {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+        
+        .metric {
+            display: inline-block;
+            margin: 5px 10px;
+        }
+        
+        .metric-label {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Volatility Filter WebSocket Client</h1>
+        
+        <div id="status" class="status disconnected">
+            Disconnected
+        </div>
+        
+        <div class="controls">
+            <button id="connectBtn" class="btn-primary" onclick="connect()">
+                Connect
+            </button>
+            <button id="disconnectBtn" class="btn-danger" onclick="disconnect()" disabled>
+                Disconnect
+            </button>
+            <button onclick="clearEvents()">Clear Events</button>
+        </div>
+        
+        <h2>Configuration</h2>
+        <div>
+            <label>WebSocket URL: </label>
+            <input type="text" id="wsUrl" value="ws://localhost:8765" size="30">
+        </div>
+        
+        <h2>Events</h2>
+        <div id="events"></div>
+    </div>
+
+    <script>
+        let ws = null;
+        let eventCount = 0;
+        
+        function updateStatus(connected) {
+            const status = document.getElementById('status');
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+            
+            if (connected) {
+                status.className = 'status connected';
+                status.textContent = 'Connected';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+            } else {
+                status.className = 'status disconnected';
+                status.textContent = 'Disconnected';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+            }
+        }
+        
+        function addEvent(type, data) {
+            const eventsDiv = document.getElementById('events');
+            const eventDiv = document.createElement('div');
+            eventDiv.className = `event ${type}`;
+            
+            const now = new Date().toLocaleTimeString();
+            let content = `<div class="event-time">${now}</div>`;
+            
+            if (type === 'breach') {
+                content += `
+                    <strong>🚨 Volatility Breach!</strong><br>
+                    <div class="metric">
+                        <span class="metric-label">Price:</span> $${data.price.toFixed(2)}
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Volatility:</span> ${data.volatility.toFixed(4)}
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Threshold:</span> ${data.threshold.toFixed(4)}
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Excess:</span> ${data.excess_ratio.toFixed(2)}x
+                    </div>
+                `;
+            } else if (type === 'stats') {
+                content += `
+                    <strong>📊 Statistics Update</strong><br>
+                    <div class="metric">
+                        <span class="metric-label">Total Trades:</span> ${data.total_trades}
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Filtered:</span> ${data.filtered_trades}
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Ratio:</span> ${(data.filter_ratio * 100).toFixed(2)}%
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Current Vol:</span> ${data.current_volatility.toFixed(4)}
+                    </div>
+                `;
+            } else {
+                content += `<strong>${type}</strong><br>${JSON.stringify(data)}`;
+            }
+            
+            eventDiv.innerHTML = content;
+            eventsDiv.insertBefore(eventDiv, eventsDiv.firstChild);
+            
+            // Keep only last 50 events
+            while (eventsDiv.children.length > 50) {
+                eventsDiv.removeChild(eventsDiv.lastChild);
+            }
+            
+            eventCount++;
+        }
+        
+        function connect() {
+            const url = document.getElementById('wsUrl').value;
+            
+            try {
+                ws = new WebSocket(url);
+                
+                ws.onopen = () => {
+                    updateStatus(true);
+                    addEvent('info', { message: 'Connected to server' });
+                    
+                    // Subscribe to events
+                    ws.send(JSON.stringify({
+                        type: 'subscribe',
+                        events: ['threshold_breach', 'statistics_update']
+                    }));
+                };
+                
+                ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    
+                    switch (data.type) {
+                        case 'threshold_breach':
+                            addEvent('breach', data.data);
+                            // Optional: Play sound or show notification
+                            break;
+                        case 'statistics_update':
+                            addEvent('stats', data.data);
+                            break;
+                        case 'connection':
+                            addEvent('info', data);
+                            break;
+                        case 'subscription_confirmed':
+                            addEvent('info', { message: `Subscribed to: ${data.subscribed_events.join(', ')}` });
+                            break;
+                        default:
+                            addEvent('info', data);
+                    }
+                };
+                
+                ws.onerror = (error) => {
+                    addEvent('error', { message: 'WebSocket error occurred' });
+                };
+                
+                ws.onclose = () => {
+                    updateStatus(false);
+                    addEvent('info', { message: 'Disconnected from server' });
+                    ws = null;
+                };
+                
+            } catch (error) {
+                addEvent('error', { message: error.message });
+            }
+        }
+        
+        function disconnect() {
+            if (ws) {
+                ws.close();
+            }
+        }
+        
+        function clearEvents() {
+            document.getElementById('events').innerHTML = '';
+            eventCount = 0;
+        }
+        
+        // Auto-connect on load
+        window.onload = () => {
+            // Uncomment to auto-connect
+            // connect();
+        };
+    </script>
+</body>
+</html>
