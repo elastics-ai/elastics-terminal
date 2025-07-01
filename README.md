@@ -46,8 +46,4 @@ python examples/websocket_client.py
 - [API Documentation](docs/API.md)
 - [Configuration Guide](docs/CONFIGURATION.md)
 - [Examples](docs/EXAMPLES.md)
-- [Deployment Guide](docs/DEPLOYMENT.md)
-
-## License
-
-MIT License - see [LICENSE](LICENSE) file for details.
+- [Deployment Guide](docs/DEPLOYMENT.md
