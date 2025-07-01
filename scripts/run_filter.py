@@ -26,8 +26,14 @@ def main():
     parser.add_argument('--db-path', type=str, help='Database file path')
     parser.add_argument('--ws-host', type=str, help='WebSocket server host')
     parser.add_argument('--ws-port', type=int, help='WebSocket server port')
+    parser.add_argument('--debug', action='store_true', help='Enable debug logging')
     
     args = parser.parse_args()
+    
+    # Set logging level based on debug flag
+    if args.debug:
+        logging.getLogger().setLevel(logging.DEBUG)
+        logging.getLogger('volatility_filter').setLevel(logging.DEBUG)
     
     # Create config from environment and arguments
     config = Config.from_args(args)

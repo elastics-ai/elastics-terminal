@@ -39,7 +39,7 @@ class WebSocketBroadcastServer:
             'status': 'connected',
             'client_id': client_id,
             'message': 'Connected to Volatility Filter WebSocket Server',
-            'available_subscriptions': ['threshold_breach', 'all_trades', 'statistics_update'],
+            'available_subscriptions': ['threshold_breach', 'all_trades', 'statistics_update', 'volatility_estimate'],
             'timestamp': int(time.time() * 1000)
         }))
         
@@ -69,7 +69,7 @@ class WebSocketBroadcastServer:
                     events = [events]
                     
                 # Validate event types
-                valid_events = {'threshold_breach', 'all_trades', 'statistics_update', 'all'}
+                valid_events = {'threshold_breach', 'all_trades', 'statistics_update', 'volatility_estimate', 'all'}
                 events = [e for e in events if e in valid_events]
                 
                 self.subscriptions[client_id] = set(events)
@@ -120,7 +120,7 @@ class WebSocketBroadcastServer:
                 'timestamp': int(time.time() * 1000)
             }))
             
-    async def client_handler(self, websocket, path):
+    async def client_handler(self, websocket):
         """Handle a client connection."""
         client_id = await self.register_client(websocket)
         
@@ -191,6 +191,14 @@ class WebSocketBroadcastServer:
         if self.loop and self.running:
             asyncio.run_coroutine_threadsafe(
                 self.broadcast_event('trade', trade_data),
+                self.loop
+            )
+            
+    def broadcast_volatility_estimate(self, volatility_data: Dict[str, Any]):
+        """Broadcast volatility estimate update."""
+        if self.loop and self.running:
+            asyncio.run_coroutine_threadsafe(
+                self.broadcast_event('volatility_estimate', volatility_data),
                 self.loop
             )
             

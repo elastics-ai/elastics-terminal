@@ -111,29 +111,100 @@ class DeribitVolatilityFilter:
         try:
             data = json.loads(message)
             
+            # Debug logging to see message structure
+            if 'method' in data:
+                logger.debug(f"Received method: {data.get('method')}")
+            
+            # Handle instrument query response
+            if 'id' in data and data.get('id') == 41:
+                if 'error' in data:
+                    logger.error(f"Instrument query error: {data['error']}")
+                else:
+                    instruments = data.get('result', [])
+                    btc_perp = [i for i in instruments if i.get('instrument_name') == 'BTC-PERPETUAL']
+                    if btc_perp:
+                        logger.info("BTC-PERPETUAL instrument found")
+                        logger.debug(f"BTC-PERPETUAL info: {json.dumps(btc_perp[0], indent=2)}")
+                    else:
+                        logger.warning("BTC-PERPETUAL not found in instruments")
+                        logger.info(f"Available perpetual instruments: {[i.get('instrument_name') for i in instruments]}")
+                        
+            # Handle recent trades response
+            elif 'id' in data and data.get('id') == 40:
+                if 'error' in data:
+                    logger.error(f"Recent trades error: {data['error']}")
+                else:
+                    trades = data.get('result', {}).get('trades', [])
+                    if trades:
+                        logger.info(f"✅ API is working! Received {len(trades)} recent trades")
+                        logger.info(f"Latest trade: Price=${trades[0]['price']}, Amount={trades[0]['amount']}")
+                    else:
+                        logger.warning("No recent trades returned")
+                        
             # Handle subscription confirmation
-            if 'id' in data and data.get('id') == 42:
+            elif 'id' in data and data.get('id') == 42:
                 if 'error' in data:
                     logger.error(f"Subscription error: {data['error']}")
                 else:
-                    logger.info("Successfully subscribed to trades channel")
+                    result = data.get('result', [])
+                    if result:
+                        logger.info(f"Successfully subscribed to channels: {result}")
+                        print(f"\n✅ Connected to Deribit! Subscribed to: {result}\nWaiting for trades...\n")
+                    else:
+                        logger.warning("Subscription returned empty result - no channels subscribed")
+                        print("\n⚠️  WARNING: No channels were subscribed. Checking channel format...\n")
+                    logger.debug(f"Subscription response: {json.dumps(data, indent=2)}")
                     
-            # Handle trade data
-            elif 'params' in data and 'data' in data['params']:
-                trades = data['params']['data']
-                for trade in trades:
-                    self.process_trade(trade)
+            # Handle trade data - check for subscription method
+            elif data.get('method') == 'subscription' and 'params' in data:
+                params = data['params']
+                channel = params.get('channel', '')
+                
+                # Log channel info
+                logger.debug(f"Received data from channel: {channel}")
+                
+                if 'trades' in channel and 'BTC-PERPETUAL' in channel and 'data' in params:
+                    trades = params['data']
+                    logger.info(f"Received {len(trades)} trades from channel: {channel}")
+                    for trade in trades:
+                        self.process_trade(trade)
+                        
+            # Handle heartbeat
+            elif data.get('method') == 'heartbeat':
+                # Respond to heartbeat to keep connection alive
+                if data.get('params', {}).get('type') == 'test_request':
+                    heartbeat_response = {
+                        "jsonrpc": "2.0",
+                        "id": data.get('id'),
+                        "method": "public/test",
+                        "params": {}
+                    }
+                    ws.send(json.dumps(heartbeat_response))
+                    logger.debug("Responded to heartbeat")
+            else:
+                # Log unhandled messages for debugging
+                logger.debug(f"Unhandled message type: {json.dumps(data)[:200]}")
                     
         except Exception as e:
             logger.error(f"Error processing message: {e}")
+            logger.debug(f"Problematic message: {message[:500]}")
             
     def process_trade(self, trade: Dict[str, Any]):
         """Process individual trade and apply volatility filter."""
-        # Extract trade information
-        timestamp = trade['timestamp']
-        price = trade['price']
-        amount = trade['amount']
-        direction = trade['direction']
+        try:
+            # Extract trade information
+            timestamp = trade['timestamp']
+            price = trade['price']
+            amount = trade['amount']
+            direction = trade['direction']
+            
+            # Log incoming trade data to stdout
+            trade_time = datetime.fromtimestamp(timestamp/1000).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+            print(f"[TRADE] {trade_time} | Price: ${price:,.2f} | Amount: {amount:,.4f} | Direction: {direction}")
+        except KeyError as e:
+            logger.error(f"Missing field in trade data: {e}")
+            logger.debug(f"Trade data structure: {json.dumps(trade, indent=2)}")
+            return
         
         # Add to buffer
         trade_data = {
@@ -171,6 +242,18 @@ class DeribitVolatilityFilter:
             if len(self.returns_buffer) >= 20:  # Minimum for AR model
                 ar_volatility = self.current_volatility = self.calculate_current_volatility()
                 filtered = ar_volatility > self.vol_threshold
+                
+                # Log volatility calculation
+                print(f"[VOLATILITY] {trade_time} | Current: {ar_volatility:.6f} | Threshold: {self.vol_threshold:.6f} | Filtered: {filtered}")
+                
+                # Broadcast volatility estimate
+                if self.broadcast_server and ar_volatility > 0:
+                    self.broadcast_server.broadcast_volatility_estimate({
+                        'timestamp': timestamp,
+                        'volatility': ar_volatility,
+                        'threshold': self.vol_threshold,
+                        'price': current_price
+                    })
                 
                 if filtered:
                     trade_data['filtered'] = True
@@ -227,7 +310,8 @@ class DeribitVolatilityFilter:
             # Convert returns to numpy array
             returns = np.array(list(self.returns_buffer))
             
-            # Fit AR(1) model
+            # Fit AR(1) model - this happens fresh with every tick
+            logger.debug(f"Refitting AR({self.ar_lag}) model with {len(returns)} returns")
             model = AutoReg(returns, lags=self.ar_lag, trend='c')
             fitted_model = model.fit()
             
@@ -271,16 +355,60 @@ class DeribitVolatilityFilter:
         """Handle WebSocket open and subscribe to trades channel."""
         logger.info("WebSocket connection opened")
         
-        # Subscribe to BTC-PERPETUAL trades
+        # Enable heartbeat to keep connection alive
+        heartbeat_msg = {
+            "jsonrpc": "2.0",
+            "id": 9929,
+            "method": "public/set_heartbeat",
+            "params": {
+                "interval": 10
+            }
+        }
+        ws.send(json.dumps(heartbeat_msg))
+        logger.debug("Heartbeat enabled")
+        
+        # First, get instrument info to verify BTC-PERPETUAL exists
+        get_instrument_msg = {
+            "jsonrpc": "2.0",
+            "id": 41,
+            "method": "public/get_instruments",
+            "params": {
+                "currency": "BTC",
+                "kind": "future",
+                "expired": False
+            }
+        }
+        ws.send(json.dumps(get_instrument_msg))
+        logger.debug("Requesting available instruments...")
+        
+        # Wait a moment before subscribing
+        import time
+        time.sleep(0.5)
+        
+        # First, try to get recent trades to verify connectivity
+        get_trades_msg = {
+            "jsonrpc": "2.0",
+            "id": 40,
+            "method": "public/get_last_trades_by_instrument",
+            "params": {
+                "instrument_name": "BTC-PERPETUAL",
+                "count": 5
+            }
+        }
+        ws.send(json.dumps(get_trades_msg))
+        logger.info("Fetching recent trades to verify API connectivity...")
+        
+        # Subscribe to BTC-PERPETUAL trades with the simplest format
         subscribe_msg = {
             "jsonrpc": "2.0",
             "id": 42,
             "method": "public/subscribe",
             "params": {
-                "channels": ["trades.BTC-PERPETUAL.raw"]
+                "channels": ["trades.BTC-PERPETUAL.100ms"]
             }
         }
         ws.send(json.dumps(subscribe_msg))
+        logger.info(f"Attempting to subscribe to: trades.BTC-PERPETUAL.100ms")
         
     def optimize_threshold_on_startup(self):
         """Optimize volatility threshold using historical data before starting."""

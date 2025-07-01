@@ -3,218 +3,303 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Volatility Filter WebSocket Client</title>
+    <title>Volatility Monitor</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #0d1117;
+            color: #c9d1d9;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
         
-        .container {
-            background-color: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        .header {
+            background-color: #161b22;
+            padding: 15px 20px;
+            border-bottom: 1px solid #30363d;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         
-        .status {
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 20px;
-            font-weight: bold;
-        }
-        
-        .connected {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        
-        .disconnected {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-        
-        .event {
-            border-left: 4px solid #007bff;
-            padding: 10px;
-            margin: 10px 0;
-            background-color: #f8f9fa;
-        }
-        
-        .breach {
-            border-left-color: #dc3545;
-            background-color: #fff5f5;
-        }
-        
-        .stats {
-            border-left-color: #28a745;
+        .title {
+            font-size: 20px;
+            font-weight: 600;
         }
         
         .controls {
-            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .status {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .connected {
+            background-color: #1f6feb;
+            color: white;
+        }
+        
+        .disconnected {
+            background-color: #da3633;
+            color: white;
         }
         
         button {
-            padding: 10px 20px;
-            margin: 5px;
-            border: none;
-            border-radius: 4px;
+            padding: 6px 16px;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            background-color: #21262d;
+            color: #c9d1d9;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
         }
         
-        .btn-primary {
-            background-color: #007bff;
-            color: white;
+        button:hover {
+            background-color: #30363d;
+            border-color: #8b949e;
         }
         
-        .btn-danger {
-            background-color: #dc3545;
-            color: white;
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
         
-        #events {
-            max-height: 400px;
-            overflow-y: auto;
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            min-height: 0;
         }
         
-        .event-time {
-            color: #6c757d;
-            font-size: 0.9em;
+        .price-display {
+            text-align: center;
+            margin-bottom: 20px;
         }
         
-        .metric {
-            display: inline-block;
-            margin: 5px 10px;
+        .price-label {
+            font-size: 14px;
+            color: #8b949e;
+            margin-bottom: 5px;
         }
         
-        .metric-label {
-            font-weight: bold;
+        .price-value {
+            font-size: 48px;
+            font-weight: 700;
+            color: #58a6ff;
+            font-variant-numeric: tabular-nums;
+        }
+        
+        .chart-container {
+            flex: 1;
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px;
+            position: relative;
+            min-height: 0;
+        }
+        
+        canvas {
+            max-height: 100%;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Volatility Filter WebSocket Client</h1>
-        
-        <div id="status" class="status disconnected">
-            Disconnected
-        </div>
-        
+    <div class="header">
+        <div class="title">Volatility Monitor</div>
         <div class="controls">
-            <button id="connectBtn" class="btn-primary" onclick="connect()">
-                Connect
-            </button>
-            <button id="disconnectBtn" class="btn-danger" onclick="disconnect()" disabled>
-                Disconnect
-            </button>
-            <button onclick="clearEvents()">Clear Events</button>
+            <div id="status" class="status disconnected">Disconnected</div>
+            <button id="connectBtn" onclick="toggleConnection()">Connect</button>
+        </div>
+    </div>
+    
+    <div class="main-content">
+        <div class="price-display">
+            <div class="price-label">BTC-PERPETUAL</div>
+            <div id="priceValue" class="price-value">--</div>
         </div>
         
-        <h2>Configuration</h2>
-        <div>
-            <label>WebSocket URL: </label>
-            <input type="text" id="wsUrl" value="ws://localhost:8765" size="30">
+        <div class="chart-container">
+            <canvas id="volatilityChart"></canvas>
         </div>
-        
-        <h2>Events</h2>
-        <div id="events"></div>
     </div>
 
     <script>
         let ws = null;
-        let eventCount = 0;
+        let volatilityChart = null;
+        let lastPrice = null;
+        const maxDataPoints = 200;
         
+        // Initialize chart
+        function initChart() {
+            const ctx = document.getElementById('volatilityChart').getContext('2d');
+            volatilityChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Volatility',
+                        data: [],
+                        borderColor: '#58a6ff',
+                        backgroundColor: 'rgba(88, 166, 255, 0.1)',
+                        tension: 0.4,
+                        pointRadius: 0,
+                        borderWidth: 2,
+                        fill: true
+                    }, {
+                        label: 'Threshold',
+                        data: [],
+                        borderColor: '#f85149',
+                        borderDash: [5, 5],
+                        pointRadius: 0,
+                        borderWidth: 2,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                color: '#c9d1d9',
+                                padding: 15,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: '#1c2128',
+                            borderColor: '#30363d',
+                            borderWidth: 1,
+                            titleColor: '#c9d1d9',
+                            bodyColor: '#8b949e',
+                            cornerRadius: 6,
+                            padding: 10
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            grid: {
+                                color: '#21262d',
+                                borderColor: '#30363d'
+                            },
+                            ticks: {
+                                color: '#8b949e',
+                                maxRotation: 0,
+                                autoSkipPadding: 20
+                            }
+                        },
+                        y: {
+                            display: true,
+                            grid: {
+                                color: '#21262d',
+                                borderColor: '#30363d'
+                            },
+                            ticks: {
+                                color: '#8b949e',
+                                callback: function(value) {
+                                    return value.toFixed(4);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Update price display
+        function updatePrice(price) {
+            lastPrice = price;
+            document.getElementById('priceValue').textContent = `$${price.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            })}`;
+        }
+        
+        // Update volatility chart
+        function updateChart(timestamp, volatility, threshold) {
+            const time = new Date(timestamp).toLocaleTimeString();
+            
+            volatilityChart.data.labels.push(time);
+            volatilityChart.data.datasets[0].data.push(volatility);
+            volatilityChart.data.datasets[1].data.push(threshold);
+            
+            // Keep only the last maxDataPoints
+            if (volatilityChart.data.labels.length > maxDataPoints) {
+                volatilityChart.data.labels.shift();
+                volatilityChart.data.datasets[0].data.shift();
+                volatilityChart.data.datasets[1].data.shift();
+            }
+            
+            volatilityChart.update('none');
+        }
+        
+        // Update connection status
         function updateStatus(connected) {
             const status = document.getElementById('status');
-            const connectBtn = document.getElementById('connectBtn');
-            const disconnectBtn = document.getElementById('disconnectBtn');
+            const btn = document.getElementById('connectBtn');
             
             if (connected) {
                 status.className = 'status connected';
                 status.textContent = 'Connected';
-                connectBtn.disabled = true;
-                disconnectBtn.disabled = false;
+                btn.textContent = 'Disconnect';
             } else {
                 status.className = 'status disconnected';
                 status.textContent = 'Disconnected';
-                connectBtn.disabled = false;
-                disconnectBtn.disabled = true;
+                btn.textContent = 'Connect';
             }
         }
         
-        function addEvent(type, data) {
-            const eventsDiv = document.getElementById('events');
-            const eventDiv = document.createElement('div');
-            eventDiv.className = `event ${type}`;
-            
-            const now = new Date().toLocaleTimeString();
-            let content = `<div class="event-time">${now}</div>`;
-            
-            if (type === 'breach') {
-                content += `
-                    <strong>🚨 Volatility Breach!</strong><br>
-                    <div class="metric">
-                        <span class="metric-label">Price:</span> $${data.price.toFixed(2)}
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">Volatility:</span> ${data.volatility.toFixed(4)}
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">Threshold:</span> ${data.threshold.toFixed(4)}
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">Excess:</span> ${data.excess_ratio.toFixed(2)}x
-                    </div>
-                `;
-            } else if (type === 'stats') {
-                content += `
-                    <strong>📊 Statistics Update</strong><br>
-                    <div class="metric">
-                        <span class="metric-label">Total Trades:</span> ${data.total_trades}
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">Filtered:</span> ${data.filtered_trades}
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">Ratio:</span> ${(data.filter_ratio * 100).toFixed(2)}%
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">Current Vol:</span> ${data.current_volatility.toFixed(4)}
-                    </div>
-                `;
+        // Toggle connection
+        function toggleConnection() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                disconnect();
             } else {
-                content += `<strong>${type}</strong><br>${JSON.stringify(data)}`;
+                connect();
             }
-            
-            eventDiv.innerHTML = content;
-            eventsDiv.insertBefore(eventDiv, eventsDiv.firstChild);
-            
-            // Keep only last 50 events
-            while (eventsDiv.children.length > 50) {
-                eventsDiv.removeChild(eventsDiv.lastChild);
-            }
-            
-            eventCount++;
         }
         
+        // Connect to WebSocket
         function connect() {
-            const url = document.getElementById('wsUrl').value;
+            const url = 'ws://localhost:8765';
             
             try {
                 ws = new WebSocket(url);
                 
                 ws.onopen = () => {
                     updateStatus(true);
-                    addEvent('info', { message: 'Connected to server' });
                     
-                    // Subscribe to events
+                    // Auto-subscribe to volatility estimates and trades
                     ws.send(JSON.stringify({
                         type: 'subscribe',
-                        events: ['threshold_breach', 'statistics_update']
+                        events: ['volatility_estimate', 'all_trades']
                     }));
                 };
                 
@@ -222,54 +307,55 @@
                     const data = JSON.parse(event.data);
                     
                     switch (data.type) {
-                        case 'threshold_breach':
-                            addEvent('breach', data.data);
-                            // Optional: Play sound or show notification
+                        case 'volatility_estimate':
+                            if (data.data.volatility && data.data.timestamp) {
+                                updateChart(data.data.timestamp, data.data.volatility, data.data.threshold);
+                                if (data.data.price) {
+                                    updatePrice(data.data.price);
+                                }
+                            }
                             break;
-                        case 'statistics_update':
-                            addEvent('stats', data.data);
+                        case 'trade':
+                            if (data.data.price) {
+                                updatePrice(data.data.price);
+                            }
                             break;
-                        case 'connection':
-                            addEvent('info', data);
-                            break;
-                        case 'subscription_confirmed':
-                            addEvent('info', { message: `Subscribed to: ${data.subscribed_events.join(', ')}` });
-                            break;
-                        default:
-                            addEvent('info', data);
                     }
                 };
                 
                 ws.onerror = (error) => {
-                    addEvent('error', { message: 'WebSocket error occurred' });
+                    console.error('WebSocket error:', error);
                 };
                 
                 ws.onclose = () => {
                     updateStatus(false);
-                    addEvent('info', { message: 'Disconnected from server' });
                     ws = null;
                 };
                 
             } catch (error) {
-                addEvent('error', { message: error.message });
+                console.error('Connection error:', error);
             }
         }
         
+        // Disconnect from WebSocket
         function disconnect() {
             if (ws) {
                 ws.close();
             }
         }
         
-        function clearEvents() {
-            document.getElementById('events').innerHTML = '';
-            eventCount = 0;
-        }
-        
-        // Auto-connect on load
+        // Initialize on load
         window.onload = () => {
-            // Uncomment to auto-connect
-            // connect();
+            initChart();
+            // Auto-connect on load
+            connect();
+        };
+        
+        // Cleanup on unload
+        window.onbeforeunload = () => {
+            if (ws) {
+                ws.close();
+            }
         };
     </script>
 </body>
