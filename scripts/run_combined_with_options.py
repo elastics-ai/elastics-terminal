@@ -19,6 +19,8 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
+logger = logging.getLogger(__name__)
+
 
 class CombinedVolatilitySystem:
     """Combined system for perpetual volatility filtering and option chain analysis."""
