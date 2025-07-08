@@ -44,7 +44,7 @@ class OptionDataFetcher:
         params = {
             "currency": currency,
             "kind": "option",
-            "expired": expired
+            "expired": str(expired).lower()
         }
         
         try:
