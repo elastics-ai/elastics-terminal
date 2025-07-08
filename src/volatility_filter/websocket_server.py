@@ -39,7 +39,9 @@ class WebSocketBroadcastServer:
             'status': 'connected',
             'client_id': client_id,
             'message': 'Connected to Volatility Filter WebSocket Server',
-            'available_subscriptions': ['threshold_breach', 'all_trades', 'statistics_update', 'volatility_estimate'],
+            'available_subscriptions': ['threshold_breach', 'all_trades', 'statistics_update', 'volatility_estimate',
+                                      'option_chain_update', 'option_trade', 'option_greeks_update', 'iv_surface_update',
+                                      'option_volatility_event', 'vol_surface'],
             'timestamp': int(time.time() * 1000)
         }))
         
@@ -69,7 +71,9 @@ class WebSocketBroadcastServer:
                     events = [events]
                     
                 # Validate event types
-                valid_events = {'threshold_breach', 'all_trades', 'statistics_update', 'volatility_estimate', 'all'}
+                valid_events = {'threshold_breach', 'all_trades', 'statistics_update', 'volatility_estimate', 
+                              'option_chain_update', 'option_trade', 'option_greeks_update', 'iv_surface_update',
+                              'option_volatility_event', 'vol_surface', 'all'}
                 events = [e for e in events if e in valid_events]
                 
                 self.subscriptions[client_id] = set(events)
@@ -275,12 +279,66 @@ class WebSocketBroadcastServer:
         """Get the number of connected clients."""
         return len(self.clients)
         
+    def broadcast_option_chain_update(self, chain_data: Dict[str, Any]):
+        """Broadcast option chain update."""
+        if self.loop and self.running:
+            asyncio.run_coroutine_threadsafe(
+                self.broadcast_event('option_chain_update', chain_data),
+                self.loop
+            )
+            
+    def broadcast_option_trade(self, trade_data: Dict[str, Any]):
+        """Broadcast option trade."""
+        if self.loop and self.running:
+            # Ensure datetime is serializable
+            if 'datetime' in trade_data and hasattr(trade_data['datetime'], 'isoformat'):
+                trade_data['datetime'] = trade_data['datetime'].isoformat()
+                
+            asyncio.run_coroutine_threadsafe(
+                self.broadcast_event('option_trade', trade_data),
+                self.loop
+            )
+            
+    def broadcast_option_greeks_update(self, greeks_data: Dict[str, Any]):
+        """Broadcast option Greeks update."""
+        if self.loop and self.running:
+            asyncio.run_coroutine_threadsafe(
+                self.broadcast_event('option_greeks_update', greeks_data),
+                self.loop
+            )
+            
+    def broadcast_iv_surface_update(self, surface_data: Dict[str, Any]):
+        """Broadcast implied volatility surface update."""
+        if self.loop and self.running:
+            asyncio.run_coroutine_threadsafe(
+                self.broadcast_event('iv_surface_update', surface_data),
+                self.loop
+            )
+            
+    def broadcast_option_volatility_event(self, event_data: Dict[str, Any]):
+        """Broadcast option volatility event."""
+        if self.loop and self.running:
+            # Ensure datetime is serializable
+            if 'datetime' in event_data and hasattr(event_data['datetime'], 'isoformat'):
+                event_data['datetime'] = event_data['datetime'].isoformat()
+                
+            asyncio.run_coroutine_threadsafe(
+                self.broadcast_event('option_volatility_event', event_data),
+                self.loop
+            )
+            
     def get_subscription_stats(self) -> Dict[str, int]:
         """Get statistics about client subscriptions."""
         stats = {
             'threshold_breach': 0,
             'all_trades': 0,
             'statistics_update': 0,
+            'volatility_estimate': 0,
+            'option_chain_update': 0,
+            'option_trade': 0,
+            'option_greeks_update': 0,
+            'iv_surface_update': 0,
+            'option_volatility_event': 0,
             'all': 0
         }
         
@@ -290,3 +348,11 @@ class WebSocketBroadcastServer:
                     stats[sub] += 1
                     
         return stats
+        
+    def broadcast_vol_surface(self, surface_data: Dict[str, Any]):
+        """Broadcast volatility surface update."""
+        if self.loop and self.running:
+            asyncio.run_coroutine_threadsafe(
+                self.broadcast_event('vol_surface', surface_data),
+                self.loop
+            )

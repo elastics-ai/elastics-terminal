@@ -37,6 +37,23 @@ class Config:
     optimization_days: int = 7
     backtest_window: int = 14
     
+    # Option settings
+    option_currency: str = os.getenv("OPTION_CURRENCY", "BTC")
+    option_expiry_days: int = int(os.getenv("OPTION_EXPIRY_DAYS", 60))
+    option_strike_range: float = float(os.getenv("OPTION_STRIKE_RANGE", 0.25))
+    option_iv_threshold: float = float(os.getenv("OPTION_IV_THRESHOLD", 2.0))
+    option_iv_change_threshold: float = float(os.getenv("OPTION_IV_CHANGE_THRESHOLD", 0.1))
+    option_greeks_interval: int = int(os.getenv("OPTION_GREEKS_INTERVAL", 60))
+    option_chain_interval: int = int(os.getenv("OPTION_CHAIN_INTERVAL", 300))
+    enable_options: bool = os.getenv("ENABLE_OPTIONS", "false").lower() == "true"
+    
+    # Volatility surface settings
+    vol_surface_fit_interval: int = int(os.getenv("VOL_SURFACE_FIT_INTERVAL", 60))
+    vol_surface_min_options: int = int(os.getenv("VOL_SURFACE_MIN_OPTIONS", 20))
+    vol_surface_smoothing: float = float(os.getenv("VOL_SURFACE_SMOOTHING", 0.1))
+    vol_surface_moneyness_range: float = float(os.getenv("VOL_SURFACE_MONEYNESS_RANGE", 0.5))
+    vol_surface_max_ttm: float = float(os.getenv("VOL_SURFACE_MAX_TTM", 2.0))
+    
     @classmethod
     def from_args(cls, args):
         """Create config from command line arguments."""
@@ -59,5 +76,7 @@ class Config:
             config.ws_host = args.ws_host
         if hasattr(args, 'ws_port') and args.ws_port:
             config.ws_port = args.ws_port
+        if hasattr(args, 'enable_options'):
+            config.enable_options = args.enable_options
             
         return config

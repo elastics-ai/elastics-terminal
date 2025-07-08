@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Volatility Monitor</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -107,18 +108,42 @@
             font-variant-numeric: tabular-nums;
         }
         
-        .chart-container {
+        .charts-grid {
             flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            min-height: 0;
+        }
+        
+        .chart-container {
             background-color: #161b22;
             border: 1px solid #30363d;
             border-radius: 8px;
             padding: 20px;
             position: relative;
-            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chart-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #c9d1d9;
+            margin-bottom: 15px;
+        }
+        
+        .chart-content {
+            flex: 1;
+            position: relative;
         }
         
         canvas {
             max-height: 100%;
+        }
+        
+        #surfaceChart {
+            height: 100%;
         }
     </style>
 </head>
@@ -137,8 +162,20 @@
             <div id="priceValue" class="price-value">--</div>
         </div>
         
-        <div class="chart-container">
-            <canvas id="volatilityChart"></canvas>
+        <div class="charts-grid">
+            <div class="chart-container">
+                <div class="chart-title">Realized Volatility</div>
+                <div class="chart-content">
+                    <canvas id="volatilityChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-title">Implied Volatility Surface</div>
+                <div class="chart-content">
+                    <div id="surfaceChart"></div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -146,6 +183,7 @@
         let ws = null;
         let volatilityChart = null;
         let lastPrice = null;
+        let lastSurface = null;
         const maxDataPoints = 200;
         
         // Initialize chart
@@ -296,10 +334,10 @@
                 ws.onopen = () => {
                     updateStatus(true);
                     
-                    // Auto-subscribe to volatility estimates and trades
+                    // Auto-subscribe to volatility estimates, trades, and vol surface
                     ws.send(JSON.stringify({
                         type: 'subscribe',
-                        events: ['volatility_estimate', 'all_trades']
+                        events: ['volatility_estimate', 'all_trades', 'vol_surface']
                     }));
                 };
                 
@@ -318,6 +356,11 @@
                         case 'trade':
                             if (data.data.price) {
                                 updatePrice(data.data.price);
+                            }
+                            break;
+                        case 'vol_surface':
+                            if (data.data) {
+                                updateVolSurface(data.data);
                             }
                             break;
                     }
@@ -342,6 +385,80 @@
             if (ws) {
                 ws.close();
             }
+        }
+        
+        // Update volatility surface chart
+        function updateVolSurface(surfaceData) {
+            lastSurface = surfaceData;
+            
+            if (!surfaceData.surface || !surfaceData.moneyness_grid || !surfaceData.ttm_grid) {
+                console.error('Invalid surface data format');
+                return;
+            }
+            
+            // Prepare data for Plotly 3D surface
+            const data = [{
+                type: 'surface',
+                z: surfaceData.surface,
+                x: surfaceData.moneyness_grid,
+                y: surfaceData.ttm_grid,
+                colorscale: [
+                    [0, '#1f77b4'],
+                    [0.5, '#58a6ff'],
+                    [1, '#ff7f0e']
+                ],
+                contours: {
+                    z: {
+                        show: true,
+                        usecolormap: true,
+                        highlightcolor: "#42f462",
+                        project: {z: true}
+                    }
+                },
+                hovertemplate: 'Moneyness: %{x:.3f}<br>Time to Maturity: %{y:.3f}<br>IV: %{z:.2%}<extra></extra>'
+            }];
+            
+            const layout = {
+                scene: {
+                    xaxis: {
+                        title: 'Moneyness (ln(K/S))',
+                        titlefont: {color: '#c9d1d9'},
+                        tickfont: {color: '#8b949e'},
+                        gridcolor: '#30363d',
+                        zerolinecolor: '#30363d'
+                    },
+                    yaxis: {
+                        title: 'Time to Maturity (years)',
+                        titlefont: {color: '#c9d1d9'},
+                        tickfont: {color: '#8b949e'},
+                        gridcolor: '#30363d',
+                        zerolinecolor: '#30363d'
+                    },
+                    zaxis: {
+                        title: 'Implied Volatility',
+                        titlefont: {color: '#c9d1d9'},
+                        tickfont: {color: '#8b949e'},
+                        gridcolor: '#30363d',
+                        zerolinecolor: '#30363d',
+                        tickformat: '.0%'
+                    },
+                    bgcolor: '#161b22',
+                    camera: {
+                        eye: {x: 1.5, y: 1.5, z: 1.5}
+                    }
+                },
+                paper_bgcolor: '#161b22',
+                plot_bgcolor: '#161b22',
+                margin: {l: 0, r: 0, t: 0, b: 0},
+                hovermode: 'closest'
+            };
+            
+            const config = {
+                responsive: true,
+                displayModeBar: false
+            };
+            
+            Plotly.newPlot('surfaceChart', data, layout, config);
         }
         
         // Initialize on load
