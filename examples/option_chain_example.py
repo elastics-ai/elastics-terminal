@@ -74,9 +74,20 @@ def demonstrate_option_data_fetching():
     # 4. Fetch volatility index
     print("\n4. Fetching volatility index...")
     vol_index = fetcher.fetch_volatility_index("BTC", "1h")
-    if vol_index and vol_index['data']:
-        latest = vol_index['data'][-1]
-        print(f"   Latest DVOL: {latest[1]}")
+    if vol_index and 'data' in vol_index and vol_index['data']:
+        # The API returns nested structure: vol_index['data']['data']
+        data = vol_index['data']
+        if isinstance(data, dict) and 'data' in data:
+            # Access the actual data array
+            data_array = data['data']
+            if isinstance(data_array, list) and len(data_array) > 0:
+                latest = data_array[-1]
+                # The data format is [timestamp, open, high, low, close]
+                print(f"   Latest DVOL: {latest[1]}")
+            else:
+                print(f"   No volatility index data available")
+        else:
+            print(f"   Unexpected data format: {type(data)}")
     
     return instruments
 
@@ -86,6 +97,7 @@ def demonstrate_option_filter():
     print("\n=== Option Volatility Filter Demo ===\n")
     
     # Create option filter
+    # Note: Setting broadcast_events=False since WebSocket server is already running
     option_filter = OptionVolatilityFilter(
         currency="BTC",
         expiry_days_ahead=30,  # Track options expiring in next 30 days
@@ -95,7 +107,7 @@ def demonstrate_option_filter():
         greeks_update_interval=30,  # Update Greeks every 30 seconds
         chain_update_interval=120,  # Update full chain every 2 minutes
         use_database=True,
-        broadcast_events=True
+        broadcast_events=False  # Don't start another WebSocket server
     )
     
     print("Starting option filter...")
@@ -259,6 +271,175 @@ async def demonstrate_websocket_client():
         print("\nDemo completed")
 
 
+async def demonstrate_vol_surface_tui():
+    """Demonstrate TUI visualization of volatility surface."""
+    print("\n=== Volatility Surface TUI Demo ===\n")
+    
+    from textual.app import App, ComposeResult
+    from textual.widgets import Header, Footer, Static, DataTable, Label
+    from textual.containers import Container, Horizontal, Vertical
+    from textual.reactive import reactive
+    from textual.screen import Screen
+    from rich.console import Console
+    from rich.table import Table
+    from rich.text import Text
+    import websockets
+    import numpy as np
+    from datetime import datetime
+    
+    class VolSurfaceScreen(Screen):
+        """Screen for displaying volatility surface."""
+        
+        CSS = """
+        VolSurfaceScreen {
+            layout: vertical;
+        }
+        
+        #surface-container {
+            height: 20;
+            border: solid $primary;
+            margin: 1;
+            padding: 1;
+        }
+        
+        #stats-container {
+            height: 8;
+            border: solid $secondary;
+            margin: 1;
+            padding: 1;
+        }
+        
+        .label {
+            width: auto;
+            height: 1;
+        }
+        """
+        
+        surface_data = reactive(None)
+        last_update = reactive("")
+        
+        def compose(self) -> ComposeResult:
+            yield Header(show_clock=True)
+            yield Container(
+                Static(id="surface-display", expand=True),
+                id="surface-container"
+            )
+            yield Container(
+                Vertical(
+                    Label("Spot Price: --", id="spot-price", classes="label"),
+                    Label("ATM Volatility: --", id="atm-vol", classes="label"),
+                    Label("Last Update: --", id="last-update", classes="label"),
+                    Label("Options Used: --", id="num-options", classes="label"),
+                ),
+                id="stats-container"
+            )
+            yield Footer()
+        
+        def on_mount(self) -> None:
+            """Start websocket connection when screen mounts."""
+            self.websocket_task = asyncio.create_task(self.connect_websocket())
+        
+        async def connect_websocket(self) -> None:
+            """Connect to websocket and listen for surface updates."""
+            uri = 'ws://localhost:8765'
+            
+            try:
+                async with websockets.connect(uri) as websocket:
+                    # Subscribe to vol surface updates
+                    await websocket.send(json.dumps({
+                        'type': 'subscribe',
+                        'events': ['vol_surface']
+                    }))
+                    
+                    # Listen for messages
+                    while True:
+                        message = await websocket.recv()
+                        data = json.loads(message)
+                        
+                        if data.get('type') == 'vol_surface':
+                            self.surface_data = data['data']
+                            self.update_display()
+                            
+            except Exception as e:
+                self.query_one("#surface-display").update(f"WebSocket Error: {e}")
+        
+        def update_display(self) -> None:
+            """Update the TUI display with new surface data."""
+            if not self.surface_data:
+                return
+            
+            # Update stats
+            self.query_one("#spot-price").update(f"Spot Price: ${self.surface_data['spot_price']:,.2f}")
+            self.query_one("#atm-vol").update(f"ATM Volatility: {self.surface_data['atm_vol']:.1%}")
+            self.query_one("#last-update").update(f"Last Update: {datetime.now().strftime('%H:%M:%S')}")
+            self.query_one("#num-options").update(f"Options Used: {self.surface_data['num_options']}")
+            
+            # Create surface visualization
+            surface = np.array(self.surface_data['surface'])
+            moneyness = np.array(self.surface_data['moneyness_grid'])
+            ttm = np.array(self.surface_data['ttm_grid'])
+            
+            # Create ASCII heatmap
+            surface_text = self._create_heatmap(surface, moneyness, ttm)
+            self.query_one("#surface-display").update(surface_text)
+        
+        def _create_heatmap(self, surface, moneyness, ttm):
+            """Create ASCII heatmap of volatility surface."""
+            # Normalize surface values for coloring
+            min_vol = np.min(surface)
+            max_vol = np.max(surface)
+            
+            # Create rich table
+            table = Table(title="Implied Volatility Surface", show_header=True, header_style="bold magenta")
+            
+            # Add TTM columns
+            table.add_column("K/S", style="cyan", width=8)
+            for t in ttm[::2]:  # Show every other TTM for space
+                table.add_column(f"{t:.2f}y", width=8)
+            
+            # Add rows for each moneyness level
+            for i in range(0, len(moneyness), 2):  # Show every other row for space
+                row_data = [f"{np.exp(moneyness[i]):.2f}"]
+                
+                for j in range(0, len(ttm), 2):
+                    vol = surface[i, j]
+                    # Color based on volatility level
+                    if vol < 0.3:
+                        color = "green"
+                    elif vol < 0.5:
+                        color = "yellow"
+                    elif vol < 0.7:
+                        color = "red"
+                    else:
+                        color = "bright_red"
+                    
+                    row_data.append(Text(f"{vol:.1%}", style=color))
+                
+                table.add_row(*row_data)
+            
+            # Convert table to string
+            console = Console()
+            with console.capture() as capture:
+                console.print(table)
+            
+            return capture.get()
+    
+    class VolSurfaceApp(App):
+        """Textual app for volatility surface visualization."""
+        
+        BINDINGS = [
+            ("q", "quit", "Quit"),
+            ("r", "refresh", "Refresh"),
+        ]
+        
+        def on_mount(self) -> None:
+            self.push_screen(VolSurfaceScreen())
+    
+    # Run the TUI app
+    app = VolSurfaceApp()
+    await app.run_async()
+
+
 def main():
     """Run all demonstrations."""
     print("=" * 60)
@@ -283,6 +464,13 @@ def main():
     input()
     print("(This will listen for option events for 60 seconds)")
     asyncio.run(demonstrate_websocket_client())
+    
+    # 5. Demonstrate Volatility Surface TUI
+    print("\nPress Enter to start Volatility Surface TUI demo...")
+    input()
+    print("(This will open a terminal UI showing real-time volatility surface)")
+    print("Press 'q' to quit the TUI")
+    asyncio.run(demonstrate_vol_surface_tui())
     
     print("\n" + "=" * 60)
     print("Demo completed!")

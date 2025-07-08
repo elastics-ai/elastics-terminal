@@ -29,7 +29,7 @@ class VolatilityEventClient:
         print(f"   Volatility: {data['volatility']:.4f}")
         print(f"   Threshold: {data['threshold']:.4f}")
         print(f"   Excess: {data['excess_ratio']:.2f}x threshold")
-        
+
     async def handle_statistics_update(self, data):
         """Handle statistics updates."""
         print(f"\n📊 Statistics Update at {datetime.now().strftime('%H:%M:%S')}")
@@ -37,22 +37,22 @@ class VolatilityEventClient:
         print(f"   Filtered Trades: {data['filtered_trades']}")
         print(f"   Filter Ratio: {data['filter_ratio']:.2%}")
         print(f"   Current Volatility: {data['current_volatility']:.4f}")
-        
+
     async def listen_for_events(self):
         """Connect and listen for volatility events."""
         try:
             async with websockets.connect(self.uri) as websocket:
                 print(f"Connected to {self.uri}")
-                
+
                 # Subscribe to events
                 await websocket.send(json.dumps({
                     'type': 'subscribe',
                     'events': ['threshold_breach', 'statistics_update']
                 }))
-                
+
                 print("Subscribed to volatility events")
                 print("Listening for events... (Press Ctrl+C to stop)\n")
-                
+
                 # Listen for messages
                 while self.running:
                     try:
@@ -60,10 +60,10 @@ class VolatilityEventClient:
                             websocket.recv(), 
                             timeout=1.0
                         )
-                        
+
                         data = json.loads(message)
                         msg_type = data.get('type')
-                        
+
                         if msg_type == 'threshold_breach':
                             await self.handle_threshold_breach(data['data'])
                         elif msg_type == 'statistics_update':
@@ -72,21 +72,21 @@ class VolatilityEventClient:
                             print(f"Server: {data['message']}")
                         elif msg_type == 'subscription_confirmed':
                             print(f"Subscription confirmed: {data['subscribed_events']}")
-                            
+
                     except asyncio.TimeoutError:
                         # Send ping to keep connection alive
                         await websocket.send(json.dumps({'type': 'ping'}))
                     except websockets.exceptions.ConnectionClosed:
                         print("Connection closed by server")
                         break
-                        
+
         except Exception as e:
             print(f"Error: {e}")
-            
+
     def stop(self):
         """Stop the client."""
         self.running = False
-        
+
     def run(self):
         """Run the client."""
         try:
@@ -99,7 +99,7 @@ class VolatilityEventClient:
 def main():
     """Main entry point."""
     import argparse
-    
+
     parser = argparse.ArgumentParser(
         description='WebSocket client for volatility events'
     )
