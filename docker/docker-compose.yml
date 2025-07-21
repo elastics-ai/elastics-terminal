@@ -1,14 +1,19 @@
 version: '3.8'
 
 services:
-  volatility-filter:
+  # Main service: Volatility Terminal Web App (includes WebSocket server, API, and web frontend)
+  volatility-webapp:
     build:
       context: ..
-      dockerfile: docker/Dockerfile
+      dockerfile: docker/Dockerfile.webapp
+    container_name: elastics-terminal-web
     ports:
-      - "8765:8765"
+      - "3001:3000"  # Next.js web app
+      - "7000:8000"  # FastAPI backend
+      - "8765:8765"  # WebSocket server
     volumes:
-      - ./data:/data
+      - ../volatility_filter.db:/data/volatility_filter.db
+      - /tmp:/tmp  # For gnuplot output
     environment:
       - WS_HOST=0.0.0.0
       - WS_PORT=8765
@@ -16,14 +21,72 @@ services:
       - AUTO_OPTIMIZE=true
       - USE_DATABASE=true
       - BROADCAST_EVENTS=true
+      - ENABLE_OPTIONS=true
+      - OPTION_CURRENCY=BTC
+      - OPTION_EXPIRY_DAYS=30
+      - OPTION_STRIKE_RANGE=0.25
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GLITCHTIP_DSN=${GLITCHTIP_DSN:-}
     restart: unless-stopped
-    
-  websocket-client:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
-    command: python examples/websocket_client.py --host volatility-filter
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     depends_on:
-      - volatility-filter
-    profiles:
-      - client
+      - glitchtip-web
+
+  glitchtip-web:
+    image: glitchtip/glitchtip:latest
+    container_name: glitchtip-web
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8080:8000"
+    volumes:
+      - glitchtip_uploads:/code/uploads
+    depends_on:
+      - postgres
+      - redis
+
+  glitchtip-worker:
+    image: glitchtip/glitchtip:latest
+    container_name: glitchtip-worker
+    restart: unless-stopped
+    env_file: .env
+    command: ./bin/run-celery-with-beat.sh
+    volumes:
+      - glitchtip_uploads:/code/uploads
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgres:14
+    container_name: glitchtip-postgres
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - glitchtip_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:6-alpine
+    container_name: glitchtip-redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+# Named volumes for data persistence
+volumes:
+  data:
+  glitchtip_postgres:
+  glitchtip_uploads:

@@ -1,0 +1,123 @@
+version: '3.8'
+
+services:
+  # Test database
+  test-db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: test_volatility
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Backend API tests
+  backend-test:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    command: >
+      sh -c "
+        pip install -r requirements.txt &&
+        python -m pytest tests/ -v --cov=src
+      "
+    environment:
+      - DB_PATH=/tmp/test_volatility.db
+      - ANTHROPIC_API_KEY=test-key
+      - TESTING=true
+    volumes:
+      - ../src:/app/src
+      - ../tests:/app/tests
+      - ../requirements.txt:/app/requirements.txt
+      - ../pytest.ini:/app/pytest.ini
+    depends_on:
+      test-db:
+        condition: service_healthy
+
+  # Frontend tests
+  frontend-test:
+    build:
+      context: ../volatility-web
+      dockerfile: ../docker/Dockerfile.webapp
+    command: >
+      sh -c "
+        npm install &&
+        npm test -- --watchAll=false --coverage
+      "
+    environment:
+      - CI=true
+      - NODE_ENV=test
+    volumes:
+      - ../volatility-web:/app
+      - /app/node_modules
+      - /app/.next
+
+  # E2E tests with both services running
+  e2e-test:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    command: >
+      sh -c "
+        pip install -r requirements.txt &&
+        python -m pytest tests/test_e2e_chat.py -v -m e2e
+      "
+    environment:
+      - DB_PATH=/tmp/test_volatility.db
+      - ANTHROPIC_API_KEY=test-key
+      - API_URL=http://backend:8000
+      - TESTING=true
+    volumes:
+      - ../src:/app/src
+      - ../tests:/app/tests
+      - ../requirements.txt:/app/requirements.txt
+      - ../pytest.ini:/app/pytest.ini
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - test-network
+
+  # Backend service for E2E tests
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    command: python volatility-web/api_server.py
+    environment:
+      - DB_PATH=/data/test_volatility.db
+      - ANTHROPIC_API_KEY=test-key
+    volumes:
+      - test-data:/data
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Frontend service for E2E tests
+  frontend:
+    build:
+      context: ../volatility-web
+      dockerfile: ../docker/Dockerfile.webapp
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:8000
+    networks:
+      - test-network
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  test-data:
+
+networks:
+  test-network:
+    driver: bridge

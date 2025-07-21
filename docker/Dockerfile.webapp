@@ -1,0 +1,130 @@
+# Multi-stage Dockerfile for Volatility Terminal Web App
+
+# Stage 1: Build Next.js application
+FROM node:20-alpine AS frontend-builder
+
+WORKDIR /app
+
+# Copy package files
+COPY volatility-web/package*.json ./
+
+# Install dependencies including plotly (using legacy peer deps for React 19 compatibility)
+RUN npm install --legacy-peer-deps && npm install react-plotly.js plotly.js --save --legacy-peer-deps
+
+# Copy all source code and config files
+COPY volatility-web/ ./
+
+# Ensure all necessary files are present for the build
+RUN ls -la && ls -la app/
+
+# Build the Next.js app
+RUN npm run build
+
+# List build output for debugging
+RUN ls -la .next/static/css/ || echo "No CSS directory found"
+
+# Stage 2: Python backend with Next.js frontend
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js 20 (matching the builder stage)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy Python requirements and install
+COPY requirements.txt .
+COPY volatility-web/requirements.txt ./web-requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r web-requirements.txt
+
+# Copy Python source code
+COPY src/ ./src/
+COPY scripts/ ./scripts/
+
+# Copy web app API server
+COPY volatility-web/api_server.py ./volatility-web/
+
+# Copy the standalone folder from builder
+COPY --from=frontend-builder /app/.next/standalone ./volatility-web/
+COPY --from=frontend-builder /app/.next/static ./volatility-web/.next/static
+COPY --from=frontend-builder /app/public ./volatility-web/public
+
+# IMPORTANT: Next.js standalone needs public directory at the same level as .next
+# Copy public directory to the correct location for standalone Next.js
+COPY --from=frontend-builder /app/public ./volatility-web/public
+
+# Verify the build output
+RUN echo "Checking build output:" && \
+    ls -la volatility-web/ && \
+    ls -la volatility-web/.next/ && \
+    ls -la volatility-web/.next/static/ || echo "static dir not found"
+
+# Create necessary directories
+RUN mkdir -p /data /tmp
+
+# Create startup script
+RUN echo '#!/bin/bash\n\
+echo "Starting Volatility Terminal Web App..."\n\
+\n\
+# Start WebSocket server in background\n\
+echo "Starting WebSocket server on port 8765..."\n\
+python scripts/run_combined_filter.py &\n\
+WEBSOCKET_PID=$!\n\
+\n\
+# Wait for WebSocket server to start\n\
+sleep 5\n\
+\n\
+# Start API server in background\n\
+echo "Starting API server on port 8000..."\n\
+(cd volatility-web && python api_server.py) &\n\
+API_PID=$!\n\
+\n\
+# Wait for API server to start\n\
+sleep 3\n\
+\n\
+# Start Next.js production server using the standalone server\n\
+echo "Starting web app on port 3000..."\n\
+(cd volatility-web && HOSTNAME=0.0.0.0 PORT=3000 node server.js) &\n\
+NEXTJS_PID=$!\n\
+\n\
+# Function to handle shutdown\n\
+shutdown() {\n\
+    echo "Shutting down services..."\n\
+    kill $WEBSOCKET_PID $API_PID $NEXTJS_PID 2>/dev/null\n\
+    exit 0\n\
+}\n\
+\n\
+# Set up signal handlers\n\
+trap shutdown SIGTERM SIGINT\n\
+\n\
+# Wait for all processes\n\
+wait $WEBSOCKET_PID $API_PID $NEXTJS_PID\n\
+' > /app/start-webapp.sh && chmod +x /app/start-webapp.sh
+
+# Create volume for database
+VOLUME ["/data"]
+
+# Expose ports
+EXPOSE 3000 8000 8765
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV DB_PATH=/data/volatility_filter.db
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost:3000 && curl -f http://localhost:8000/api/health || exit 1
+
+# Run the web app
+CMD ["/app/start-webapp.sh"]

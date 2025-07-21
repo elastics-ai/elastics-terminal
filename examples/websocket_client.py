@@ -14,11 +14,11 @@ from datetime import datetime
 
 class VolatilityEventClient:
     """Client for subscribing to volatility events."""
-    
-    def __init__(self, uri='ws://localhost:8765'):
+
+    def __init__(self, uri="ws://localhost:8765"):
         self.uri = uri
         self.running = True
-        
+
     async def handle_threshold_breach(self, data):
         """Handle threshold breach events."""
         print(f"\n🚨 VOLATILITY BREACH DETECTED!")
@@ -45,10 +45,14 @@ class VolatilityEventClient:
                 print(f"Connected to {self.uri}")
 
                 # Subscribe to events
-                await websocket.send(json.dumps({
-                    'type': 'subscribe',
-                    'events': ['threshold_breach', 'statistics_update']
-                }))
+                await websocket.send(
+                    json.dumps(
+                        {
+                            "type": "subscribe",
+                            "events": ["threshold_breach", "statistics_update"],
+                        }
+                    )
+                )
 
                 print("Subscribed to volatility events")
                 print("Listening for events... (Press Ctrl+C to stop)\n")
@@ -56,26 +60,25 @@ class VolatilityEventClient:
                 # Listen for messages
                 while self.running:
                     try:
-                        message = await asyncio.wait_for(
-                            websocket.recv(), 
-                            timeout=1.0
-                        )
+                        message = await asyncio.wait_for(websocket.recv(), timeout=1.0)
 
                         data = json.loads(message)
-                        msg_type = data.get('type')
+                        msg_type = data.get("type")
 
-                        if msg_type == 'threshold_breach':
-                            await self.handle_threshold_breach(data['data'])
-                        elif msg_type == 'statistics_update':
-                            await self.handle_statistics_update(data['data'])
-                        elif msg_type == 'connection':
+                        if msg_type == "threshold_breach":
+                            await self.handle_threshold_breach(data["data"])
+                        elif msg_type == "statistics_update":
+                            await self.handle_statistics_update(data["data"])
+                        elif msg_type == "connection":
                             print(f"Server: {data['message']}")
-                        elif msg_type == 'subscription_confirmed':
-                            print(f"Subscription confirmed: {data['subscribed_events']}")
+                        elif msg_type == "subscription_confirmed":
+                            print(
+                                f"Subscription confirmed: {data['subscribed_events']}"
+                            )
 
                     except asyncio.TimeoutError:
                         # Send ping to keep connection alive
-                        await websocket.send(json.dumps({'type': 'ping'}))
+                        await websocket.send(json.dumps({"type": "ping"}))
                     except websockets.exceptions.ConnectionClosed:
                         print("Connection closed by server")
                         break
@@ -101,25 +104,16 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(
-        description='WebSocket client for volatility events'
+        description="WebSocket client for volatility events"
     )
-    parser.add_argument(
-        '--host', 
-        default='localhost',
-        help='WebSocket server host'
-    )
-    parser.add_argument(
-        '--port', 
-        type=int, 
-        default=8765,
-        help='WebSocket server port'
-    )
-    
+    parser.add_argument("--host", default="localhost", help="WebSocket server host")
+    parser.add_argument("--port", type=int, default=8765, help="WebSocket server port")
+
     args = parser.parse_args()
-    
-    client = VolatilityEventClient(f'ws://{args.host}:{args.port}')
+
+    client = VolatilityEventClient(f"ws://{args.host}:{args.port}")
     client.run()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

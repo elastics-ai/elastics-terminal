@@ -19,5 +19,5 @@ __all__ = [
     "VolatilityFilterOptimizer",
     "DatabaseManager",
     "WebSocketBroadcastServer",
-    "HistoricalDataFetcher"
+    "HistoricalDataFetcher",
 ]

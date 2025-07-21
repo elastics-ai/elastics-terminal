@@ -3,7 +3,13 @@
     "allow": [
       "Bash(python3:*)",
       "Bash(source:*)",
-      "Bash(pip install:*)"
+      "Bash(pip install:*)",
+      "Bash(sudo mv:*)",
+      "Bash(sudo chmod:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(ls:*)",
+      "Bash(vim:*)"
     ],
     "deny": []
   }
