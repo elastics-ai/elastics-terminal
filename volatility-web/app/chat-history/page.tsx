@@ -1,14 +1,16 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { ChatHistoryTree } from '@/components/chat/ChatHistoryTree'
+import { ChatTreeView } from '@/components/chat/ChatTreeView'
 import { ChatHistorySearch } from '@/components/chat/ChatHistorySearch'
 import { ChatHistoryItem } from '@/components/chat/ChatHistoryItem'
 import { ConversationViewer } from '@/components/chat/ConversationViewer'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { chatAPI } from '@/lib/api'
-import { Loader2, MessageSquare } from 'lucide-react'
+import { Loader2, MessageSquare, Network } from 'lucide-react'
+import { useOpenInFloatingChat } from '@/hooks/useOpenInFloatingChat'
 
 interface SearchFilters {
   useCase?: string
@@ -23,7 +25,8 @@ export default function ChatHistoryPage() {
   const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [filters, setFilters] = useState<SearchFilters>({})
-  const [viewMode, setViewMode] = useState<'list' | 'tree'>('list')
+  const [viewMode, setViewMode] = useState<'list' | 'tree' | 'graph'>('list')
+  const { openConversationInFloatingChat } = useOpenInFloatingChat()
 
   // Fetch conversations list
   const { data: conversationsData, isLoading: isLoadingConversations } = useQuery({
@@ -50,7 +53,7 @@ export default function ChatHistoryPage() {
     queryFn: () => selectedConversationId
       ? chatAPI.getConversationTree(selectedConversationId)
       : Promise.resolve({ tree: {} }),
-    enabled: !!selectedConversationId && viewMode === 'tree',
+    enabled: !!selectedConversationId && (viewMode === 'tree' || viewMode === 'graph'),
   })
 
   // Delete conversation mutation
@@ -134,7 +137,7 @@ export default function ChatHistoryPage() {
                     : 'text-gray-400 hover:text-white'
                 }`}
               >
-                List View
+                List
               </button>
               <button
                 onClick={() => setViewMode('tree')}
@@ -144,7 +147,18 @@ export default function ChatHistoryPage() {
                     : 'text-gray-400 hover:text-white'
                 }`}
               >
-                Tree View
+                Tree
+              </button>
+              <button
+                onClick={() => setViewMode('graph')}
+                className={`flex-1 px-3 py-1.5 text-sm rounded transition-colors flex items-center justify-center gap-1 ${
+                  viewMode === 'graph' 
+                    ? 'bg-gray-800 text-white' 
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                <Network className="w-3 h-3" />
+                Graph
               </button>
             </div>
 
@@ -177,11 +191,12 @@ export default function ChatHistoryPage() {
                       onClick={() => handleConversationSelect(conversation.id)}
                       onDelete={() => handleDelete(conversation.id)}
                       onEdit={() => handleEdit(conversation.id)}
+                      onOpenInFloatingChat={() => openConversationInFloatingChat(conversation)}
                     />
                   ))
                 )}
               </div>
-            ) : (
+            ) : viewMode === 'tree' ? (
               treeData?.tree && (
                 <ChatHistoryTree
                   tree={treeData.tree}
@@ -189,13 +204,28 @@ export default function ChatHistoryPage() {
                   onSelect={handleConversationSelect}
                 />
               )
-            )}
+            ) : null}
           </div>
         </div>
 
-        {/* Right Panel - Conversation Viewer */}
+        {/* Right Panel - Conversation Viewer or Graph View */}
         <div className="flex-1">
-          {isLoadingMessages ? (
+          {viewMode === 'graph' ? (
+            treeData?.tree ? (
+              <ChatTreeView
+                tree={treeData.tree}
+                selectedId={selectedConversationId || undefined}
+                onSelect={handleConversationSelect}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-500">
+                <div className="text-center">
+                  <Network className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                  <p>Select a conversation to view its tree</p>
+                </div>
+              </div>
+            )
+          ) : isLoadingMessages ? (
             <div className="flex items-center justify-center h-full">
               <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
             </div>

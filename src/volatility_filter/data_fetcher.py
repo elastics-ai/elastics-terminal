@@ -1,10 +1,11 @@
 """Module for fetching historical trade data from Deribit."""
 
-import requests
-import time
-from typing import List, Dict, Any, Optional
 import logging
+import time
 from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
+
+import requests
 
 logger = logging.getLogger(__name__)
 

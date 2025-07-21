@@ -6,7 +6,7 @@ This module provides comprehensive definitions and explanations of financial
 terms used in options trading to help the LLM understand and use them correctly.
 """
 
-from typing import Dict, List
+from typing import Dict
 
 
 class FinanceGlossary:
@@ -218,20 +218,20 @@ class FinanceGlossary:
         explanations = {
             "delta_notional": """
                 Delta Notional = Position Delta × Underlying Price
-                
-                Example: 
+
+                Example:
                 - Position has delta of 0.5
-                - Quantity is 10 contracts  
+                - Quantity is 10 contracts
                 - Underlying BTC price is $100,000
                 - Position Delta = 0.5 × 10 = 5.0
                 - Delta Notional = 5.0 × $100,000 = $500,000
-                
+
                 This means the position behaves like owning $500,000 worth of BTC.
             """,
             "total_greek_exposure": """
                 For any Greek across the portfolio:
                 Total Exposure = Σ(quantity × greek_value × contract_size)
-                
+
                 Example for total gamma:
                 Position 1: 10 contracts × 0.0005 gamma × 1.0 BTC = 0.005
                 Position 2: -5 contracts × 0.0008 gamma × 1.0 BTC = -0.004
@@ -240,7 +240,7 @@ class FinanceGlossary:
             "breakeven": """
                 For a long call: Breakeven = Strike + Premium Paid
                 For a long put: Breakeven = Strike - Premium Paid
-                
+
                 Account for transaction costs and contract multiplier.
             """,
         }

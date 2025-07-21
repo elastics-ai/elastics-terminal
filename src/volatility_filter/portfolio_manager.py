@@ -6,13 +6,11 @@ This module provides portfolio analytics, position management, and risk calculat
 for the Bloomberg-style TUI interface.
 """
 
-import asyncio
-import json
 import logging
-from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+
 import pandas as pd
-import numpy as np
 
 from .database import DatabaseManager
 from .option_data_fetcher import OptionDataFetcher
@@ -200,15 +198,21 @@ class PortfolioManager:
             return {"top_1": 0, "top_3": 0, "top_5": 0}
 
         return {
-            "top_1": (sorted_df.iloc[0]["abs_value"] / total_value * 100)
-            if len(sorted_df) >= 1
-            else 0,
-            "top_3": (sorted_df.iloc[:3]["abs_value"].sum() / total_value * 100)
-            if len(sorted_df) >= 3
-            else 100,
-            "top_5": (sorted_df.iloc[:5]["abs_value"].sum() / total_value * 100)
-            if len(sorted_df) >= 5
-            else 100,
+            "top_1": (
+                (sorted_df.iloc[0]["abs_value"] / total_value * 100)
+                if len(sorted_df) >= 1
+                else 0
+            ),
+            "top_3": (
+                (sorted_df.iloc[:3]["abs_value"].sum() / total_value * 100)
+                if len(sorted_df) >= 3
+                else 100
+            ),
+            "top_5": (
+                (sorted_df.iloc[:5]["abs_value"].sum() / total_value * 100)
+                if len(sorted_df) >= 5
+                else 100
+            ),
         }
 
     def _get_largest_positions(
@@ -262,7 +266,7 @@ class PortfolioManager:
                     "strike": int(parts[2]),
                     "type": parts[3],  # C or P
                 }
-        except:
+        except (ValueError, IndexError):
             pass
 
         return {"underlying": "", "expiry": "", "strike": 0, "type": ""}
@@ -468,13 +472,15 @@ class PortfolioManager:
             try:
                 with self.db.get_connection() as conn:
                     cursor = conn.cursor()
-                    cursor.execute("""
+                    cursor.execute(
+                        """
                         SELECT timestamp, price, volatility, amount as volume
                         FROM volatility_events
                         WHERE event_type = 'threshold_exceeded'
                         ORDER BY timestamp DESC
                         LIMIT 10
-                    """)
+                    """
+                    )
                     for row in cursor.fetchall():
                         volatility_events.append(
                             {
@@ -502,9 +508,9 @@ class PortfolioManager:
                 "positions": positions_formatted,
                 "volatility_events": volatility_events,
                 "market_stats": {
-                    "spot_price": positions_data[0]["current_price"]
-                    if positions_data
-                    else 0,
+                    "spot_price": (
+                        positions_data[0]["current_price"] if positions_data else 0
+                    ),
                     "atm_vol": 0.5,  # Placeholder
                     "skew": 0,  # Placeholder
                     "num_options": len(

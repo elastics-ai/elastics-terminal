@@ -84,7 +84,7 @@ export default function DocsPage() {
           <div className="border border-border rounded-lg p-6 bg-muted/50">
             <h3 className="text-lg font-semibold mb-2">Need Help?</h3>
             <p className="text-muted-foreground">
-              If you can't find what you're looking for, try asking our AI assistant in the Chat section, 
+              If you can&apos;t find what you&apos;re looking for, try asking our AI assistant in the Chat section, 
               or reach out to our support team.
             </p>
           </div>

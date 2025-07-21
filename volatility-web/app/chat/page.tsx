@@ -36,12 +36,12 @@ export default function ChatPage() {
 
   return (
     <AppLayout>
-      <div className="flex-1 p-6 overflow-auto">
+      <div className="flex-1 p-6 flex flex-col">
         <div className="mb-4">
           <h1 className="text-xl font-normal">Chat</h1>
         </div>
         
-        <div className="max-w-4xl mx-auto">
+        <div className="flex-1 max-w-4xl mx-auto w-full">
           <ChatInterface 
             messages={messages}
             onSendMessage={handleSendMessage}

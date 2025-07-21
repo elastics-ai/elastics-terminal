@@ -4,65 +4,71 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-
+    --background: 216 20% 97%;
+    --foreground: 222 47% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
+    --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 239 84% 67%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 217 91% 60%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 239 84% 67%;
+    --radius: 0.375rem;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-
-    --radius: 0.5rem;
+    --sidebar-bg: 223 28% 13%;
+    --sidebar-text: 0 0% 100%;
+    --sidebar-hover: 223 28% 18%;
+    --sidebar-active: 239 84% 67%;
+    
+    --critical: 0 84% 60%;
+    --warning: 38 92% 50%;
+    --info: 217 91% 60%;
+    --success: 142 71% 45%;
+    
+    --chart-primary: 239 84% 67%;
+    --chart-secondary: 217 91% 60%;
+    
+    /* Bloomberg-style colors */
+    --bloomberg-bg: 0 0% 100%;
+    --bloomberg-text: 220 13% 18%;
+    --bloomberg-border: 220 13% 91%;
+    --bloomberg-input: 220 13% 98%;
+    --bloomberg-accent: 217 91% 60%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 215 20.2% 65.1%;
+    --sidebar-bg: 0 0% 96%;
+    --sidebar-text: 240 10% 3.9%;
   }
 }
 
@@ -72,5 +78,47 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .status-badge {
+    @apply inline-flex items-center px-2 py-1 rounded text-xs font-medium;
+  }
+  
+  .status-critical {
+    @apply bg-red-500 text-white;
+  }
+  
+  .status-warning {
+    @apply bg-amber-500 text-white;
+  }
+  
+  .status-info {
+    @apply bg-blue-500 text-white;
+  }
+  
+  .metric-card {
+    @apply bg-card rounded-lg p-4 shadow-sm border border-border;
+  }
+  
+  .metric-value {
+    @apply text-2xl font-semibold;
+  }
+  
+  .metric-label {
+    @apply text-sm text-muted-foreground;
+  }
+  
+  .metric-change {
+    @apply text-sm font-medium;
+  }
+  
+  .metric-change-positive {
+    @apply text-green-600;
+  }
+  
+  .metric-change-negative {
+    @apply text-red-600;
   }
 }

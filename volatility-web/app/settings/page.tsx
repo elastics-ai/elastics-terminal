@@ -1,7 +1,7 @@
 'use client'
 
 import { AppLayout } from '@/components/layout/app-layout'
-import { Settings, Bell, Shield, Database, Zap, Globe } from 'lucide-react'
+import { Bell, Shield, Database, Zap } from 'lucide-react'
 import { useState } from 'react'
 
 export default function SettingsPage() {

@@ -1,12 +1,13 @@
 """Database management module for storing trade data and volatility events."""
 
+import json
+import logging
 import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
+
 import pandas as pd
-from typing import Dict, Any, Optional, List
-import logging
-import json
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,8 @@ class DatabaseManager:
             cursor = conn.cursor()
 
             # Historical trades table
-            cursor.execute("""
+            cursor.execute(
+                """
                 CREATE TABLE IF NOT EXISTS historical_trades (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     timestamp BIGINT NOT NULL,
@@ -47,20 +49,26 @@ class DatabaseManager:
                     tick_direction INTEGER,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
-            """)
+            """
+            )
 
             # Create indexes
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_hist_timestamp 
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_hist_timestamp
                 ON historical_trades(timestamp)
-            """)
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_hist_datetime 
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_hist_datetime
                 ON historical_trades(datetime)
-            """)
+            """
+            )
 
             # Real-time trades table
-            cursor.execute("""
+            cursor.execute(
+                """
                 CREATE TABLE IF NOT EXISTS realtime_trades (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     timestamp BIGINT NOT NULL,
@@ -74,20 +82,26 @@ class DatabaseManager:
                     ar_volatility REAL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
-            """)
+            """
+            )
 
             # Create indexes for realtime trades
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_rt_timestamp 
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_rt_timestamp
                 ON realtime_trades(timestamp)
-            """)
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_rt_datetime 
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_rt_datetime
                 ON realtime_trades(datetime)
-            """)
+            """
+            )
 
             # Volatility events table
-            cursor.execute("""
+            cursor.execute(
+                """
                 CREATE TABLE IF NOT EXISTS volatility_events (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     timestamp BIGINT NOT NULL,
@@ -103,24 +117,32 @@ class DatabaseManager:
                     event_type TEXT DEFAULT 'threshold_exceeded',
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
-            """)
+            """
+            )
 
             # Create indexes for volatility events
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_vol_timestamp 
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_vol_timestamp
                 ON volatility_events(timestamp)
-            """)
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_vol_datetime 
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_vol_datetime
                 ON volatility_events(datetime)
-            """)
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_vol_type 
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_vol_type
                 ON volatility_events(event_type)
-            """)
+            """
+            )
 
             # Filter configuration table
-            cursor.execute("""
+            cursor.execute(
+                """
                 CREATE TABLE IF NOT EXISTS filter_config (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     config_name TEXT UNIQUE NOT NULL,
@@ -133,10 +155,12 @@ class DatabaseManager:
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
-            """)
+            """
+            )
 
             # Performance metrics table
-            cursor.execute("""
+            cursor.execute(
+                """
                 CREATE TABLE IF NOT EXISTS performance_metrics (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -156,10 +180,12 @@ class DatabaseManager:
                     config_id INTEGER,
                     FOREIGN KEY (config_id) REFERENCES filter_config(id)
                 )
-            """)
+            """
+            )
 
             # Option instruments table
-            cursor.execute("""
+            cursor.execute(
+                """
                 CREATE TABLE IF NOT EXISTS option_instruments (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     instrument_name TEXT UNIQUE NOT NULL,
@@ -177,24 +203,32 @@ class DatabaseManager:
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
-            """)
+            """
+            )
 
             # Create indexes for option instruments
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_opt_inst_underlying 
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_opt_inst_underlying
                 ON option_instruments(underlying)
-            """)
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_opt_inst_expiry 
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_opt_inst_expiry
                 ON option_instruments(expiry_date)
-            """)
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_opt_inst_strike 
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_opt_inst_strike
                 ON option_instruments(strike)
-            """)
+            """
+            )
 
             # Option chains table (snapshots of entire option chain)
-            cursor.execute("""
+            cursor.execute(
+                """
                 CREATE TABLE IF NOT EXISTS option_chains (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     timestamp BIGINT NOT NULL,
@@ -205,20 +239,26 @@ class DatabaseManager:
                     snapshot_data TEXT NOT NULL,  -- JSON blob of full chain
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
-            """)
+            """
+            )
 
             # Create indexes for option chains
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_opt_chain_timestamp 
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_opt_chain_timestamp
                 ON option_chains(timestamp)
-            """)
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_opt_chain_underlying 
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_opt_chain_underlying
                 ON option_chains(underlying)
-            """)
+            """
+            )
 
             # Option trades table
-            cursor.execute("""
+            cursor.execute(
+                """
                 CREATE TABLE IF NOT EXISTS option_trades (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     timestamp BIGINT NOT NULL,
@@ -235,20 +275,26 @@ class DatabaseManager:
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (instrument_name) REFERENCES option_instruments(instrument_name)
                 )
-            """)
+            """
+            )
 
             # Create indexes for option trades
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_opt_trade_timestamp 
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_opt_trade_timestamp
                 ON option_trades(timestamp)
-            """)
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_opt_trade_instrument 
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_opt_trade_instrument
                 ON option_trades(instrument_name)
-            """)
+            """
+            )
 
             # Option Greeks table
-            cursor.execute("""
+            cursor.execute(
+                """
                 CREATE TABLE IF NOT EXISTS option_greeks (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     timestamp BIGINT NOT NULL,
@@ -271,20 +317,26 @@ class DatabaseManager:
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (instrument_name) REFERENCES option_instruments(instrument_name)
                 )
-            """)
+            """
+            )
 
             # Create indexes for option Greeks
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_opt_greeks_timestamp 
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_opt_greeks_timestamp
                 ON option_greeks(timestamp)
-            """)
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_opt_greeks_instrument 
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_opt_greeks_instrument
                 ON option_greeks(instrument_name)
-            """)
+            """
+            )
 
             # Option volatility events table
-            cursor.execute("""
+            cursor.execute(
+                """
                 CREATE TABLE IF NOT EXISTS option_volatility_events (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     timestamp BIGINT NOT NULL,
@@ -304,24 +356,32 @@ class DatabaseManager:
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (instrument_name) REFERENCES option_instruments(instrument_name)
                 )
-            """)
+            """
+            )
 
             # Create indexes for option volatility events
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_opt_vol_event_timestamp 
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_opt_vol_event_timestamp
                 ON option_volatility_events(timestamp)
-            """)
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_opt_vol_event_type 
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_opt_vol_event_type
                 ON option_volatility_events(event_type)
-            """)
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_opt_vol_event_instrument 
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_opt_vol_event_instrument
                 ON option_volatility_events(instrument_name)
-            """)
+            """
+            )
 
             # Volatility surface fits table
-            cursor.execute("""
+            cursor.execute(
+                """
                 CREATE TABLE IF NOT EXISTS volatility_surface_fits (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     timestamp BIGINT NOT NULL,
@@ -338,20 +398,26 @@ class DatabaseManager:
                     smile_data TEXT,  -- JSON array of [moneyness, vol] pairs
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
-            """)
+            """
+            )
 
             # Create indexes for volatility surface fits
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_vol_surface_timestamp 
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_vol_surface_timestamp
                 ON volatility_surface_fits(timestamp)
-            """)
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_vol_surface_underlying 
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_vol_surface_underlying
                 ON volatility_surface_fits(underlying)
-            """)
+            """
+            )
 
             # Positions table
-            cursor.execute("""
+            cursor.execute(
+                """
                 CREATE TABLE IF NOT EXISTS positions (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     position_id TEXT UNIQUE NOT NULL,
@@ -382,28 +448,38 @@ class DatabaseManager:
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (instrument_name) REFERENCES option_instruments(instrument_name)
                 )
-            """)
+            """
+            )
 
             # Create indexes for positions
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_pos_position_id 
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_pos_position_id
                 ON positions(position_id)
-            """)
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_pos_instrument 
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_pos_instrument
                 ON positions(instrument_name)
-            """)
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_pos_active 
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_pos_active
                 ON positions(is_active)
-            """)
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_pos_entry_timestamp 
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_pos_entry_timestamp
                 ON positions(entry_timestamp)
-            """)
+            """
+            )
 
             # Chat conversations table
-            cursor.execute("""
+            cursor.execute(
+                """
                 CREATE TABLE IF NOT EXISTS chat_conversations (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     session_id TEXT NOT NULL,
@@ -416,10 +492,12 @@ class DatabaseManager:
                     is_active BOOLEAN DEFAULT 1,
                     FOREIGN KEY (parent_message_id) REFERENCES chat_messages(id)
                 )
-            """)
+            """
+            )
 
             # Chat messages table
-            cursor.execute("""
+            cursor.execute(
+                """
                 CREATE TABLE IF NOT EXISTS chat_messages (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     conversation_id INTEGER NOT NULL,
@@ -432,10 +510,12 @@ class DatabaseManager:
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (conversation_id) REFERENCES chat_conversations(id)
                 )
-            """)
+            """
+            )
 
             # Chat analytics table
-            cursor.execute("""
+            cursor.execute(
+                """
                 CREATE TABLE IF NOT EXISTS chat_analytics (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     conversation_id INTEGER NOT NULL,
@@ -447,28 +527,38 @@ class DatabaseManager:
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (conversation_id) REFERENCES chat_conversations(id)
                 )
-            """)
+            """
+            )
 
             # Create indexes for chat tables
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_chat_conv_session 
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_chat_conv_session
                 ON chat_conversations(session_id)
-            """)
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_chat_conv_user 
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_chat_conv_user
                 ON chat_conversations(user_id)
-            """)
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_chat_msg_conv 
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_chat_msg_conv
                 ON chat_messages(conversation_id)
-            """)
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_chat_analytics_conv 
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_chat_analytics_conv
                 ON chat_analytics(conversation_id)
-            """)
+            """
+            )
 
             # SQL Modules table
-            cursor.execute("""
+            cursor.execute(
+                """
                 CREATE TABLE IF NOT EXISTS sql_modules (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     title TEXT NOT NULL,
@@ -491,10 +581,12 @@ class DatabaseManager:
                     FOREIGN KEY (first_message_id) REFERENCES chat_messages(id),
                     FOREIGN KEY (first_conversation_id) REFERENCES chat_conversations(id)
                 )
-            """)
+            """
+            )
 
             # SQL Module Executions table
-            cursor.execute("""
+            cursor.execute(
+                """
                 CREATE TABLE IF NOT EXISTS sql_module_executions (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     module_id INTEGER NOT NULL,
@@ -510,29 +602,40 @@ class DatabaseManager:
                     FOREIGN KEY (message_id) REFERENCES chat_messages(id),
                     FOREIGN KEY (conversation_id) REFERENCES chat_conversations(id)
                 )
-            """)
+            """
+            )
 
             # Create indexes for SQL modules
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_sql_modules_hash 
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_sql_modules_hash
                 ON sql_modules(query_hash)
-            """)
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_sql_modules_type 
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_sql_modules_type
                 ON sql_modules(query_type)
-            """)
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_sql_modules_favorite 
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_sql_modules_favorite
                 ON sql_modules(is_favorite)
-            """)
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_sql_module_exec_module 
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_sql_module_exec_module
                 ON sql_module_executions(module_id)
-            """)
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_sql_module_exec_time 
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_sql_module_exec_time
                 ON sql_module_executions(executed_at)
-            """)
+            """
+            )
 
             conn.commit()
 
@@ -546,7 +649,7 @@ class DatabaseManager:
                 try:
                     cursor.execute(
                         """
-                        INSERT OR IGNORE INTO historical_trades 
+                        INSERT OR IGNORE INTO historical_trades
                         (timestamp, datetime, trade_id, price, amount, direction, tick_direction)
                         VALUES (?, ?, ?, ?, ?, ?, ?)
                     """,
@@ -580,8 +683,8 @@ class DatabaseManager:
             try:
                 cursor.execute(
                     """
-                    INSERT OR IGNORE INTO realtime_trades 
-                    (timestamp, datetime, trade_id, price, amount, direction, 
+                    INSERT OR IGNORE INTO realtime_trades
+                    (timestamp, datetime, trade_id, price, amount, direction,
                      tick_direction, log_return, ar_volatility)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
@@ -612,8 +715,8 @@ class DatabaseManager:
             try:
                 cursor.execute(
                     """
-                    INSERT INTO volatility_events 
-                    (timestamp, datetime, trade_id, price, amount, direction, 
+                    INSERT INTO volatility_events
+                    (timestamp, datetime, trade_id, price, amount, direction,
                      volatility, threshold, window_size, ar_lag, event_type)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
@@ -649,8 +752,8 @@ class DatabaseManager:
             try:
                 cursor.execute(
                     """
-                    INSERT OR REPLACE INTO filter_config 
-                    (config_name, window_size, ar_lag, vol_threshold, 
+                    INSERT OR REPLACE INTO filter_config
+                    (config_name, window_size, ar_lag, vol_threshold,
                      is_optimized, optimization_method, optimization_score, updated_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                 """,
@@ -713,7 +816,7 @@ class DatabaseManager:
             cursor = conn.cursor()
             cursor.execute(
                 """
-                SELECT 
+                SELECT
                     COUNT(*) as total_trades,
                     AVG(ar_volatility) as avg_volatility,
                     MAX(ar_volatility) as max_volatility,
@@ -762,7 +865,7 @@ class DatabaseManager:
             try:
                 cursor.execute(
                     """
-                    INSERT INTO performance_metrics 
+                    INSERT INTO performance_metrics
                     (total_trades, filtered_trades, filter_ratio, avg_volatility,
                      max_volatility, min_volatility, true_positives, false_positives,
                      false_negatives, true_negatives, precision_score, recall_score,
@@ -826,10 +929,10 @@ class DatabaseManager:
                 try:
                     cursor.execute(
                         """
-                        INSERT OR REPLACE INTO option_instruments 
-                        (instrument_name, underlying, option_type, strike, 
+                        INSERT OR REPLACE INTO option_instruments
+                        (instrument_name, underlying, option_type, strike,
                          expiry_timestamp, expiry_date, creation_timestamp,
-                         tick_size, taker_commission, maker_commission, 
+                         tick_size, taker_commission, maker_commission,
                          contract_size, is_active, updated_at)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                     """,
@@ -867,8 +970,8 @@ class DatabaseManager:
             try:
                 cursor.execute(
                     """
-                    INSERT INTO option_chains 
-                    (timestamp, datetime, underlying, underlying_price, 
+                    INSERT INTO option_chains
+                    (timestamp, datetime, underlying, underlying_price,
                      underlying_index_price, snapshot_data)
                     VALUES (?, ?, ?, ?, ?, ?)
                 """,
@@ -896,8 +999,8 @@ class DatabaseManager:
             try:
                 cursor.execute(
                     """
-                    INSERT OR IGNORE INTO option_trades 
-                    (timestamp, datetime, trade_id, instrument_name, 
+                    INSERT OR IGNORE INTO option_trades
+                    (timestamp, datetime, trade_id, instrument_name,
                      price, amount, direction, tick_direction,
                      implied_volatility, index_price, underlying_price)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -934,10 +1037,10 @@ class DatabaseManager:
             try:
                 cursor.execute(
                     """
-                    INSERT INTO option_greeks 
+                    INSERT INTO option_greeks
                     (timestamp, datetime, instrument_name, mark_price, mark_iv,
                      underlying_price, delta, gamma, vega, theta, rho,
-                     bid_iv, ask_iv, bid_price, ask_price, 
+                     bid_iv, ask_iv, bid_price, ask_price,
                      open_interest, volume_24h)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
@@ -978,7 +1081,7 @@ class DatabaseManager:
             try:
                 cursor.execute(
                     """
-                    INSERT INTO option_volatility_events 
+                    INSERT INTO option_volatility_events
                     (timestamp, datetime, instrument_name, event_type,
                      implied_volatility, historical_volatility, iv_change,
                      iv_percentile, underlying_price, strike, days_to_expiry,
@@ -1029,8 +1132,8 @@ class DatabaseManager:
         """Get option chain for a specific expiry date."""
         with self.get_connection() as conn:
             query = """
-                SELECT oi.*, og.mark_price, og.mark_iv, og.delta, og.gamma, 
-                       og.vega, og.theta, og.bid_price, og.ask_price, 
+                SELECT oi.*, og.mark_price, og.mark_iv, og.delta, og.gamma,
+                       og.vega, og.theta, og.bid_price, og.ask_price,
                        og.open_interest, og.volume_24h
                 FROM option_instruments oi
                 LEFT JOIN (
@@ -1038,7 +1141,7 @@ class DatabaseManager:
                     FROM option_greeks
                     GROUP BY instrument_name
                 ) latest ON oi.instrument_name = latest.instrument_name
-                LEFT JOIN option_greeks og ON og.instrument_name = latest.instrument_name 
+                LEFT JOIN option_greeks og ON og.instrument_name = latest.instrument_name
                     AND og.timestamp = latest.max_ts
                 WHERE oi.underlying = ? AND oi.expiry_date = ?
                 ORDER BY oi.strike
@@ -1107,7 +1210,7 @@ class DatabaseManager:
                            og.mark_iv, og.bid_iv, og.ask_iv, og.underlying_price
                     FROM option_instruments oi
                     JOIN option_greeks og ON oi.instrument_name = og.instrument_name
-                    WHERE oi.underlying = ? 
+                    WHERE oi.underlying = ?
                       AND og.timestamp = (
                           SELECT MAX(timestamp) FROM option_greeks
                           WHERE timestamp <= ? AND instrument_name = oi.instrument_name
@@ -1126,7 +1229,7 @@ class DatabaseManager:
                         FROM option_greeks
                         GROUP BY instrument_name
                     ) latest ON oi.instrument_name = latest.instrument_name
-                    JOIN option_greeks og ON og.instrument_name = latest.instrument_name 
+                    JOIN option_greeks og ON og.instrument_name = latest.instrument_name
                         AND og.timestamp = latest.max_ts
                     WHERE oi.underlying = ? AND oi.is_active = TRUE
                     ORDER BY oi.expiry_date, oi.strike
@@ -1144,7 +1247,7 @@ class DatabaseManager:
             try:
                 cursor.execute(
                     """
-                    INSERT INTO volatility_surface_fits 
+                    INSERT INTO volatility_surface_fits
                     (timestamp, datetime, underlying, spot_price, surface_data,
                      moneyness_grid, ttm_grid, num_options, fit_quality, atm_vol,
                      term_structure, smile_data)
@@ -1217,7 +1320,7 @@ class DatabaseManager:
             try:
                 cursor.execute(
                     """
-                    INSERT INTO positions 
+                    INSERT INTO positions
                     (position_id, instrument_name, instrument_type, quantity,
                      entry_price, entry_timestamp, entry_datetime, current_price,
                      current_timestamp, underlying_price, mark_iv, delta, gamma,
@@ -1265,7 +1368,7 @@ class DatabaseManager:
             try:
                 cursor.execute(
                     """
-                    UPDATE positions 
+                    UPDATE positions
                     SET current_price = ?, current_timestamp = ?, underlying_price = ?,
                         mark_iv = ?, delta = ?, gamma = ?, vega = ?, theta = ?,
                         position_delta = ?, position_value = ?, pnl = ?, pnl_percent = ?,
@@ -1305,7 +1408,7 @@ class DatabaseManager:
             try:
                 cursor.execute(
                     """
-                    UPDATE positions 
+                    UPDATE positions
                     SET is_active = FALSE, exit_price = ?, exit_timestamp = ?,
                         exit_datetime = ?, updated_at = CURRENT_TIMESTAMP
                     WHERE position_id = ? AND is_active = TRUE
@@ -1365,8 +1468,9 @@ class DatabaseManager:
             cursor = conn.cursor()
 
             # Get aggregate statistics
-            cursor.execute("""
-                SELECT 
+            cursor.execute(
+                """
+                SELECT
                     COUNT(*) as total_positions,
                     SUM(CASE WHEN is_active = TRUE THEN 1 ELSE 0 END) as active_positions,
                     SUM(position_value) as total_value,
@@ -1379,17 +1483,20 @@ class DatabaseManager:
                     SUM(theta * position_value) as total_theta_exposure
                 FROM positions
                 WHERE is_active = TRUE
-            """)
+            """
+            )
 
             summary = cursor.fetchone()
 
             # Get position breakdown by type
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT instrument_type, COUNT(*) as count, SUM(position_value) as value
                 FROM positions
                 WHERE is_active = TRUE
                 GROUP BY instrument_type
-            """)
+            """
+            )
 
             breakdown = cursor.fetchall()
 
@@ -1423,7 +1530,7 @@ class DatabaseManager:
                 try:
                     cursor.execute(
                         """
-                        INSERT OR IGNORE INTO positions 
+                        INSERT OR IGNORE INTO positions
                         (position_id, instrument_name, instrument_type, quantity,
                          entry_price, entry_timestamp, entry_datetime, current_price,
                          current_timestamp, underlying_price, mark_iv, delta, gamma,
@@ -1477,7 +1584,7 @@ class DatabaseManager:
             try:
                 cursor.execute(
                     """
-                    INSERT INTO chat_conversations 
+                    INSERT INTO chat_conversations
                     (session_id, user_id, title, use_case, parent_message_id)
                     VALUES (?, ?, ?, ?, ?)
                 """,
@@ -1502,7 +1609,7 @@ class DatabaseManager:
             cursor = conn.cursor()
             cursor.execute(
                 """
-                SELECT * FROM chat_conversations 
+                SELECT * FROM chat_conversations
                 WHERE session_id = ? AND is_active = 1
                 ORDER BY created_at DESC
                 LIMIT 1
@@ -1560,7 +1667,7 @@ class DatabaseManager:
             try:
                 cursor.execute(
                     """
-                    INSERT INTO chat_messages 
+                    INSERT INTO chat_messages
                     (conversation_id, role, content, metadata, sql_query, query_results, context_snapshot)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
@@ -1626,7 +1733,7 @@ class DatabaseManager:
                 if message.get("metadata"):
                     try:
                         message["metadata"] = json.loads(message["metadata"])
-                    except:
+                    except (json.JSONDecodeError, TypeError):
                         message["metadata"] = None
                 messages.append(message)
 
@@ -1656,7 +1763,7 @@ class DatabaseManager:
             try:
                 cursor.execute(
                     """
-                    INSERT INTO chat_analytics 
+                    INSERT INTO chat_analytics
                     (conversation_id, use_case, query_type, response_time_ms, tokens_used)
                     VALUES (?, ?, ?, ?, ?)
                 """,
@@ -1683,7 +1790,7 @@ class DatabaseManager:
             cursor = conn.cursor()
             cursor.execute(
                 """
-                SELECT 
+                SELECT
                     COUNT(DISTINCT conversation_id) as total_conversations,
                     COUNT(*) as total_queries,
                     AVG(response_time_ms) as avg_response_time,
@@ -1736,7 +1843,7 @@ class DatabaseManager:
             cursor = conn.cursor()
 
             query = """
-                SELECT 
+                SELECT
                     c.id,
                     c.session_id,
                     c.user_id,
@@ -1765,8 +1872,8 @@ class DatabaseManager:
 
             if search_query:
                 query += """ AND (c.title LIKE ? OR EXISTS (
-                    SELECT 1 FROM chat_messages m2 
-                    WHERE m2.conversation_id = c.id 
+                    SELECT 1 FROM chat_messages m2
+                    WHERE m2.conversation_id = c.id
                     AND m2.content LIKE ?
                 ))"""
                 search_pattern = f"%{search_query}%"
@@ -1797,7 +1904,7 @@ class DatabaseManager:
 
             cursor.execute(
                 """
-                SELECT 
+                SELECT
                     c.*,
                     COUNT(m.id) as message_count,
                     MIN(m.created_at) as first_message_at,
@@ -1825,11 +1932,11 @@ class DatabaseManager:
                 """
                 WITH RECURSIVE conversation_tree AS (
                     -- Base case: the root conversation
-                    SELECT 
-                        c.id, 
-                        c.session_id, 
-                        c.title, 
-                        c.use_case, 
+                    SELECT
+                        c.id,
+                        c.session_id,
+                        c.title,
+                        c.use_case,
                         c.parent_message_id,
                         c.created_at,
                         c.updated_at,
@@ -1839,11 +1946,11 @@ class DatabaseManager:
                     LEFT JOIN chat_messages m ON c.id = m.conversation_id
                     WHERE c.id = ?
                     GROUP BY c.id
-                    
+
                     UNION ALL
-                    
+
                     -- Recursive case: conversations branched from messages in the tree
-                    SELECT 
+                    SELECT
                         c.id,
                         c.session_id,
                         c.title,
@@ -1875,7 +1982,7 @@ class DatabaseManager:
                         JOIN chat_conversations c ON m.conversation_id = c.id
                         WHERE m.id = ?
                         """,
-                        (node_dict["parent_message_id"],)
+                        (node_dict["parent_message_id"],),
                     )
                     branch_info = cursor.fetchone()
                     if branch_info:
@@ -1899,7 +2006,7 @@ class DatabaseManager:
         # Build parent-child relationships by checking parent_message_id relationships
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            
+
             for node in nodes:
                 if node["depth"] == 0:
                     root = node_map[node["id"]]
@@ -1907,12 +2014,14 @@ class DatabaseManager:
                     # Find which conversation contains the parent message
                     cursor.execute(
                         "SELECT conversation_id FROM chat_messages WHERE id = ?",
-                        (node["parent_message_id"],)
+                        (node["parent_message_id"],),
                     )
                     result = cursor.fetchone()
                     if result and result["conversation_id"] in node_map:
                         parent_conv_id = result["conversation_id"]
-                        node_map[parent_conv_id]["children"].append(node_map[node["id"]])
+                        node_map[parent_conv_id]["children"].append(
+                            node_map[node["id"]]
+                        )
 
         return root or {}
 
@@ -1924,7 +2033,7 @@ class DatabaseManager:
             try:
                 cursor.execute(
                     """
-                    UPDATE chat_conversations 
+                    UPDATE chat_conversations
                     SET is_active = 0, updated_at = CURRENT_TIMESTAMP
                     WHERE id = ?
                 """,
@@ -1943,142 +2052,151 @@ class DatabaseManager:
 
     # SQL Modules methods
     def create_or_update_sql_module(
-        self, 
+        self,
         sql_query: str,
         message_id: int,
         conversation_id: int,
         execution_time_ms: int,
         row_count: int,
         query_results: Optional[str] = None,
-        error_message: Optional[str] = None
+        error_message: Optional[str] = None,
     ) -> Optional[int]:
         """Create or update a SQL module from an executed query."""
         import hashlib
         import re
-        
+
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            
+
             # Generate query hash
-            normalized_query = re.sub(r'\s+', ' ', sql_query.strip().upper())
+            normalized_query = re.sub(r"\s+", " ", sql_query.strip().upper())
             query_hash = hashlib.md5(normalized_query.encode()).hexdigest()
-            
+
             # Extract query type
-            query_type = normalized_query.split()[0] if normalized_query else 'UNKNOWN'
-            
+            query_type = normalized_query.split()[0] if normalized_query else "UNKNOWN"
+
             # Extract table names (simple regex approach)
-            table_pattern = r'FROM\s+(\w+)|JOIN\s+(\w+)|INTO\s+(\w+)|UPDATE\s+(\w+)'
+            table_pattern = r"FROM\s+(\w+)|JOIN\s+(\w+)|INTO\s+(\w+)|UPDATE\s+(\w+)"
             tables = set()
             for match in re.finditer(table_pattern, normalized_query):
                 for group in match.groups():
                     if group:
                         tables.add(group.lower())
-            
+
             tables_json = json.dumps(list(tables)) if tables else None
-            
+
             try:
                 # Check if module exists
                 cursor.execute(
                     "SELECT id, execution_count, avg_execution_time_ms FROM sql_modules WHERE query_hash = ?",
-                    (query_hash,)
+                    (query_hash,),
                 )
                 existing = cursor.fetchone()
-                
+
                 if existing:
                     # Update existing module
                     module_id = existing["id"]
                     exec_count = existing["execution_count"] + 1
                     avg_time = (
-                        (existing["avg_execution_time_ms"] * existing["execution_count"] + execution_time_ms) 
-                        / exec_count
-                    )
-                    
-                    cursor.execute("""
-                        UPDATE sql_modules 
+                        existing["avg_execution_time_ms"] * existing["execution_count"]
+                        + execution_time_ms
+                    ) / exec_count
+
+                    cursor.execute(
+                        """
+                        UPDATE sql_modules
                         SET execution_count = ?,
                             avg_execution_time_ms = ?,
                             last_execution_time_ms = ?,
                             last_executed_at = CURRENT_TIMESTAMP,
                             updated_at = CURRENT_TIMESTAMP
                         WHERE id = ?
-                    """, (exec_count, avg_time, execution_time_ms, module_id))
+                    """,
+                        (exec_count, avg_time, execution_time_ms, module_id),
+                    )
                 else:
                     # Create new module
-                    cursor.execute("""
-                        INSERT INTO sql_modules 
-                        (title, description, sql_query, query_hash, tables_used, 
+                    cursor.execute(
+                        """
+                        INSERT INTO sql_modules
+                        (title, description, sql_query, query_hash, tables_used,
                          query_type, first_message_id, first_conversation_id,
                          first_executed_at, execution_count, avg_execution_time_ms,
                          last_execution_time_ms, last_executed_at)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, 1, ?, ?, CURRENT_TIMESTAMP)
-                    """, (
-                        f"{query_type} Query",  # Basic title, will be updated later
-                        None,  # Description will be generated later
-                        sql_query,
-                        query_hash,
-                        tables_json,
-                        query_type,
-                        message_id,
-                        conversation_id,
-                        execution_time_ms,
-                        execution_time_ms
-                    ))
+                    """,
+                        (
+                            f"{query_type} Query",  # Basic title, will be updated later
+                            None,  # Description will be generated later
+                            sql_query,
+                            query_hash,
+                            tables_json,
+                            query_type,
+                            message_id,
+                            conversation_id,
+                            execution_time_ms,
+                            execution_time_ms,
+                        ),
+                    )
                     module_id = cursor.lastrowid
-                
+
                 # Record execution
-                cursor.execute("""
-                    INSERT INTO sql_module_executions 
+                cursor.execute(
+                    """
+                    INSERT INTO sql_module_executions
                     (module_id, message_id, conversation_id, execution_time_ms,
                      row_count, success, error_message, query_results)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    module_id,
-                    message_id,
-                    conversation_id,
-                    execution_time_ms,
-                    row_count,
-                    error_message is None,
-                    error_message,
-                    query_results
-                ))
-                
+                """,
+                    (
+                        module_id,
+                        message_id,
+                        conversation_id,
+                        execution_time_ms,
+                        row_count,
+                        error_message is None,
+                        error_message,
+                        query_results,
+                    ),
+                )
+
                 conn.commit()
                 return module_id
-                
+
             except Exception as e:
                 logger.error(f"Error creating/updating SQL module: {e}")
                 return None
 
     def get_sql_modules(
-        self, 
-        limit: int = 50, 
+        self,
+        limit: int = 50,
         offset: int = 0,
         search: Optional[str] = None,
         query_type: Optional[str] = None,
-        favorites_only: bool = False
+        favorites_only: bool = False,
     ) -> List[Dict[str, Any]]:
         """Get SQL modules with optional filters."""
         with self.get_connection() as conn:
             query = "SELECT * FROM sql_modules WHERE 1=1"
             params = []
-            
+
             if search:
                 query += " AND (title LIKE ? OR description LIKE ? OR sql_query LIKE ?)"
                 search_pattern = f"%{search}%"
                 params.extend([search_pattern, search_pattern, search_pattern])
-            
+
             if query_type:
                 query += " AND query_type = ?"
                 params.append(query_type)
-            
+
             if favorites_only:
                 query += " AND is_favorite = TRUE"
-            
+
             query += " ORDER BY last_executed_at DESC LIMIT ? OFFSET ?"
             params.extend([limit, offset])
-            
+
             df = pd.read_sql_query(query, conn, params=params)
-            
+
             # Parse JSON fields
             modules = []
             for _, row in df.iterrows():
@@ -2088,7 +2206,7 @@ class DatabaseManager:
                 if module.get("columns_used"):
                     module["columns_used"] = json.loads(module["columns_used"])
                 modules.append(module)
-            
+
             return modules
 
     def get_sql_module_by_id(self, module_id: int) -> Optional[Dict[str, Any]]:
@@ -2097,7 +2215,7 @@ class DatabaseManager:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM sql_modules WHERE id = ?", (module_id,))
             row = cursor.fetchone()
-            
+
             if row:
                 module = dict(row)
                 if module.get("tables_used"):
@@ -2108,9 +2226,7 @@ class DatabaseManager:
             return None
 
     def get_sql_module_executions(
-        self, 
-        module_id: int, 
-        limit: int = 50
+        self, module_id: int, limit: int = 50
     ) -> List[Dict[str, Any]]:
         """Get execution history for a SQL module."""
         with self.get_connection() as conn:
@@ -2123,17 +2239,19 @@ class DatabaseManager:
                 LIMIT ?
             """
             df = pd.read_sql_query(query, conn, params=(module_id, limit))
-            
+
             executions = []
             for _, row in df.iterrows():
                 execution = dict(row)
                 if execution.get("query_results"):
                     try:
-                        execution["query_results"] = json.loads(execution["query_results"])
-                    except:
+                        execution["query_results"] = json.loads(
+                            execution["query_results"]
+                        )
+                    except (json.JSONDecodeError, TypeError):
                         pass
                 executions.append(execution)
-            
+
             return executions
 
     def update_sql_module_metadata(
@@ -2141,35 +2259,35 @@ class DatabaseManager:
         module_id: int,
         title: Optional[str] = None,
         description: Optional[str] = None,
-        is_favorite: Optional[bool] = None
+        is_favorite: Optional[bool] = None,
     ) -> bool:
         """Update SQL module metadata."""
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            
+
             updates = []
             params = []
-            
+
             if title is not None:
                 updates.append("title = ?")
                 params.append(title)
-            
+
             if description is not None:
                 updates.append("description = ?")
                 params.append(description)
-            
+
             if is_favorite is not None:
                 updates.append("is_favorite = ?")
                 params.append(is_favorite)
-            
+
             if not updates:
                 return True
-            
+
             updates.append("updated_at = CURRENT_TIMESTAMP")
             params.append(module_id)
-            
+
             query = f"UPDATE sql_modules SET {', '.join(updates)} WHERE id = ?"
-            
+
             try:
                 cursor.execute(query, params)
                 conn.commit()
@@ -2182,45 +2300,53 @@ class DatabaseManager:
         """Get overall SQL module statistics."""
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            
+
             # Total modules and executions
-            cursor.execute("""
-                SELECT 
+            cursor.execute(
+                """
+                SELECT
                     COUNT(DISTINCT id) as total_modules,
                     SUM(execution_count) as total_executions,
                     AVG(avg_execution_time_ms) as avg_execution_time,
                     COUNT(DISTINCT CASE WHEN is_favorite THEN id END) as favorite_count
                 FROM sql_modules
-            """)
-            
+            """
+            )
+
             stats = dict(cursor.fetchone())
-            
+
             # Modules by type
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT query_type, COUNT(*) as count
                 FROM sql_modules
                 GROUP BY query_type
-            """)
-            
-            stats["by_type"] = {row["query_type"]: row["count"] for row in cursor.fetchall()}
-            
+            """
+            )
+
+            stats["by_type"] = {
+                row["query_type"]: row["count"] for row in cursor.fetchall()
+            }
+
             # Most used tables
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT tables_used, execution_count
                 FROM sql_modules
                 WHERE tables_used IS NOT NULL
-            """)
-            
+            """
+            )
+
             table_counts = {}
             for row in cursor.fetchall():
                 tables = json.loads(row["tables_used"])
                 for table in tables:
-                    table_counts[table] = table_counts.get(table, 0) + row["execution_count"]
-            
+                    table_counts[table] = (
+                        table_counts.get(table, 0) + row["execution_count"]
+                    )
+
             stats["most_used_tables"] = sorted(
-                table_counts.items(), 
-                key=lambda x: x[1], 
-                reverse=True
+                table_counts.items(), key=lambda x: x[1], reverse=True
             )[:10]
-            
+
             return stats

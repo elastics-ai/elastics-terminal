@@ -1,13 +1,14 @@
 """Module for optimizing volatility filter parameters."""
 
-import numpy as np
-import pandas as pd
-from statsmodels.tsa.ar_model import AutoReg
-from scipy import optimize
-from typing import Dict, Any, List, Tuple, Optional
+import logging
 import pickle
 from datetime import datetime
-import logging
+from typing import Any, Dict, List, Optional, Tuple
+
+import numpy as np
+import pandas as pd
+from scipy import optimize
+from statsmodels.tsa.ar_model import AutoReg
 
 logger = logging.getLogger(__name__)
 
@@ -263,9 +264,9 @@ class VolatilityFilterOptimizer:
             "f1_score": f1,
             "accuracy": accuracy,
             "total_predictions": len(predictions),
-            "positive_rate": np.sum(predictions) / len(predictions)
-            if len(predictions) > 0
-            else 0,
+            "positive_rate": (
+                np.sum(predictions) / len(predictions) if len(predictions) > 0 else 0
+            ),
         }
 
         return metrics

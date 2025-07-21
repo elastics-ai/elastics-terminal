@@ -6,21 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { modulesAPI } from '@/lib/api'
 import { ModuleTile } from '@/components/modules/ModuleTile'
 import { ModuleDetail } from '@/components/modules/ModuleDetail'
-import { Search, Filter, Star, BarChart3, Loader2 } from 'lucide-react'
-
-interface Module {
-  id: number
-  title: string
-  description: string | null
-  sql_query: string
-  query_type: string
-  tables_used: string[] | null
-  execution_count: number
-  avg_execution_time_ms: number
-  last_executed_at: string
-  is_favorite: boolean
-  first_conversation_id: number
-}
+import { Search, Star, BarChart3, Loader2 } from 'lucide-react'
 
 export default function ModulesPage() {
   const queryClient = useQueryClient()

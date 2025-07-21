@@ -5,6 +5,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { chatAPI } from '@/lib/api'
 import { ChatMessage } from './chat-message'
 import { ChatInput } from './chat-input'
+import { BranchCreationModal } from '@/components/chat/BranchCreationModal'
 import { History, GitBranch, ArrowLeft } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
@@ -42,7 +43,10 @@ export function ChatInterface({
   const [currentConversationId, setCurrentConversationId] = useState(conversationId)
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [messageBranches, setMessageBranches] = useState<Record<number, number>>({})
-  const [showBranchDialog, setShowBranchDialog] = useState<number | null>(null)
+  const [branchModalData, setBranchModalData] = useState<{
+    messageId: number
+    message: Message
+  } | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
 
@@ -117,16 +121,24 @@ export function ChatInterface({
     router.push('/chat-history')
   }
 
-  const handleBranch = async (messageId: number) => {
-    if (!currentConversationId) return
+  const handleBranch = (messageId: number) => {
+    const message = messages.find(m => m.messageId === messageId)
+    if (message) {
+      setBranchModalData({ messageId, message })
+    }
+  }
+
+  const handleCreateBranch = async (title: string, description?: string) => {
+    if (!currentConversationId || !branchModalData) return
     
     try {
       const response = await fetch(`/api/chat/conversations/${currentConversationId}/branch`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          parent_message_id: messageId,
-          title: 'Branch from message'
+          parent_message_id: branchModalData.messageId,
+          title,
+          description
         })
       })
       
@@ -137,6 +149,8 @@ export function ChatInterface({
       }
     } catch (error) {
       console.error('Error creating branch:', error)
+    } finally {
+      setBranchModalData(null)
     }
   }
 
@@ -176,7 +190,7 @@ export function ChatInterface({
   ]
 
   return (
-    <div className="flex flex-col h-[700px]">
+    <div className="flex flex-col h-full relative bg-white">
       {/* Branch indicator */}
       {parentMessageId && (
         <div className="mb-4 p-3 bg-blue-900/20 border border-blue-800/50 rounded-lg">
@@ -191,7 +205,7 @@ export function ChatInterface({
       )}
       
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto space-y-3 mb-4">
+      <div className="flex-1 overflow-y-auto space-y-3 pb-[200px]">
         {messages.map((message) => (
           <ChatMessage 
             key={message.id} 
@@ -209,50 +223,64 @@ export function ChatInterface({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Suggestions */}
-      {messages.length === 1 && onSuggestionClick && (
-        <div className="mb-4">
-          <div className="flex flex-wrap gap-2">
-            {displaySuggestions.map((suggestion, index) => (
-              <button
-                key={index}
-                onClick={() => onSuggestionClick(suggestion)}
-                className="px-3 py-1.5 text-sm border border-gray-700 rounded hover:bg-gray-800 transition-colors"
-              >
-                {suggestion}
-              </button>
-            ))}
+      {/* Fixed bottom input container */}
+      <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg">
+        {/* Suggestions */}
+        {messages.length === 1 && onSuggestionClick && (
+          <div className="px-4 pt-4">
+            <div className="flex flex-wrap gap-2">
+              {displaySuggestions.map((suggestion, index) => (
+                <button
+                  key={index}
+                  onClick={() => onSuggestionClick(suggestion)}
+                  className="px-3 py-1.5 text-sm border border-gray-300 bg-white rounded-lg hover:bg-gray-50 transition-colors text-gray-700"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Input */}
-      <div>
-        <ChatInput
-          value={input}
-          onChange={setInput}
-          onSubmit={handleSubmit}
-          disabled={sendMessageMutation.isPending}
-        />
-        <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
-          <span>Powered by Claude 3.5 • Context-aware analysis</span>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleViewHistory}
-              className="flex items-center gap-1 hover:text-gray-300 transition-colors"
-            >
-              <History className="w-3 h-3" />
-              View History
-            </button>
-            <button
-              onClick={handleClear}
-              className="hover:text-gray-300 transition-colors"
-            >
-              Clear
-            </button>
+        {/* Input */}
+        <div className="p-4">
+          <ChatInput
+            value={input}
+            onChange={setInput}
+            onSubmit={handleSubmit}
+            disabled={sendMessageMutation.isPending}
+          />
+          <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
+            <span>Powered by Claude 3.5 • Context-aware analysis</span>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleViewHistory}
+                className="flex items-center gap-1 hover:text-gray-700 transition-colors"
+              >
+                <History className="w-3 h-3" />
+                View History
+              </button>
+              <button
+                onClick={handleClear}
+                className="hover:text-gray-700 transition-colors"
+              >
+                Clear
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Branch Creation Modal */}
+      {branchModalData && (
+        <BranchCreationModal
+          isOpen={!!branchModalData}
+          onClose={() => setBranchModalData(null)}
+          onConfirm={handleCreateBranch}
+          parentMessage={branchModalData.message}
+          currentConversationTitle={conversationTitle || `Conversation #${currentConversationId}`}
+        />
+      )}
     </div>
   )
 }

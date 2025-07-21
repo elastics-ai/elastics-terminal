@@ -11,6 +11,7 @@
 - Updated Claude API model from claude-3-sonnet-20240229 to claude-3-5-sonnet-20241022
 - Added proper cleanup for asyncio event loops
 - Unified chat UI with light theme to match app styling
+- Integrated GlitchTip error tracking for monitoring production errors
 
 ## Architecture
 - Backend: Python FastAPI with WebSocket support
@@ -19,3 +20,12 @@
 - WebSocket server on port 8765
 - API server on port 8000
 - Web app on port 3000
+- GlitchTip on port 8080 (internal)
+
+## Error Tracking (GlitchTip)
+- GlitchTip is configured for error tracking and performance monitoring
+- Access GlitchTip dashboard: Internal only (via container network)
+- DSN is configured in docker/.env as GLITCHTIP_DSN
+- Default admin credentials: admin@localhost / admin123
+- Sentry SDK is integrated in both WebSocket server and API server
+- Test error endpoint available at: /api/test-error

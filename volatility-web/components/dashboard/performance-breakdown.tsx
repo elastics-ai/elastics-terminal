@@ -50,20 +50,26 @@ export function PerformanceBreakdown() {
     }
   })
 
+  const currentMetrics = {
+    portfolio: { value: 24, change: -4.58, benchmark: 0.21 },
+    alpha: { value: 0.15, label: '24h', change: 0.00 },
+    beta: { value: 0.4, label: 'Beta: 0.31', change: 0.00 }
+  }
+
   return (
-    <div className="chart-container">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-base font-semibold">Performance Breakdown</h3>
-        <div className="flex items-center gap-1 bg-secondary/50 rounded-md p-1">
+    <div className="bg-white rounded-lg p-6 shadow-sm border border-border">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-lg font-semibold">Performance Breakdown</h3>
+        <div className="flex items-center gap-1 bg-gray-100 rounded-md p-1">
           {timeRanges.map((range) => (
             <button
               key={range.value}
               onClick={() => setSelectedRange(range.value)}
               className={cn(
-                "px-3 py-1 text-xs font-medium rounded transition-colors",
+                "px-3 py-1.5 text-xs font-medium rounded transition-colors",
                 selectedRange === range.value
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-black text-white"
+                  : "text-gray-600 hover:text-gray-900"
               )}
             >
               {range.label}
@@ -72,42 +78,64 @@ export function PerformanceBreakdown() {
         </div>
       </div>
 
-      <div className="space-y-6">
+      <div className="grid grid-cols-2 gap-6">
         {/* Cumulative Returns Chart */}
         <div>
-          <h4 className="text-xs text-muted-foreground mb-2">Cumulative Returns</h4>
-          <div className="h-48">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="text-sm font-medium">Cumulative Returns</h4>
+            <div className="flex items-center gap-4 text-xs">
+              <div className="flex items-center gap-1">
+                <span className="w-3 h-0.5 bg-[hsl(var(--chart-primary))]"></span>
+                <span className="text-muted-foreground">Portfolio</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="w-3 h-0.5 bg-gray-400"></span>
+                <span className="text-muted-foreground">Benchmark</span>
+              </div>
+            </div>
+          </div>
+          <div className="mb-3">
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-semibold">{currentMetrics.portfolio.value}%</span>
+              <span className="text-sm font-medium text-red-600">
+                {currentMetrics.portfolio.change}%
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Benchmark: {currentMetrics.portfolio.benchmark}%
+            </p>
+          </div>
+          <div className="h-[200px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(55, 65, 81, 0.3)" />
+                <CartesianGrid strokeDasharray="0" stroke="#f0f0f0" vertical={false} />
                 <XAxis 
                   dataKey="date" 
-                  tick={{ fontSize: 10 }} 
-                  stroke="#6B7280"
+                  tick={{ fontSize: 11 }} 
+                  stroke="#999"
                   interval="preserveStartEnd"
+                  axisLine={false}
                 />
                 <YAxis 
-                  tick={{ fontSize: 10 }} 
-                  stroke="#6B7280"
+                  tick={{ fontSize: 11 }} 
+                  stroke="#999"
                   tickFormatter={(value) => `${value}%`}
+                  axisLine={false}
                 />
                 <Tooltip 
                   contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))', 
-                    border: '1px solid hsl(var(--border))',
+                    backgroundColor: '#fff', 
+                    border: '1px solid #e5e5e5',
                     borderRadius: '6px',
-                    fontSize: '12px'
+                    fontSize: '12px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                   }}
                   formatter={(value: number) => [`${value}%`, '']}
-                />
-                <Legend 
-                  wrapperStyle={{ fontSize: '10px' }}
-                  iconType="line"
                 />
                 <Line 
                   type="monotone" 
                   dataKey="portfolio" 
-                  stroke="#5B8DEF" 
+                  stroke="hsl(var(--chart-primary))" 
                   strokeWidth={2}
                   dot={false}
                   name="Portfolio"
@@ -115,7 +143,7 @@ export function PerformanceBreakdown() {
                 <Line 
                   type="monotone" 
                   dataKey="benchmark" 
-                  stroke="#6B7280" 
+                  stroke="#999" 
                   strokeWidth={2}
                   dot={false}
                   name="Benchmark"
@@ -127,47 +155,74 @@ export function PerformanceBreakdown() {
 
         {/* Alpha/Beta Chart */}
         <div>
-          <h4 className="text-xs text-muted-foreground mb-2">Alpha/Beta</h4>
-          <div className="h-48">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="text-sm font-medium">Alpha/Beta</h4>
+            <div className="flex items-center gap-4 text-xs">
+              <div className="flex items-center gap-1">
+                <span className="w-3 h-0.5 bg-gray-900"></span>
+                <span className="text-muted-foreground">Alpha</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="w-3 h-0.5 bg-gray-400"></span>
+                <span className="text-muted-foreground">Beta</span>
+              </div>
+            </div>
+          </div>
+          <div className="mb-3 grid grid-cols-2 gap-4">
+            <div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-semibold">{currentMetrics.alpha.value}</span>
+                <span className="status-badge bg-black text-white text-[10px]">
+                  {currentMetrics.alpha.label}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">0.00</p>
+            </div>
+            <div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-semibold">{currentMetrics.beta.value}</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">{currentMetrics.beta.label}</p>
+            </div>
+          </div>
+          <div className="h-[200px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData} margin={{ top: 5, right: 30, bottom: 5, left: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(55, 65, 81, 0.3)" />
+                <CartesianGrid strokeDasharray="0" stroke="#f0f0f0" vertical={false} />
                 <XAxis 
                   dataKey="date" 
-                  tick={{ fontSize: 10 }} 
-                  stroke="#6B7280"
+                  tick={{ fontSize: 11 }} 
+                  stroke="#999"
                   interval="preserveStartEnd"
+                  axisLine={false}
                 />
                 <YAxis 
                   yAxisId="left"
-                  tick={{ fontSize: 10 }} 
-                  stroke="#6B7280"
-                  label={{ value: 'Alpha', angle: -90, position: 'insideLeft', style: { fontSize: 10 } }}
+                  tick={{ fontSize: 11 }} 
+                  stroke="#999"
+                  axisLine={false}
                 />
                 <YAxis 
                   yAxisId="right"
                   orientation="right"
-                  tick={{ fontSize: 10 }} 
-                  stroke="#6B7280"
-                  label={{ value: 'Beta', angle: 90, position: 'insideRight', style: { fontSize: 10 } }}
+                  tick={{ fontSize: 11 }} 
+                  stroke="#999"
+                  axisLine={false}
                 />
                 <Tooltip 
                   contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))', 
-                    border: '1px solid hsl(var(--border))',
+                    backgroundColor: '#fff', 
+                    border: '1px solid #e5e5e5',
                     borderRadius: '6px',
-                    fontSize: '12px'
+                    fontSize: '12px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                   }}
-                />
-                <Legend 
-                  wrapperStyle={{ fontSize: '10px' }}
-                  iconType="line"
                 />
                 <Line 
                   yAxisId="left"
                   type="monotone" 
                   dataKey="alpha" 
-                  stroke="#5B8DEF" 
+                  stroke="#000" 
                   strokeWidth={2}
                   dot={false}
                   name="Alpha"
@@ -176,7 +231,7 @@ export function PerformanceBreakdown() {
                   yAxisId="right"
                   type="monotone" 
                   dataKey="beta" 
-                  stroke="#10B981" 
+                  stroke="#999" 
                   strokeWidth={2}
                   dot={false}
                   name="Beta"

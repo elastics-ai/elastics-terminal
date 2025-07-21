@@ -1,11 +1,12 @@
 """Module for fetching option chain data from Deribit."""
 
-import requests
-import time
-from typing import List, Dict, Any, Optional, Set
 import logging
+import time
 from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional, Set
+
 import numpy as np
+import requests
 
 logger = logging.getLogger(__name__)
 

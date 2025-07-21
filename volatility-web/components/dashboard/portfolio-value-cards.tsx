@@ -3,9 +3,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { portfolioAPI } from '@/lib/api'
 import { formatCurrency, formatPercentage, cn } from '@/lib/utils'
-import { TrendingUp, TrendingDown } from 'lucide-react'
+import { Bot } from 'lucide-react'
+import { useQuickChat } from '@/hooks/useQuickChat'
 
 export function PortfolioValueCards() {
+  const { openChatWith } = useQuickChat()
   const { data, isLoading } = useQuery({
     queryKey: ['portfolio-summary'],
     queryFn: portfolioAPI.getSummary,
@@ -17,8 +19,9 @@ export function PortfolioValueCards() {
       label: 'Portfolio Value',
       value: data?.total_value || 2540300,
       format: 'currency',
-      change: null,
-      changeLabel: null,
+      change: 34000,
+      changeLabel: '$34,000',
+      percentage: 1.36,
     },
     {
       label: 'Cumulative PnL',
@@ -26,7 +29,7 @@ export function PortfolioValueCards() {
       format: 'currency',
       change: 54000,
       changeLabel: '$54,000',
-      percentage: 1.53,
+      percentage: 3.68,
     },
     {
       label: 'Cumulative Return',
@@ -45,36 +48,51 @@ export function PortfolioValueCards() {
   ]
 
   return (
-    <div className="grid grid-cols-4 gap-4">
-      {cards.map((card, index) => (
-        <div key={index} className="metric-card">
-          <p className="metric-label">{card.label}</p>
-          <p className="metric-value">
-            {card.format === 'currency' 
-              ? formatCurrency(card.value)
-              : `+${card.value}%`
-            }
-          </p>
-          {card.percentage && (
-            <p className={cn("text-sm", card.percentage >= 0 ? "text-[hsl(var(--positive))]" : "text-[hsl(var(--negative))]")}>
-              {card.percentage >= 0 ? '+' : ''}{card.percentage}%
+    <div className="relative">
+      {/* Ask AI Button */}
+      <button
+        onClick={() => openChatWith("Analyze my portfolio performance and provide insights")}
+        className="absolute -top-2 -right-2 flex items-center gap-1.5 px-3 py-1.5 
+                   bg-purple-600 hover:bg-purple-700 text-white text-xs rounded-full
+                   shadow-lg transition-all hover:scale-105 z-10"
+      >
+        <Bot className="w-3.5 h-3.5" />
+        Ask AI the about portfolio
+      </button>
+
+      <div className="grid grid-cols-4 gap-6">
+        {cards.map((card, index) => (
+          <div key={index} className="bg-white rounded-lg p-6 shadow-sm border border-border">
+            <p className="text-sm text-muted-foreground mb-2">{card.label}</p>
+          <div className="flex items-baseline gap-3">
+            <p className="text-3xl font-semibold">
+              {card.format === 'currency' 
+                ? formatCurrency(card.value)
+                : `+${card.value}%`
+              }
             </p>
-          )}
-          {card.change !== null && (
-            <div className={cn(
-              "metric-change",
-              card.change >= 0 ? "text-[hsl(var(--positive))]" : "text-[hsl(var(--negative))]"
-            )}>
-              {card.change >= 0 ? (
-                <TrendingUp className="w-3 h-3" />
-              ) : (
-                <TrendingDown className="w-3 h-3" />
-              )}
-              <span>{card.changeLabel}</span>
-            </div>
+            {card.percentage && (
+              <span className={cn(
+                "text-sm font-medium",
+                card.percentage >= 0 ? "text-green-600" : "text-red-600"
+              )}>
+                {card.percentage >= 0 ? '+' : ''}{card.percentage}%
+              </span>
+            )}
+          </div>
+          {card.changeLabel && (
+            <p className="text-sm text-muted-foreground mt-2">
+              24h: <span className={cn(
+                "font-medium",
+                card.change >= 0 ? "text-green-600" : "text-red-600"
+              )}>
+                {card.change >= 0 ? '+' : ''}{card.changeLabel}
+              </span>
+            </p>
           )}
         </div>
       ))}
+      </div>
     </div>
   )
 }

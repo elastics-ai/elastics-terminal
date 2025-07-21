@@ -1,17 +1,16 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/bloomberg/providers/providers";
 
-const ibmPlexMono = IBM_Plex_Mono({
-  weight: ["400", "500", "600", "700"],
+const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-ibm-plex-mono",
+  variable: "--font-inter",
 });
 
 export const metadata: Metadata = {
-  title: "Volatility Terminal",
-  description: "Professional volatility monitoring and portfolio management",
+  title: "Elastics - Portfolio Overview",
+  description: "Professional portfolio monitoring and analytics platform",
 };
 
 export default function RootLayout({
@@ -20,9 +19,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en">
       <body
-        className={`${ibmPlexMono.variable} font-mono antialiased bg-background text-foreground`}
+        className={`${inter.variable} font-sans antialiased bg-background text-foreground`}
       >
         <Providers>{children}</Providers>
       </body>

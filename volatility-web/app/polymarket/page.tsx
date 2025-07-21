@@ -8,7 +8,12 @@ import { MarketDetailsModal } from "@/components/bloomberg/views/polymarket/mark
 
 export default function PolymarketPage() {
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedMarket, setSelectedMarket] = useState<any>(null)
+  const [selectedMarket, setSelectedMarket] = useState<{
+    id: string;
+    question: string;
+    description?: string;
+    [key: string]: unknown;
+  } | null>(null)
 
   return (
     <AppLayout>

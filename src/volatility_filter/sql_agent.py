@@ -6,12 +6,13 @@ This module provides a safe SQL query executor with schema awareness,
 validation, and domain-specific understanding for the chat interface.
 """
 
+import logging
 import re
 import sqlite3
-import logging
-from typing import Dict, Any, List, Optional, Tuple
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple
+
 import pandas as pd
 
 logger = logging.getLogger(__name__)
@@ -223,14 +224,14 @@ class SQLAgent:
             Dict with 'success', 'data', 'columns', and 'error' keys
         """
         import time
-        
+
         # Validate query first
         is_valid, error = self.validate_query(query)
         if not is_valid:
             return {"success": False, "error": error, "data": [], "columns": []}
 
         start_time = time.time()
-        
+
         try:
             # Connect with timeout
             conn = sqlite3.connect(self.db_path, timeout=self.MAX_QUERY_TIME)
@@ -261,7 +262,7 @@ class SQLAgent:
                 logger.warning(f"Query result truncated at {self.MAX_ROWS} rows")
 
             conn.close()
-            
+
             # Calculate execution time
             execution_time_ms = int((time.time() - start_time) * 1000)
 

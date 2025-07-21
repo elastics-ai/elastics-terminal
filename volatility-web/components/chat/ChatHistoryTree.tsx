@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { ChevronRight, ChevronDown, MessageSquare, GitBranch, Calendar } from 'lucide-react'
+import { ChevronRight, ChevronDown, MessageSquare, GitBranch, Calendar, Hash } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -12,6 +12,7 @@ interface ConversationNode {
   created_at: string
   message_count: number
   children?: ConversationNode[]
+  parent_id?: number
 }
 
 interface ChatHistoryTreeProps {
@@ -58,7 +59,9 @@ const TreeNode: React.FC<{
   selectedId?: number
   onSelect: (id: number) => void
   onBranch?: (id: number, messageId: number) => void
-}> = ({ node, level, selectedId, onSelect, onBranch }) => {
+  isLast: boolean
+  parentExpanded?: boolean
+}> = ({ node, level, selectedId, onSelect, onBranch, isLast, parentExpanded = true }) => {
   const [isExpanded, setIsExpanded] = useState(true)
   const hasChildren = node.children && node.children.length > 0
   const isSelected = selectedId === node.id
@@ -86,24 +89,46 @@ const TreeNode: React.FC<{
   }
 
   return (
-    <div>
+    <div className="relative">
+      {/* Connection lines */}
+      {level > 0 && (
+        <>
+          {/* Vertical line from parent */}
+          <div 
+            className="absolute left-0 top-0 w-px bg-gray-700"
+            style={{ 
+              left: `${(level - 1) * 24 + 12}px`,
+              height: isLast ? '20px' : '100%',
+            }}
+          />
+          {/* Horizontal line to node */}
+          <div 
+            className="absolute top-5 h-px bg-gray-700"
+            style={{ 
+              left: `${(level - 1) * 24 + 12}px`,
+              width: '12px',
+            }}
+          />
+        </>
+      )}
+
       <motion.div
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.2, delay: level * 0.05 }}
         className={cn(
-          'flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all',
+          'relative flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all',
           'hover:bg-gray-800/50',
           isSelected && 'bg-primary/20 border-l-2 border-primary'
         )}
-        style={{ paddingLeft: `${level * 20 + 12}px` }}
+        style={{ paddingLeft: `${level * 24 + 12}px` }}
         onClick={handleSelect}
       >
         {/* Expand/Collapse Toggle */}
         {hasChildren && (
           <button
             onClick={handleToggle}
-            className="p-0.5 hover:bg-gray-700 rounded"
+            className="p-0.5 hover:bg-gray-700 rounded relative z-10"
           >
             {isExpanded ? (
               <ChevronDown className="w-4 h-4" />
@@ -114,10 +139,13 @@ const TreeNode: React.FC<{
         )}
         {!hasChildren && <div className="w-5" />}
 
-        {/* Icon */}
-        <div className="flex-shrink-0">
+        {/* Node indicator */}
+        <div className="flex-shrink-0 relative">
           {hasChildren ? (
-            <GitBranch className="w-4 h-4 text-gray-500" />
+            <div className="relative">
+              <GitBranch className="w-4 h-4 text-purple-400" />
+              <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-purple-500 rounded-full" />
+            </div>
           ) : (
             <MessageSquare className="w-4 h-4 text-gray-500" />
           )}
@@ -130,6 +158,12 @@ const TreeNode: React.FC<{
               {node.title}
             </h4>
             <UseCaseBadge useCase={node.use_case} />
+            {node.parent_id && (
+              <span className="flex items-center gap-1 text-xs text-gray-500">
+                <Hash className="w-3 h-3" />
+                {node.parent_id}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
             <span>{node.message_count} messages</span>
@@ -139,6 +173,14 @@ const TreeNode: React.FC<{
             </span>
           </div>
         </div>
+
+        {/* Branch count indicator */}
+        {hasChildren && (
+          <div className="flex items-center gap-1 text-xs text-purple-400">
+            <GitBranch className="w-3 h-3" />
+            {node.children!.length}
+          </div>
+        )}
       </motion.div>
 
       {/* Children */}
@@ -149,8 +191,9 @@ const TreeNode: React.FC<{
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
+            className="relative"
           >
-            {node.children!.map((child) => (
+            {node.children!.map((child, index) => (
               <TreeNode
                 key={child.id}
                 node={child}
@@ -158,6 +201,8 @@ const TreeNode: React.FC<{
                 selectedId={selectedId}
                 onSelect={onSelect}
                 onBranch={onBranch}
+                isLast={index === node.children!.length - 1}
+                parentExpanded={isExpanded}
               />
             ))}
           </motion.div>
@@ -182,14 +227,43 @@ export const ChatHistoryTree: React.FC<ChatHistoryTreeProps> = ({
     )
   }
 
+  // Calculate tree statistics
+  const countNodes = (node: ConversationNode): number => {
+    let count = 1
+    if (node.children) {
+      node.children.forEach(child => {
+        count += countNodes(child)
+      })
+    }
+    return count
+  }
+
+  const maxDepth = (node: ConversationNode, depth: number = 0): number => {
+    if (!node.children || node.children.length === 0) return depth
+    return Math.max(...node.children.map(child => maxDepth(child, depth + 1)))
+  }
+
+  const totalConversations = countNodes(tree)
+  const treeDepth = maxDepth(tree)
+
   return (
     <div className="py-2">
+      {/* Tree Statistics */}
+      <div className="mb-4 px-3 py-2 bg-gray-800/30 rounded-lg">
+        <div className="flex items-center justify-between text-xs text-gray-400">
+          <span>{totalConversations} conversations</span>
+          <span>Max depth: {treeDepth}</span>
+        </div>
+      </div>
+
+      {/* Tree Visualization */}
       <TreeNode
         node={tree}
         level={0}
         selectedId={selectedId}
         onSelect={onSelect}
         onBranch={onBranch}
+        isLast={true}
       />
     </div>
   )

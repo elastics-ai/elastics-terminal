@@ -3,13 +3,14 @@ Volatility surface fitting module for option chains.
 Fits implied volatility surfaces using interpolation methods.
 """
 
+import logging
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Tuple
+
 import numpy as np
 from scipy import interpolate
 from scipy.optimize import minimize_scalar
-from typing import Dict, List, Tuple, Optional
-import logging
-from datetime import datetime, timedelta
-from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 

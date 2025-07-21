@@ -5,6 +5,7 @@ import { Provider as JotaiProvider } from 'jotai'
 import { ThemeProvider } from 'next-themes'
 import { useEffect } from 'react'
 import { wsClient } from '@/lib/websocket'
+import { FloatingChatProvider } from '@/contexts/FloatingChatContext'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -30,7 +31,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
           defaultTheme="light"
           enableSystem={false}
         >
-          {children}
+          <FloatingChatProvider>
+            {children}
+          </FloatingChatProvider>
         </ThemeProvider>
       </JotaiProvider>
     </QueryClientProvider>

@@ -7,7 +7,7 @@ how to translate natural language queries into SQL and provide
 domain-appropriate responses.
 """
 
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 
 class ChatExamples:
@@ -21,7 +21,7 @@ class ChatExamples:
                 "question": "What is my delta exposure for the 100k strike calls?",
                 "thought_process": "User is asking about delta exposure for specific strike calls. Need to query positions table and filter by strike price and option type.",
                 "sql": """
-                    SELECT 
+                    SELECT
                         p.instrument_name,
                         p.quantity,
                         p.delta,
@@ -31,8 +31,8 @@ class ChatExamples:
                         o.expiry_timestamp
                     FROM positions p
                     JOIN option_instruments o ON p.instrument_name = o.instrument_name
-                    WHERE p.is_active = 1 
-                        AND o.strike = 100000 
+                    WHERE p.is_active = 1
+                        AND o.strike = 100000
                         AND o.option_type = 'European Call'
                     ORDER BY o.expiry_timestamp
                 """,
@@ -42,7 +42,7 @@ class ChatExamples:
                 "question": "Show me my largest losing positions",
                 "thought_process": "User wants to see positions with the biggest losses. Query positions table, filter for active positions with negative P&L, order by P&L ascending.",
                 "sql": """
-                    SELECT 
+                    SELECT
                         instrument_name,
                         instrument_type,
                         quantity,
@@ -68,7 +68,7 @@ class ChatExamples:
                 "question": "What's my total gamma exposure?",
                 "thought_process": "User asking for portfolio-level gamma. Need to sum gamma exposure across all active positions.",
                 "sql": """
-                    SELECT 
+                    SELECT
                         SUM(gamma * quantity * 1.0) as total_gamma,
                         SUM(ABS(gamma * quantity * 1.0)) as total_absolute_gamma,
                         COUNT(*) as position_count
@@ -81,7 +81,7 @@ class ChatExamples:
                 "question": "Break down my Greeks by expiry date",
                 "thought_process": "User wants Greeks aggregated by expiration. Need to join positions with option_instruments and group by expiry.",
                 "sql": """
-                    SELECT 
+                    SELECT
                         DATE(o.expiry_timestamp/1000, 'unixepoch') as expiry_date,
                         SUM(p.position_delta) as total_delta,
                         SUM(p.gamma * p.quantity) as total_gamma,
@@ -107,23 +107,23 @@ class ChatExamples:
                 "thought_process": "User wants to see IV changes for at-the-money options. Need to find options near current spot price and compare current vs earlier IVs.",
                 "sql": """
                     WITH current_spot AS (
-                        SELECT underlying_price 
-                        FROM option_greeks 
-                        ORDER BY timestamp DESC 
+                        SELECT underlying_price
+                        FROM option_greeks
+                        ORDER BY timestamp DESC
                         LIMIT 1
                     ),
                     atm_options AS (
                         SELECT DISTINCT instrument_name
                         FROM option_instruments
-                        WHERE is_active = 1 
+                        WHERE is_active = 1
                             AND ABS(strike - (SELECT underlying_price FROM current_spot)) / (SELECT underlying_price FROM current_spot) < 0.05
                     )
-                    SELECT 
+                    SELECT
                         g.instrument_name,
                         o.strike,
                         o.option_type,
                         MAX(CASE WHEN g.timestamp > strftime('%s', 'now', '-1 hour') * 1000 THEN g.mark_iv END) as current_iv,
-                        MAX(CASE WHEN g.timestamp < strftime('%s', 'now', '-23 hours') * 1000 
+                        MAX(CASE WHEN g.timestamp < strftime('%s', 'now', '-23 hours') * 1000
                                 AND g.timestamp > strftime('%s', 'now', '-24 hours') * 1000 THEN g.mark_iv END) as yesterday_iv
                     FROM option_greeks g
                     JOIN option_instruments o ON g.instrument_name = o.instrument_name
@@ -144,7 +144,7 @@ class ChatExamples:
                 "question": "What's my P&L breakdown by instrument type?",
                 "thought_process": "User wants P&L aggregated by instrument type (option, future, spot).",
                 "sql": """
-                    SELECT 
+                    SELECT
                         instrument_type,
                         COUNT(*) as position_count,
                         SUM(position_value) as total_value,
@@ -170,7 +170,7 @@ class ChatExamples:
                 "thought_process": "User wants concentration risk analysis. Need to group positions by strike and expiry to find concentrations.",
                 "sql": """
                     WITH position_concentrations AS (
-                        SELECT 
+                        SELECT
                             o.strike,
                             DATE(o.expiry_timestamp/1000, 'unixepoch') as expiry_date,
                             COUNT(*) as position_count,
@@ -187,7 +187,7 @@ class ChatExamples:
                         FROM positions
                         WHERE is_active = 1
                     )
-                    SELECT 
+                    SELECT
                         pc.*,
                         ROUND(pc.absolute_value * 100.0 / pt.total_portfolio_value, 1) as pct_of_portfolio
                     FROM position_concentrations pc, portfolio_total pt

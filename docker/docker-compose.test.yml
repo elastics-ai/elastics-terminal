@@ -65,12 +65,13 @@ services:
     command: >
       sh -c "
         pip install -r requirements.txt &&
-        python -m pytest tests/test_e2e_chat.py -v -m e2e
+        python -m pytest tests/e2e/ -v -m e2e
       "
     environment:
       - DB_PATH=/tmp/test_volatility.db
       - ANTHROPIC_API_KEY=test-key
       - API_URL=http://backend:8000
+      - WS_URL=ws://websocket:8765
       - TESTING=true
     volumes:
       - ../src:/app/src
@@ -80,6 +81,7 @@ services:
     depends_on:
       - backend
       - frontend
+      - websocket
     networks:
       - test-network
 
@@ -92,12 +94,35 @@ services:
     environment:
       - DB_PATH=/data/test_volatility.db
       - ANTHROPIC_API_KEY=test-key
+      - TESTING=true
     volumes:
       - test-data:/data
+      - ../src:/app/src
+      - ../volatility-web:/app/volatility-web
     networks:
       - test-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  
+  # WebSocket service for E2E tests
+  websocket:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    command: python -m src.volatility_filter.websocket_server
+    environment:
+      - DB_PATH=/data/test_volatility.db
+      - TESTING=true
+    volumes:
+      - test-data:/data
+      - ../src:/app/src
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import websocket; ws = websocket.create_connection('ws://localhost:8765'); ws.close()"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -109,14 +134,45 @@ services:
       dockerfile: ../docker/Dockerfile.webapp
     environment:
       - NEXT_PUBLIC_API_URL=http://backend:8000
+      - NEXT_PUBLIC_WS_URL=ws://websocket:8765
     networks:
       - test-network
     depends_on:
       backend:
         condition: service_healthy
+      websocket:
+        condition: service_healthy
+  
+  # Playwright E2E tests
+  playwright-test:
+    build:
+      context: ../volatility-web
+      dockerfile: ../docker/Dockerfile.playwright
+    command: >
+      sh -c "
+        npm install &&
+        npx playwright install --with-deps &&
+        npx playwright test
+      "
+    environment:
+      - CI=true
+      - BASE_URL=http://frontend:3000
+      - API_URL=http://backend:8000
+      - WS_URL=ws://websocket:8765
+    volumes:
+      - ../volatility-web:/app
+      - /app/node_modules
+      - playwright-results:/app/test-results
+    depends_on:
+      - backend
+      - frontend
+      - websocket
+    networks:
+      - test-network
 
 volumes:
   test-data:
+  playwright-results:
 
 networks:
   test-network:

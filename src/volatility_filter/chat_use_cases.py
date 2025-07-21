@@ -6,9 +6,8 @@ This module provides use case detection, specialized system prompts, and context
 suggestions based on the type of analysis the user is interested in.
 """
 
-import re
-from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime
+from typing import Any, Dict, List
 
 
 class ChatUseCases:

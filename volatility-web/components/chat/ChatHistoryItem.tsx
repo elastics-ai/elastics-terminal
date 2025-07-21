@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { MessageSquare, Clock, Tag, GitBranch, Trash2, Edit3 } from 'lucide-react'
+import { MessageSquare, Clock, Tag, GitBranch, Trash2, Edit3, ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 
@@ -20,6 +20,7 @@ interface ChatHistoryItemProps {
   onDelete?: () => void
   onEdit?: () => void
   onBranch?: () => void
+  onOpenInFloatingChat?: () => void
 }
 
 export const ChatHistoryItem: React.FC<ChatHistoryItemProps> = ({
@@ -28,7 +29,8 @@ export const ChatHistoryItem: React.FC<ChatHistoryItemProps> = ({
   onClick,
   onDelete,
   onEdit,
-  onBranch
+  onBranch,
+  onOpenInFloatingChat
 }) => {
   const formatRelativeTime = (dateString: string) => {
     const date = new Date(dateString)
@@ -88,6 +90,11 @@ export const ChatHistoryItem: React.FC<ChatHistoryItemProps> = ({
     onBranch?.()
   }
 
+  const handleOpenInFloatingChat = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onOpenInFloatingChat?.()
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -139,6 +146,15 @@ export const ChatHistoryItem: React.FC<ChatHistoryItemProps> = ({
 
         {/* Actions */}
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          {onOpenInFloatingChat && (
+            <button
+              onClick={handleOpenInFloatingChat}
+              className="p-1.5 hover:bg-gray-700 rounded transition-colors"
+              title="Open in floating chat"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+            </button>
+          )}
           {onEdit && (
             <button
               onClick={handleEdit}

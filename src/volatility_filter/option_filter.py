@@ -1,18 +1,19 @@
 """Option volatility filter module for tracking and analyzing option chain data."""
 
 import json
-import websocket
-import numpy as np
-from collections import deque, defaultdict
-from datetime import datetime, timedelta
+import logging
 import threading
 import time
-from typing import Dict, Any, Optional, List, Set
-import logging
+from collections import defaultdict, deque
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional, Set
+
+import numpy as np
+import websocket
 
 from .database import DatabaseManager
-from .websocket_server import WebSocketBroadcastServer
 from .option_data_fetcher import OptionDataFetcher
+from .websocket_server import WebSocketBroadcastServer
 
 logger = logging.getLogger(__name__)
 
@@ -626,9 +627,11 @@ class OptionVolatilityFilter:
                                 "days_to_expiry": days_to_expiry,
                                 "expiry_date": expiry_date,
                                 "implied_volatility": iv,
-                                "moneyness": strike / self.underlying_price
-                                if self.underlying_price
-                                else None,
+                                "moneyness": (
+                                    strike / self.underlying_price
+                                    if self.underlying_price
+                                    else None
+                                ),
                             }
                         )
 

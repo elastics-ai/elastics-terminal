@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Balance portfolio to achieve target delta."""
 
-
 import time
 import random
 import uuid

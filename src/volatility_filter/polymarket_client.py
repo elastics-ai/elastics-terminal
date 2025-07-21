@@ -7,12 +7,13 @@ market data, prices, and trading information.
 """
 
 import asyncio
-import httpx
 import json
 import logging
-from typing import Dict, Any, List, Optional
 from datetime import datetime
 from decimal import Decimal
+from typing import Any, Dict, List, Optional
+
+import httpx
 
 logger = logging.getLogger(__name__)
 

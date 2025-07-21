@@ -17,11 +17,36 @@ from datetime import datetime
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# Initialize Sentry SDK for error tracking
+import sentry_sdk
+from sentry_sdk.integrations.logging import LoggingIntegration
+
 from src.volatility_filter.filter import DeribitVolatilityFilter
 from src.volatility_filter.option_filter import OptionVolatilityFilter
 from src.volatility_filter.config import Config
 from src.volatility_filter.database import DatabaseManager
 from src.volatility_filter.websocket_server import WebSocketBroadcastServer
+
+# Configure Sentry
+sentry_logging = LoggingIntegration(
+    level=logging.INFO,        # Capture info and above as breadcrumbs
+    event_level=logging.ERROR   # Send errors as events
+)
+
+glitchtip_dsn = os.getenv('GLITCHTIP_DSN')
+if glitchtip_dsn:
+    sentry_sdk.init(
+        dsn=glitchtip_dsn,
+        integrations=[sentry_logging],
+        traces_sample_rate=0.1,  # Capture 10% of transactions for performance monitoring
+        environment=os.getenv('NODE_ENV', 'production'),
+        release="volatility-filter@1.0.0"
+    )
+    logger = logging.getLogger(__name__)
+    logger.info("GlitchTip error tracking initialized")
+else:
+    logger = logging.getLogger(__name__)
+    logger.warning("GLITCHTIP_DSN not set, error tracking disabled")
 
 # Configure logging
 logging.basicConfig(

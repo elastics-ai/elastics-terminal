@@ -13,9 +13,38 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 import asyncio
 
+# Initialize Sentry SDK for error tracking
+import sentry_sdk
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from sentry_sdk.integrations.logging import LoggingIntegration
+
+# Configure Sentry
+sentry_logging = LoggingIntegration(
+    level=logging.INFO,        # Capture info and above as breadcrumbs
+    event_level=logging.ERROR   # Send errors as events
+)
+
+glitchtip_dsn = os.getenv('GLITCHTIP_DSN')
+if glitchtip_dsn:
+    sentry_sdk.init(
+        dsn=glitchtip_dsn,
+        integrations=[
+            FastApiIntegration(transaction_style="endpoint"),
+            sentry_logging
+        ],
+        traces_sample_rate=0.1,  # Capture 10% of transactions for performance monitoring
+        environment=os.getenv('NODE_ENV', 'production'),
+        release="volatility-filter@1.0.0"
+    )
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+if glitchtip_dsn:
+    logger.info("GlitchTip error tracking initialized for API server")
+else:
+    logger.warning("GLITCHTIP_DSN not set, error tracking disabled")
 
 # Add parent directory to path to import volatility_filter modules
 parent_dir = Path(__file__).parent.parent
@@ -101,6 +130,26 @@ async def get_portfolio_summary():
         if summary and summary["total_positions"] and summary["total_positions"] > 0:
             total_value = summary["total_value"] or 0
             total_pnl = summary["total_pnl"] or 0
+            
+            # Get top performers
+            cursor = await conn.execute("""
+                SELECT instrument_name, pnl, pnl_percent
+                FROM positions
+                WHERE is_active = 1 AND pnl IS NOT NULL
+                ORDER BY pnl DESC
+                LIMIT 3
+            """)
+            top_performers = [dict(row) async for row in cursor]
+            
+            # Get worst performers
+            cursor = await conn.execute("""
+                SELECT instrument_name, pnl, pnl_percent
+                FROM positions
+                WHERE is_active = 1 AND pnl IS NOT NULL
+                ORDER BY pnl ASC
+                LIMIT 3
+            """)
+            worst_performers = [dict(row) async for row in cursor]
 
             return {
                 "total_positions": summary["total_positions"] or 0,
@@ -109,6 +158,9 @@ async def get_portfolio_summary():
                 "total_pnl_percentage": (total_pnl / total_value * 100)
                 if total_value > 0
                 else 0,
+                "positions_count": summary["total_positions"] or 0,
+                "top_performers": top_performers,
+                "worst_performers": worst_performers,
                 "net_delta": summary["net_delta"] or 0,
                 "absolute_delta": summary["absolute_delta"] or 0,
                 "gamma": summary["total_gamma"] or 0,
@@ -122,6 +174,9 @@ async def get_portfolio_summary():
                 "total_value": 0,
                 "total_pnl": 0,
                 "total_pnl_percentage": 0,
+                "positions_count": 0,
+                "top_performers": [],
+                "worst_performers": [],
                 "net_delta": 0,
                 "absolute_delta": 0,
                 "gamma": 0,
@@ -134,30 +189,34 @@ async def get_portfolio_summary():
 @app.get("/api/portfolio/positions")
 async def get_portfolio_positions():
     """Get all active positions."""
-    async with get_db() as conn:
-        cursor = await conn.execute("""
-            SELECT 
-                instrument_name as instrument,
-                instrument_type as type,
-                quantity,
-                entry_price,
-                current_price,
-                position_value as value,
-                pnl,
-                pnl_percent as pnl_percentage,
-                delta,
-                mark_iv as iv
-            FROM positions
-            WHERE is_active = 1
-            ORDER BY ABS(position_value) DESC
-        """)
+    try:
+        async with get_db() as conn:
+            cursor = await conn.execute("""
+                SELECT 
+                    instrument_name as symbol,
+                    instrument_type as type,
+                    quantity,
+                    entry_price,
+                    current_price,
+                    position_value as value,
+                    pnl,
+                    pnl_percent as pnl_percentage,
+                    delta,
+                    mark_iv as iv
+                FROM positions
+                WHERE is_active = 1
+                ORDER BY ABS(position_value) DESC
+            """)
 
-        positions = []
-        async for row in cursor:
-            position = dict(row)
-            positions.append(position)
+            positions = []
+            async for row in cursor:
+                position = dict(row)
+                positions.append(position)
 
-        return positions
+            return positions
+    except Exception as e:
+        logger.error(f"Error fetching portfolio positions: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {e}")
 
 
 @app.get("/api/portfolio/pnl-breakdown")
@@ -182,10 +241,17 @@ async def get_pnl_breakdown():
             total += row["total_pnl"] or 0
 
         return {
-            "options": breakdown.get("option", 0),
-            "futures": breakdown.get("future", 0),
-            "spot": breakdown.get("spot", 0),
-            "total": total,
+            "by_asset_class": {
+                "options": breakdown.get("option", 0),
+                "futures": breakdown.get("future", 0),
+                "spot": breakdown.get("spot", 0),
+            },
+            "by_symbol": breakdown,  # For now, using instrument type
+            "summary": {
+                "total_pnl": total,
+                "realized_pnl": 0,  # Would need additional logic
+                "unrealized_pnl": total,  # Assuming all PnL is unrealized
+            }
         }
 
 
@@ -199,8 +265,12 @@ async def get_volatility_alerts(limit: int = 10):
                 timestamp,
                 datetime,
                 price,
-                volatility,
-                threshold
+                volatility as current_volatility,
+                threshold,
+                CASE 
+                    WHEN volatility > threshold THEN 'above'
+                    ELSE 'below'
+                END as breach_type
             FROM volatility_events
             WHERE event_type = 'threshold_exceeded'
             ORDER BY timestamp DESC
@@ -211,7 +281,10 @@ async def get_volatility_alerts(limit: int = 10):
 
         alerts = []
         async for row in cursor:
-            alerts.append(dict(row))
+            alert = dict(row)
+            # Add symbol field (not in current schema, using placeholder)
+            alert["symbol"] = "BTC-USD"  # Would need to be added to schema
+            alerts.append(alert)
 
         return alerts
 
@@ -239,14 +312,30 @@ async def get_latest_vol_surface():
         if row:
             result = dict(row)
             # Parse JSON fields
-            result["surface_data"] = json.loads(result["surface_data"])
-            result["moneyness_grid"] = json.loads(result["moneyness_grid"])
-            result["ttm_grid"] = json.loads(result["ttm_grid"])
-            return result
+            surface_data = json.loads(result["surface_data"])
+            moneyness_grid = json.loads(result["moneyness_grid"])
+            ttm_grid = json.loads(result["ttm_grid"])
+            
+            return {
+                "timestamp": result["timestamp"],
+                "surface_data": surface_data,
+                "moneyness_grid": moneyness_grid,
+                "ttm_grid": ttm_grid,
+                "spot_price": result["spot_price"],
+                "num_options": result["num_options"],
+                "atm_vol": result["atm_vol"]
+            }
         else:
-            raise HTTPException(
-                status_code=404, detail="No volatility surface data found"
-            )
+            # Return empty surface data structure
+            return {
+                "timestamp": datetime.now().isoformat(),
+                "surface_data": [],
+                "moneyness_grid": [],
+                "ttm_grid": [],
+                "spot_price": 0,
+                "num_options": 0,
+                "atm_vol": 0
+            }
 
 
 @app.get("/api/polymarket/markets")
@@ -547,7 +636,7 @@ async def create_conversation_branch(conversation_id: int, branch_data: dict):
         # Get messages up to the branch point
         all_messages = db_manager.get_chat_messages(conversation_id, limit=1000)
         messages_up_to_branch = []
-        
+
         for msg in all_messages:
             messages_up_to_branch.append(msg)
             if msg["id"] == parent_message_id:
@@ -570,20 +659,22 @@ async def create_conversation_branch(conversation_id: int, branch_data: dict):
 
         # Copy messages up to branch point to new conversation
         for msg in messages_up_to_branch:
-            db_manager.insert_chat_message({
-                "conversation_id": new_conversation_id,
-                "role": msg["role"],
-                "content": msg["content"],
-                "metadata": msg.get("metadata"),
-                "sql_query": msg.get("sql_query"),
-                "query_results": msg.get("query_results"),
-                "context_snapshot": msg.get("context_snapshot"),
-            })
+            db_manager.insert_chat_message(
+                {
+                    "conversation_id": new_conversation_id,
+                    "role": msg["role"],
+                    "content": msg["content"],
+                    "metadata": msg.get("metadata"),
+                    "sql_query": msg.get("sql_query"),
+                    "query_results": msg.get("query_results"),
+                    "context_snapshot": msg.get("context_snapshot"),
+                }
+            )
 
         return {
             "conversation_id": new_conversation_id,
             "messages_copied": len(messages_up_to_branch),
-            "branch_point": parent_message_id
+            "branch_point": parent_message_id,
         }
     except Exception as e:
         logger.error(f"Error creating branch: {e}")
@@ -610,13 +701,13 @@ async def get_message_branches(message_id: int):
                 GROUP BY c.id
                 ORDER BY c.created_at DESC
                 """,
-                (message_id,)
+                (message_id,),
             )
-            
+
             branches = []
             async for row in cursor:
                 branches.append(dict(row))
-            
+
             return {"branches": branches}
     except Exception as e:
         logger.error(f"Error fetching branches: {e}")
@@ -677,8 +768,31 @@ async def get_realtime_stats():
         )  # Last hour
 
         stats = await cursor.fetchone()
+        
+        # Get active positions count
+        cursor = await conn.execute("""
+            SELECT COUNT(*) as active_positions,
+                   SUM(pnl) as total_pnl
+            FROM positions
+            WHERE is_active = 1
+        """)
+        position_stats = await cursor.fetchone()
 
-        return dict(stats) if stats else {}
+        if stats:
+            result = dict(stats)
+            result["total_volume"] = result.get("total_trades", 0) * (result.get("avg_price", 0) or 0)
+            result["active_positions"] = position_stats["active_positions"] or 0
+            result["total_pnl"] = position_stats["total_pnl"] or 0
+            result["last_updated"] = datetime.now().isoformat()
+            return result
+        else:
+            return {
+                "total_volume": 0,
+                "total_trades": 0,
+                "active_positions": position_stats["active_positions"] or 0,
+                "total_pnl": position_stats["total_pnl"] or 0,
+                "last_updated": datetime.now().isoformat()
+            }
 
 
 @app.get("/api/health")
@@ -687,7 +801,32 @@ async def health_check():
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
 
+@app.get("/api/test-error")
+async def test_error():
+    """Test error tracking endpoint - triggers a test error."""
+    logger.info("Test error endpoint called")
+    
+    # Capture some context
+    sentry_sdk.set_context("test_info", {
+        "endpoint": "/api/test-error",
+        "timestamp": datetime.now().isoformat(),
+        "environment": os.getenv('NODE_ENV', 'production')
+    })
+    
+    # Trigger a test error
+    try:
+        # This will raise a ZeroDivisionError
+        result = 1 / 0
+    except ZeroDivisionError as e:
+        logger.error("Test error triggered successfully", exc_info=True)
+        raise HTTPException(
+            status_code=500, 
+            detail="Test error triggered for GlitchTip testing"
+        )
+
+
 # SQL Modules API Routes
+
 
 @app.get("/api/modules")
 async def get_sql_modules(
@@ -695,7 +834,7 @@ async def get_sql_modules(
     offset: int = 0,
     search: Optional[str] = None,
     query_type: Optional[str] = None,
-    favorites_only: bool = False
+    favorites_only: bool = False,
 ):
     """Get SQL modules with filtering and pagination."""
     try:
@@ -704,34 +843,36 @@ async def get_sql_modules(
             offset=offset,
             search=search,
             query_type=query_type,
-            favorites_only=favorites_only
+            favorites_only=favorites_only,
         )
-        
+
         # Get total count for pagination
         async with get_db() as conn:
             count_query = "SELECT COUNT(*) as total FROM sql_modules WHERE 1=1"
             params = []
-            
+
             if search:
-                count_query += " AND (title LIKE ? OR description LIKE ? OR sql_query LIKE ?)"
+                count_query += (
+                    " AND (title LIKE ? OR description LIKE ? OR sql_query LIKE ?)"
+                )
                 search_pattern = f"%{search}%"
                 params.extend([search_pattern, search_pattern, search_pattern])
-            
+
             if query_type:
                 count_query += " AND query_type = ?"
                 params.append(query_type)
-            
+
             if favorites_only:
                 count_query += " AND is_favorite = TRUE"
-            
+
             cursor = await conn.execute(count_query, params)
             total_count = (await cursor.fetchone())["total"]
-        
+
         return {
             "modules": modules,
             "total": total_count,
-            "limit": limit,
-            "offset": offset
+            "page": offset // limit + 1,
+            "page_size": limit,
         }
     except Exception as e:
         logger.error(f"Error fetching SQL modules: {e}")
@@ -770,13 +911,14 @@ async def execute_sql_module(module_id: int):
         module = db_manager.get_sql_module_by_id(module_id)
         if not module:
             raise HTTPException(status_code=404, detail="Module not found")
-        
+
         # Execute the query
         from src.volatility_filter.sql_agent import SQLAgent
+
         sql_agent = SQLAgent(db_path=db_path)
-        
+
         results = sql_agent.execute_query(module["sql_query"])
-        
+
         if results["success"]:
             # Create execution record
             db_manager.create_or_update_sql_module(
@@ -785,20 +927,24 @@ async def execute_sql_module(module_id: int):
                 conversation_id=0,  # No associated conversation
                 execution_time_ms=results.get("execution_time_ms", 0),
                 row_count=results.get("row_count", 0),
-                query_results=json.dumps(results["data"][:10])  # Store first 10 rows
+                query_results=json.dumps(results["data"][:10]),  # Store first 10 rows
             )
+
+            # Format response for test compatibility
+            if results["data"] and len(results["data"]) > 0:
+                columns = list(results["data"][0].keys())
+            else:
+                columns = []
+            
+            rows = results["data"]
             
             return {
-                "success": True,
-                "data": results["data"],
-                "row_count": results["row_count"],
-                "execution_time_ms": results.get("execution_time_ms", 0)
+                "columns": columns,
+                "rows": rows,
+                "execution_time": results.get("execution_time_ms", 0),
             }
         else:
-            return {
-                "success": False,
-                "error": results["error"]
-            }
+            return {"success": False, "error": results["error"]}
     except Exception as e:
         logger.error(f"Error executing SQL module: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -812,12 +958,12 @@ async def update_sql_module(module_id: int, update_data: dict):
             module_id=module_id,
             title=update_data.get("title"),
             description=update_data.get("description"),
-            is_favorite=update_data.get("is_favorite")
+            is_favorite=update_data.get("is_favorite"),
         )
-        
+
         if not success:
             raise HTTPException(status_code=404, detail="Module not found")
-        
+
         return {"success": True}
     except Exception as e:
         logger.error(f"Error updating SQL module: {e}")

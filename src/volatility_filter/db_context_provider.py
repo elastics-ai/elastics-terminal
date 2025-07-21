@@ -7,12 +7,12 @@ for Claude to analyze and answer questions about portfolio and market data.
 """
 
 import logging
-from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
 
 from .database import DatabaseManager
-from .portfolio_manager import PortfolioManager
 from .polymarket_client import PolymarketClient
+from .portfolio_manager import PortfolioManager
 from .sql_agent import SQLAgent
 
 logger = logging.getLogger(__name__)

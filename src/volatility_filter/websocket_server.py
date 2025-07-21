@@ -2,13 +2,14 @@
 
 import asyncio
 import json
-import websockets
-from typing import Set, Dict, Any, Optional
-import uuid
+import logging
 import threading
 import time
-import logging
+import uuid
 from datetime import datetime
+from typing import Any, Dict, Optional, Set
+
+import websockets
 
 logger = logging.getLogger(__name__)
 

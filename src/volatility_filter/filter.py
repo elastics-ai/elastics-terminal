@@ -1,20 +1,21 @@
 """Main volatility filter module."""
 
 import json
-import websocket
-import numpy as np
-from statsmodels.tsa.ar_model import AutoReg
-from collections import deque
-from datetime import datetime
+import logging
 import threading
 import time
-from typing import Dict, Any, Optional, List
-import logging
+from collections import deque
+from datetime import datetime
+from typing import Any, Dict
 
-from .database import DatabaseManager
-from .websocket_server import WebSocketBroadcastServer
+import numpy as np
+import websocket
+from statsmodels.tsa.ar_model import AutoReg
+
 from .data_fetcher import HistoricalDataFetcher
+from .database import DatabaseManager
 from .optimizer import VolatilityFilterOptimizer
+from .websocket_server import WebSocketBroadcastServer
 
 logger = logging.getLogger(__name__)
 
@@ -457,7 +458,7 @@ class DeribitVolatilityFilter:
             "params": {"channels": ["trades.BTC-PERPETUAL.100ms"]},
         }
         ws.send(json.dumps(subscribe_msg))
-        logger.info(f"Attempting to subscribe to: trades.BTC-PERPETUAL.100ms")
+        logger.info("Attempting to subscribe to: trades.BTC-PERPETUAL.100ms")
 
     def optimize_threshold_on_startup(self):
         """Optimize volatility threshold using historical data before starting."""
@@ -501,14 +502,14 @@ class DeribitVolatilityFilter:
         # Backtest the optimized threshold
         metrics = self.optimizer.backtest_threshold(optimized_threshold)
 
-        logger.info(f"\nOptimization Results:")
-        logger.info(f"Original threshold: {self.vol_threshold:.4f}")
-        logger.info(f"Optimized threshold: {optimized_threshold:.4f}")
-        logger.info(f"Backtest metrics:")
-        logger.info(f"  - Precision: {metrics['precision']:.3f}")
-        logger.info(f"  - Recall: {metrics['recall']:.3f}")
-        logger.info(f"  - F1 Score: {metrics['f1_score']:.3f}")
-        logger.info(f"  - Accuracy: {metrics['accuracy']:.3f}")
+        logger.info("\nOptimization Results:")
+        logger.info("Original threshold: {:.4f}".format(self.vol_threshold))
+        logger.info("Optimized threshold: {:.4f}".format(optimized_threshold))
+        logger.info("Backtest metrics:")
+        logger.info("  - Precision: {:.3f}".format(metrics["precision"]))
+        logger.info("  - Recall: {:.3f}".format(metrics["recall"]))
+        logger.info("  - F1 Score: {:.3f}".format(metrics["f1_score"]))
+        logger.info("  - Accuracy: {:.3f}".format(metrics["accuracy"]))
 
         # Update threshold
         self.vol_threshold = optimized_threshold
@@ -595,9 +596,11 @@ class DeribitVolatilityFilter:
             "current_volatility": self.current_volatility,
             "total_processed": self.total_trades_processed,
             "total_events": self.total_events_detected,
-            "overall_ratio": self.total_events_detected / self.total_trades_processed
-            if self.total_trades_processed > 0
-            else 0,
+            "overall_ratio": (
+                self.total_events_detected / self.total_trades_processed
+                if self.total_trades_processed > 0
+                else 0
+            ),
         }
 
         # Add database statistics if available
@@ -619,7 +622,6 @@ class DeribitVolatilityFilter:
             return
 
         # Get data from database
-        recent_trades = self.db_manager.get_recent_trades(limit=1000)
         vol_events = self.db_manager.get_volatility_events()
         perf_24h = self.db_manager.get_performance_summary(hours=24)
         perf_7d = self.db_manager.get_performance_summary(hours=168)
@@ -641,7 +643,7 @@ class DeribitVolatilityFilter:
         <body>
             <h1>Volatility Filter Performance Report</h1>
             <p>Generated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
-            
+
             <h2>Configuration</h2>
             <div class="metric">
                 <p>Window Size: {self.window_size}</p>
@@ -651,7 +653,7 @@ class DeribitVolatilityFilter:
                 <p>Database: {self.use_database}</p>
                 <p>WebSocket Broadcasting: {self.broadcast_events}</p>
             </div>
-            
+
             <h2>24-Hour Performance</h2>
             <div class="metric">
                 <p>Total Trades: {perf_24h["total_trades"]:,}</p>
@@ -661,14 +663,14 @@ class DeribitVolatilityFilter:
                 <p>Max Volatility: {perf_24h["max_volatility"]:.4f}</p>
                 <p>Min Volatility: {perf_24h["min_volatility"]:.4f}</p>
             </div>
-            
+
             <h2>7-Day Performance</h2>
             <div class="metric">
                 <p>Total Trades: {perf_7d["total_trades"]:,}</p>
                 <p>Volatility Events: {perf_7d["volatility_events"]:,}</p>
                 <p>Filter Ratio: {perf_7d["filter_ratio"]:.2%}</p>
             </div>
-            
+
             <h2>Recent Volatility Events (Last 20)</h2>
             <table>
                 <tr>
@@ -698,7 +700,7 @@ class DeribitVolatilityFilter:
 
         html_content += """
             </table>
-            
+
             <h2>Volatility Distribution</h2>
             <div class="metric">
                 <p>Note: For detailed volatility distribution charts, consider using a visualization library.</p>
