@@ -63,8 +63,7 @@ COPY --from=frontend-builder /app/.next/standalone ./volatility-web/
 COPY --from=frontend-builder /app/.next/static ./volatility-web/.next/static
 COPY --from=frontend-builder /app/public ./volatility-web/public
 
-# Copy additional authentication middleware
-COPY azure/middleware/ ./volatility-web/middleware/ 2>/dev/null || true
+# Authentication middleware is already included in the volatility-web copy
 
 # Create necessary directories
 RUN mkdir -p /data /tmp

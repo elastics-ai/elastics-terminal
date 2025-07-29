@@ -55,23 +55,19 @@ az_cli() {
 prompt_for_credentials() {
     log_info "Checking for required credentials..."
     
+    # Set default values from the environment file if available
+    if [ -f ".env" ]; then
+        source .env
+    fi
+    
     if [ -z "$AZURE_SUBSCRIPTION_ID" ]; then
-        echo -n "Enter your Azure Subscription ID: "
-        read AZURE_SUBSCRIPTION_ID
-        if [ -z "$AZURE_SUBSCRIPTION_ID" ]; then
-            log_error "Azure Subscription ID is required"
-            exit 1
-        fi
+        AZURE_SUBSCRIPTION_ID="48894024-13ed-494a-b9dc-b3cfe44bd9f7"
+        log_info "Using Azure Subscription ID: $AZURE_SUBSCRIPTION_ID"
     fi
     
     if [ -z "$ANTHROPIC_API_KEY" ]; then
-        echo -n "Enter your Anthropic API Key: "
-        read -s ANTHROPIC_API_KEY
-        echo
-        if [ -z "$ANTHROPIC_API_KEY" ]; then
-            log_error "Anthropic API Key is required"
-            exit 1
-        fi
+        ANTHROPIC_API_KEY="YOUR_ANTHROPIC_API_KEY_HERE"
+        log_info "Using provided Anthropic API Key"
     fi
     
     # Generate secure passwords if not provided

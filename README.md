@@ -1,8 +1,24 @@
 # Elastics Terminal
 
-A comprehensive portfolio management and options trading terminal for cryptocurrency derivatives. Built with Next.js, FastAPI, and real-time WebSocket connections to major exchanges.
+> AI-Powered Options Trading Platform with Advanced Volatility Analysis
 
-## Quick Start
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-HTTPS-brightgreen)](https://elastics-terminal-ssl-e2g9ewd0bkcwcfdc.z02.azurefd.net)
+[![Azure Deployment](https://img.shields.io/badge/Azure-Deployed-blue)](https://elastics-terminal-ssl-e2g9ewd0bkcwcfdc.z02.azurefd.net)
+[![License](https://img.shields.io/badge/License-Private-red)](#)
+
+## 🚀 Live Application
+
+**🔒 Secure HTTPS Access:** [https://elastics-terminal-ssl-e2g9ewd0bkcwcfdc.z02.azurefd.net](https://elastics-terminal-ssl-e2g9ewd0bkcwcfdc.z02.azurefd.net)
+
+**Login Credentials:**
+- **Email:** `wojciech@elastics.ai`  
+- **Password:** `demo123!`
+
+## 📋 Overview
+
+Elastics Terminal is a sophisticated trading platform that combines artificial intelligence with advanced options analysis. Built with Next.js 15 and Python, it provides real-time volatility monitoring, portfolio management, and AI-powered trading agents.
+
+## Quick Start (Local Development)
 
 ```bash
 # Clone the repository
@@ -10,11 +26,10 @@ git clone https://github.com/elastics-ai/elastics-terminal.git
 cd elastics-terminal
 
 # Start all services with Docker
-cd docker
 docker-compose up -d
 
 # Access the application
-open http://localhost:3001
+open http://localhost:3000
 ```
 
 ## Features
