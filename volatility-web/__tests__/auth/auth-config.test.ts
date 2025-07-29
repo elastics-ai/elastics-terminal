@@ -10,7 +10,7 @@ import {
   mockJWT,
   mockAzureUser,
   mockLocalDevUser
-} from '../fixtures/auth-fixtures'
+} from '@/lib/test-fixtures/auth-fixtures'
 
 // Mock environment variables
 const originalEnv = process.env

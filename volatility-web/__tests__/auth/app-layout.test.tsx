@@ -12,7 +12,7 @@ import {
   mockAzureSession,
   mockLocalDevUser,
   mockAzureUser
-} from '../fixtures/auth-fixtures'
+} from '@/lib/test-fixtures/auth-fixtures'
 
 // Mock Next.js navigation
 jest.mock('next/navigation', () => ({
