@@ -1,405 +1,116 @@
 import React from 'react'
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { render, screen, fireEvent } from '@testing-library/react'
 import PortfolioPage from '@/app/portfolio/page'
-import { portfolioAPI } from '@/lib/api'
 
-// Mock the API
-jest.mock('@/lib/api', () => ({
-  portfolioAPI: {
-    getOverview: jest.fn(),
-    getPerformance: jest.fn(),
-    getAllocation: jest.fn(),
-    getPositions: jest.fn(),
-    getNewsFeed: jest.fn(),
-    getAISuggestions: jest.fn(),
-  },
+// Mock the components
+jest.mock('@/components/layout/app-layout', () => ({
+  AppLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>
 }))
 
-// Mock router
-jest.mock('next/navigation', () => ({
-  useRouter: () => ({
-    push: jest.fn(),
-    replace: jest.fn(),
-    prefetch: jest.fn(),
-  }),
-  useSearchParams: () => ({
-    get: jest.fn(),
-  }),
+jest.mock('recharts', () => ({
+  LineChart: () => <div data-testid="line-chart" />,
+  BarChart: () => <div data-testid="bar-chart" />,
+  PieChart: () => <div data-testid="pie-chart" />,
+  Line: () => null,
+  Bar: () => null,
+  Pie: () => null,
+  XAxis: () => null,
+  YAxis: () => null,
+  CartesianGrid: () => null,
+  Tooltip: () => null,
+  Legend: () => null,
+  ResponsiveContainer: ({ children }: any) => <div>{children}</div>,
+  Cell: () => null,
 }))
-
-const mockPortfolioAPI = portfolioAPI as jest.Mocked<typeof portfolioAPI>
 
 describe('PortfolioPage', () => {
-  let queryClient: QueryClient
-
-  beforeEach(() => {
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: { retry: false },
-      },
-    })
-    jest.clearAllMocks()
+  it('renders portfolio page with header', () => {
+    render(<PortfolioPage />)
+    
+    expect(screen.getByText('Portfolio Analysis')).toBeInTheDocument()
+    expect(screen.getByText('Comprehensive portfolio performance and risk metrics')).toBeInTheDocument()
   })
 
-  const renderComponent = () => {
-    return render(
-      <QueryClientProvider client={queryClient}>
-        <PortfolioPage />
-      </QueryClientProvider>
-    )
-  }
-
-  describe('Overview Section', () => {
-    it('should display portfolio overview metrics', async () => {
-      mockPortfolioAPI.getOverview.mockResolvedValue({
-        total_value: 2540300,
-        total_pnl: 61024,
-        total_pnl_percent: 2.46,
-        cumulative_return: 15.3,
-        sharpe_ratio: 1.82,
-        max_drawdown: -8.5,
-        winning_rate: 0.67,
-        total_trades: 156,
-      })
-
-      renderComponent()
-
-      await waitFor(() => {
-        expect(screen.getByText('Total Value')).toBeInTheDocument()
-        expect(screen.getByText('$2,540,300')).toBeInTheDocument()
-        expect(screen.getByText('+$61,024')).toBeInTheDocument()
-        expect(screen.getByText('+2.46%')).toBeInTheDocument()
-      })
-    })
-
-    it('should handle loading state', () => {
-      mockPortfolioAPI.getOverview.mockImplementation(() => new Promise(() => {}))
-
-      renderComponent()
-
-      expect(screen.getAllByTestId('skeleton')).toHaveLength(4)
-    })
-
-    it('should handle error state', async () => {
-      mockPortfolioAPI.getOverview.mockRejectedValue(new Error('API Error'))
-
-      renderComponent()
-
-      await waitFor(() => {
-        expect(screen.getByText(/Error loading portfolio data/i)).toBeInTheDocument()
-      })
-    })
+  it('displays key metrics cards', () => {
+    render(<PortfolioPage />)
+    
+    expect(screen.getByText('Total Value')).toBeInTheDocument()
+    expect(screen.getByText('$2,547,890')).toBeInTheDocument()
+    expect(screen.getByText('Daily P&L')).toBeInTheDocument()
+    expect(screen.getByText('Sharpe Ratio')).toBeInTheDocument()
+    expect(screen.getByText('Max Drawdown')).toBeInTheDocument()
   })
 
-  describe('Performance Chart', () => {
-    it('should display performance chart with data', async () => {
-      mockPortfolioAPI.getPerformance.mockResolvedValue({
-        data: [
-          { timestamp: '2023-12-01', value: 2400000, pnl: 0 },
-          { timestamp: '2023-12-02', value: 2450000, pnl: 50000 },
-          { timestamp: '2023-12-03', value: 2540300, pnl: 90300 },
-        ],
-        stats: {
-          best_day: { date: '2023-12-03', pnl: 90300 },
-          worst_day: { date: '2023-12-01', pnl: -10000 },
-          volatility: 0.023,
-        },
-      })
-
-      renderComponent()
-
-      await waitFor(() => {
-        expect(screen.getByText('Portfolio Performance')).toBeInTheDocument()
-        // Chart should be rendered (check for Recharts elements)
-        expect(screen.getByTestId('performance-chart')).toBeInTheDocument()
-      })
-    })
-
-    it('should allow timeframe selection', async () => {
-      mockPortfolioAPI.getPerformance.mockResolvedValue({
-        data: [],
-        stats: {},
-      })
-
-      renderComponent()
-
-      await waitFor(() => {
-        expect(screen.getByText('1D')).toBeInTheDocument()
-        expect(screen.getByText('1W')).toBeInTheDocument()
-        expect(screen.getByText('1M')).toBeInTheDocument()
-        expect(screen.getByText('YTD')).toBeInTheDocument()
-      })
-
-      // Click on 1W button
-      fireEvent.click(screen.getByText('1W'))
-
-      expect(mockPortfolioAPI.getPerformance).toHaveBeenCalledWith('1W')
-    })
+  it('shows correct P&L formatting', () => {
+    render(<PortfolioPage />)
+    
+    expect(screen.getByText('+$12,340')).toBeInTheDocument()
+    expect(screen.getByText('+0.48%')).toBeInTheDocument()
   })
 
-  describe('Asset Allocation', () => {
-    it('should display asset allocation breakdown', async () => {
-      mockPortfolioAPI.getAllocation.mockResolvedValue({
-        by_asset: [
-          { asset: 'BTC', value: 1500000, percentage: 59.1 },
-          { asset: 'ETH', value: 540000, percentage: 21.3 },
-          { asset: 'Options', value: 500300, percentage: 19.6 },
-        ],
-        by_type: [
-          { type: 'Spot', value: 2040000, percentage: 80.4 },
-          { type: 'Options', value: 500300, percentage: 19.6 },
-        ],
-        by_exchange: [
-          { exchange: 'Binance', value: 1200000, percentage: 47.2 },
-          { exchange: 'Deribit', value: 840300, percentage: 33.1 },
-          { exchange: 'Coinbase', value: 500000, percentage: 19.7 },
-        ],
-      })
-
-      renderComponent()
-
-      await waitFor(() => {
-        expect(screen.getByText('Asset Allocation')).toBeInTheDocument()
-        expect(screen.getByText('BTC')).toBeInTheDocument()
-        expect(screen.getByText('59.1%')).toBeInTheDocument()
-        expect(screen.getByText('$1,500,000')).toBeInTheDocument()
-      })
-    })
-
-    it('should display allocation charts', async () => {
-      mockPortfolioAPI.getAllocation.mockResolvedValue({
-        by_asset: [],
-        by_type: [],
-        by_exchange: [],
-      })
-
-      renderComponent()
-
-      await waitFor(() => {
-        // Check for pie chart containers
-        expect(screen.getByTestId('allocation-by-asset')).toBeInTheDocument()
-        expect(screen.getByTestId('allocation-by-type')).toBeInTheDocument()
-        expect(screen.getByTestId('allocation-by-exchange')).toBeInTheDocument()
-      })
-    })
+  it('renders all tabs', () => {
+    render(<PortfolioPage />)
+    
+    expect(screen.getByRole('tab', { name: 'Performance' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Positions' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Allocation' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Greeks' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Risk Analysis' })).toBeInTheDocument()
   })
 
-  describe('Open Positions', () => {
-    it('should display list of open positions', async () => {
-      mockPortfolioAPI.getPositions.mockResolvedValue({
-        positions: [
-          {
-            id: '1',
-            instrument: 'BTC-PERPETUAL',
-            type: 'Future',
-            side: 'Long',
-            quantity: 10,
-            entry_price: 45000,
-            current_price: 52000,
-            value: 520000,
-            pnl: 70000,
-            pnl_percentage: 15.56,
-          },
-          {
-            id: '2',
-            instrument: 'ETH-29DEC23-2200-C',
-            type: 'Option',
-            side: 'Long',
-            quantity: 50,
-            entry_price: 120,
-            current_price: 180,
-            value: 9000,
-            pnl: 3000,
-            pnl_percentage: 50,
-            greeks: {
-              delta: 0.65,
-              gamma: 0.0012,
-              vega: 45.2,
-              theta: -12.5,
-            },
-          },
-        ],
-        summary: {
-          total_positions: 2,
-          total_value: 529000,
-          total_pnl: 73000,
-          winning_positions: 2,
-          losing_positions: 0,
-        },
-      })
-
-      renderComponent()
-
-      await waitFor(() => {
-        expect(screen.getByText('Open Positions')).toBeInTheDocument()
-        expect(screen.getByText('BTC-PERPETUAL')).toBeInTheDocument()
-        expect(screen.getByText('ETH-29DEC23-2200-C')).toBeInTheDocument()
-        expect(screen.getByText('+$70,000')).toBeInTheDocument()
-        expect(screen.getByText('+15.56%')).toBeInTheDocument()
-      })
-    })
-
-    it('should allow position filtering', async () => {
-      mockPortfolioAPI.getPositions.mockResolvedValue({
-        positions: [],
-        summary: {},
-      })
-
-      renderComponent()
-
-      await waitFor(() => {
-        const searchInput = screen.getByPlaceholderText('Search positions...')
-        expect(searchInput).toBeInTheDocument()
-      })
-
-      // Type in search
-      const searchInput = screen.getByPlaceholderText('Search positions...')
-      fireEvent.change(searchInput, { target: { value: 'BTC' } })
-
-      // Should filter positions (implementation dependent)
-    })
-
-    it('should display position Greeks for options', async () => {
-      mockPortfolioAPI.getPositions.mockResolvedValue({
-        positions: [
-          {
-            id: '1',
-            instrument: 'ETH-29DEC23-2200-C',
-            type: 'Option',
-            greeks: {
-              delta: 0.65,
-              gamma: 0.0012,
-              vega: 45.2,
-              theta: -12.5,
-            },
-          },
-        ],
-        summary: {},
-      })
-
-      renderComponent()
-
-      await waitFor(() => {
-        expect(screen.getByText('Δ 0.65')).toBeInTheDocument()
-        expect(screen.getByText('Γ 0.0012')).toBeInTheDocument()
-      })
-    })
+  it('switches between tabs', () => {
+    render(<PortfolioPage />)
+    
+    // Click on Positions tab
+    fireEvent.click(screen.getByRole('tab', { name: 'Positions' }))
+    expect(screen.getByText('Open Positions')).toBeInTheDocument()
+    
+    // Click on Greeks tab
+    fireEvent.click(screen.getByRole('tab', { name: 'Greeks' }))
+    expect(screen.getByText('Greeks Exposure')).toBeInTheDocument()
   })
 
-  describe('News Feed', () => {
-    it('should display market news', async () => {
-      mockPortfolioAPI.getNewsFeed.mockResolvedValue({
-        news: [
-          {
-            id: '1',
-            title: 'Bitcoin Surges Past $50,000',
-            source: 'CoinDesk',
-            timestamp: '2023-12-03T10:00:00Z',
-            sentiment: 'bullish',
-            relevance_score: 0.95,
-            affected_assets: ['BTC'],
-            summary: 'Bitcoin price surges...',
-          },
-        ],
-      })
-
-      renderComponent()
-
-      await waitFor(() => {
-        expect(screen.getByText('Market News & Events')).toBeInTheDocument()
-        expect(screen.getByText('Bitcoin Surges Past $50,000')).toBeInTheDocument()
-        expect(screen.getByText('CoinDesk')).toBeInTheDocument()
-      })
-    })
+  it('displays positions table with correct data', () => {
+    render(<PortfolioPage />)
+    
+    fireEvent.click(screen.getByRole('tab', { name: 'Positions' }))
+    
+    expect(screen.getByText('SPX 4500C 03/15')).toBeInTheDocument()
+    expect(screen.getByText('SPX 4400P 03/15')).toBeInTheDocument()
+    expect(screen.getByText('+$340.00')).toBeInTheDocument()
+    expect(screen.getByText('+14.95%')).toBeInTheDocument()
   })
 
-  describe('AI Trade Suggestions', () => {
-    it('should display AI-generated trade suggestions', async () => {
-      mockPortfolioAPI.getAISuggestions.mockResolvedValue({
-        suggestions: [
-          {
-            id: '1',
-            action: 'BUY',
-            instrument: 'ETH-29DEC23-2500-C',
-            rationale: 'High implied volatility skew detected',
-            confidence: 0.85,
-            expected_return: 0.25,
-            risk_score: 0.6,
-            timeframe: '1-3 days',
-          },
-        ],
-      })
-
-      renderComponent()
-
-      await waitFor(() => {
-        expect(screen.getByText('AI Trade Suggestions')).toBeInTheDocument()
-        expect(screen.getByText('ETH-29DEC23-2500-C')).toBeInTheDocument()
-        expect(screen.getByText('High implied volatility skew detected')).toBeInTheDocument()
-        expect(screen.getByText('85%')).toBeInTheDocument() // Confidence
-      })
-    })
-
-    it('should allow executing AI suggestions', async () => {
-      mockPortfolioAPI.getAISuggestions.mockResolvedValue({
-        suggestions: [
-          {
-            id: '1',
-            action: 'BUY',
-            instrument: 'ETH-29DEC23-2500-C',
-          },
-        ],
-      })
-
-      renderComponent()
-
-      await waitFor(() => {
-        const executeButton = screen.getByText('Execute')
-        expect(executeButton).toBeInTheDocument()
-      })
-
-      // Click execute button
-      fireEvent.click(screen.getByText('Execute'))
-
-      // Should trigger execution flow (implementation dependent)
-    })
+  it('shows Greeks with targets', () => {
+    render(<PortfolioPage />)
+    
+    fireEvent.click(screen.getByRole('tab', { name: 'Greeks' }))
+    
+    expect(screen.getByText('Delta')).toBeInTheDocument()
+    expect(screen.getByText('Gamma')).toBeInTheDocument()
+    expect(screen.getByText('Vega')).toBeInTheDocument()
+    expect(screen.getByText('Theta')).toBeInTheDocument()
+    expect(screen.getByText('Rho')).toBeInTheDocument()
+    
+    expect(screen.getByText('Target: 0.2')).toBeInTheDocument()
   })
 
-  describe('Interactive Features', () => {
-    it('should refresh data on demand', async () => {
-      mockPortfolioAPI.getOverview.mockResolvedValue({
-        total_value: 2540300,
-      })
+  it('has timeframe selector', () => {
+    render(<PortfolioPage />)
+    
+    const timeframeSelector = screen.getByRole('combobox')
+    expect(timeframeSelector).toBeInTheDocument()
+    
+    fireEvent.click(timeframeSelector)
+    expect(screen.getByText('1 Day')).toBeInTheDocument()
+    expect(screen.getByText('1 Week')).toBeInTheDocument()
+    expect(screen.getByText('1 Month')).toBeInTheDocument()
+  })
 
-      renderComponent()
-
-      await waitFor(() => {
-        const refreshButton = screen.getByLabelText('Refresh data')
-        expect(refreshButton).toBeInTheDocument()
-      })
-
-      // Click refresh
-      fireEvent.click(screen.getByLabelText('Refresh data'))
-
-      // Should refetch data
-      expect(mockPortfolioAPI.getOverview).toHaveBeenCalledTimes(2)
-    })
-
-    it('should export portfolio data', async () => {
-      renderComponent()
-
-      await waitFor(() => {
-        const exportButton = screen.getByText('Export')
-        expect(exportButton).toBeInTheDocument()
-      })
-
-      // Click export
-      fireEvent.click(screen.getByText('Export'))
-
-      // Should show export options
-      expect(screen.getByText('Export as CSV')).toBeInTheDocument()
-      expect(screen.getByText('Export as PDF')).toBeInTheDocument()
-    })
+  it('has export and settings buttons', () => {
+    render(<PortfolioPage />)
+    
+    expect(screen.getByText('Export')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /settings/i })).toBeInTheDocument()
   })
 })
