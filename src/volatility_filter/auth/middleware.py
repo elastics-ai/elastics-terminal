@@ -72,13 +72,24 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             
             # Add user headers for downstream services
             if user:
-                request.headers.__dict__["_store"] = request.headers.__dict__.get("_store", [])
-                request.headers.__dict__["_store"].extend([
-                    (b"x-user-id", user.get("id", "").encode()),
-                    (b"x-user-email", user.get("email", "").encode()),
-                    (b"x-user-name", user.get("name", "").encode()),
-                    (b"x-tenant-id", user.get("tenant_id", "").encode()),
-                ])
+                # Handle both real Headers objects and mock dict objects
+                if hasattr(request.headers, '__dict__'):
+                    # Real Headers object
+                    request.headers.__dict__["_store"] = request.headers.__dict__.get("_store", [])
+                    request.headers.__dict__["_store"].extend([
+                        (b"x-user-id", user.get("id", "").encode()),
+                        (b"x-user-email", user.get("email", "").encode()),
+                        (b"x-user-name", user.get("name", "").encode()),
+                        (b"x-tenant-id", user.get("tenant_id", "").encode()),
+                    ])
+                else:
+                    # Mock dict object - add headers as string keys
+                    request.headers.update({
+                        "x-user-id": user.get("id", ""),
+                        "x-user-email": user.get("email", ""),
+                        "x-user-name": user.get("name", ""),
+                        "x-tenant-id": user.get("tenant_id", ""),
+                    })
             
             return await call_next(request)
             
