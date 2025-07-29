@@ -40,9 +40,10 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install -y nodejs && \
     rm -rf /var/lib/apt/lists/*
 
-# Copy Python requirements and install
+# Copy Python requirements and elastics-options
 COPY requirements.txt .
 COPY volatility-web/requirements.txt ./web-requirements.txt
+COPY elastics-options/ ./elastics-options/
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install --no-cache-dir -r web-requirements.txt
 
