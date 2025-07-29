@@ -170,9 +170,9 @@ DATABASE_URL=sqlite:///data/elastics_terminal.db
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## License
+## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Private License - All rights reserved. Unauthorized copying, distribution, or modification is prohibited.
 
 ## Support
 
