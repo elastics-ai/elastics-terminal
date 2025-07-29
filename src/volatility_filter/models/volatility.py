@@ -50,6 +50,48 @@ class VolatilityEvent(BaseModel):
     created_at: dt = Field(default_factory=lambda: dt.now())
 
 
+class SSVIParameters(BaseModel):
+    """SSVI model parameters."""
+    model_config = ConfigDict(from_attributes=True)
+    
+    theta_a: float = Field(..., description="Theta scale parameter")
+    theta_b: float = Field(..., description="Theta power parameter")
+    theta_c: float = Field(..., description="Theta offset parameter")
+    phi_eta: float = Field(..., description="Phi scale parameter")
+    phi_gamma: float = Field(..., description="Phi power parameter")
+    rho: float = Field(..., description="Correlation parameter")
+    theta_model_type: str = Field("power_law", description="Theta function type")
+    phi_model_type: str = Field("heston", description="Phi function type")
+
+
+class SurfaceFitResult(BaseModel):
+    """Result of volatility surface fitting."""
+    model_config = ConfigDict(from_attributes=True)
+    
+    symbol: str = Field(..., description="Underlying symbol")
+    model_type: str = Field(..., description="Model type (e.g., SSVI, SVI)")
+    parameters: SSVIParameters = Field(..., description="Fitted parameters")
+    fit_quality: Dict[str, Any] = Field(..., description="Fit quality metrics")
+    calibration_timestamp: dt = Field(..., description="When surface was calibrated")
+    expiry_range: tuple[float, float] = Field(..., description="Min/max expiry in years")
+    strike_range: tuple[float, float] = Field(..., description="Min/max strike prices")
+
+
+class VolatilitySurfacePoint(BaseModel):
+    """Single point on volatility surface."""
+    model_config = ConfigDict(from_attributes=True)
+    
+    strike: float = Field(..., description="Strike price")
+    expiry: dt = Field(..., description="Expiry date")
+    time_to_expiry: float = Field(..., description="Time to expiry in years")
+    implied_vol: float = Field(..., description="Implied volatility")
+    log_moneyness: float = Field(..., description="Log moneyness")
+    bid: Optional[float] = Field(None, description="Bid price")
+    ask: Optional[float] = Field(None, description="Ask price")
+    volume: Optional[int] = Field(None, description="Trading volume")
+    open_interest: Optional[int] = Field(None, description="Open interest")
+
+
 class ImpliedVolData(BaseModel):
     """Implied volatility data for an option."""
     model_config = ConfigDict(from_attributes=True)
