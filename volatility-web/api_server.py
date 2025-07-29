@@ -518,6 +518,131 @@ async def get_polymarket_markets(
     }
 
 
+@app.get("/api/polymarket/volatility")
+async def get_polymarket_volatility(
+    active_only: bool = True, limit: int = 50, search: Optional[str] = None
+):
+    """Get Polymarket markets with implied volatility calculations."""
+    try:
+        from src.volatility_filter.polymarket_volatility import analyze_market_volatilities, polymarket_vol_calculator
+        
+        # Get markets data using existing endpoint logic
+        markets = await polymarket_client.get_markets(
+            active_only=active_only, limit=limit
+        )
+        
+        # Format markets for volatility analysis
+        if markets:
+            formatted_markets = []
+            for m in markets:
+                formatted_markets.append(
+                    {
+                        "id": m.get("id", ""),
+                        "question": m.get("question", ""),
+                        "yes_percentage": m.get("yes_price", 0) * 100,
+                        "no_percentage": m.get("no_price", 0) * 100,
+                        "volume": m.get("volume", 0),
+                        "end_date": m.get("end_date", ""),
+                        "category": m.get("category", "Other"),
+                        "tags": m.get("tags", []),
+                        "active": m.get("active", True),
+                    }
+                )
+            markets_data = formatted_markets
+        else:
+            # Use demo data if no real data
+            markets_data = [
+                {
+                    "id": "demo-1",
+                    "question": "Will Bitcoin reach $100,000 by end of 2024?",
+                    "yes_percentage": 35.2,
+                    "no_percentage": 64.8,
+                    "volume": 1250000,
+                    "end_date": "2024-12-31",
+                    "category": "Crypto",
+                    "tags": ["bitcoin", "crypto", "price"],
+                    "active": True,
+                },
+                {
+                    "id": "demo-2",
+                    "question": "Will ETH/BTC ratio exceed 0.1 in Q1 2024?",
+                    "yes_percentage": 42.7,
+                    "no_percentage": 57.3,
+                    "volume": 850000,
+                    "end_date": "2024-03-31",
+                    "category": "Crypto",
+                    "tags": ["ethereum", "bitcoin", "ratio"],
+                    "active": True,
+                },
+            ]
+        
+        # Filter by search term if provided
+        if search:
+            search_lower = search.lower()
+            markets_data = [
+                m
+                for m in markets_data
+                if search_lower in m["question"].lower()
+                or search_lower in m.get("category", "").lower()
+                or any(search_lower in tag.lower() for tag in m.get("tags", []))
+            ]
+        
+        # Calculate volatility insights
+        volatility_insights = analyze_market_volatilities(markets_data[:limit])
+        
+        # Add individual implied volatilities to market data
+        enhanced_markets = []
+        for market in markets_data[:limit]:
+            implied_vol = polymarket_vol_calculator.calculate_implied_volatility(market)
+            market_with_vol = market.copy()
+            if implied_vol is not None:
+                market_with_vol["implied_volatility"] = implied_vol
+                market_with_vol["implied_volatility_pct"] = implied_vol * 100
+                
+                # Add volatility level classification
+                vol_pct = implied_vol * 100
+                if vol_pct < 20:
+                    market_with_vol["volatility_level"] = "Low"
+                elif vol_pct < 40:
+                    market_with_vol["volatility_level"] = "Moderate"
+                elif vol_pct < 60:
+                    market_with_vol["volatility_level"] = "High"
+                else:
+                    market_with_vol["volatility_level"] = "Very High"
+            else:
+                market_with_vol["implied_volatility"] = None
+                market_with_vol["implied_volatility_pct"] = None
+                market_with_vol["volatility_level"] = "Unknown"
+            
+            enhanced_markets.append(market_with_vol)
+        
+        return {
+            "markets": enhanced_markets,
+            "total": len(enhanced_markets),
+            "volatility_summary": volatility_insights["statistics"] if volatility_insights.get("statistics") else None,
+            "high_vol_markets": volatility_insights.get("high_vol_markets", [])[:5],
+            "low_vol_markets": volatility_insights.get("low_vol_markets", [])[:5],
+            "calculable_markets": volatility_insights.get("calculable_markets", 0),
+            "last_update": datetime.now().isoformat(),
+            "is_mock": volatility_insights.get("statistics", {}).get("is_mock", False),
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in polymarket volatility endpoint: {e}")
+        # Return basic structure with error info
+        return {
+            "markets": [],
+            "total": 0,
+            "volatility_summary": None,
+            "high_vol_markets": [],
+            "low_vol_markets": [],
+            "calculable_markets": 0,
+            "last_update": datetime.now().isoformat(),
+            "error": str(e),
+            "is_mock": True,
+        }
+
+
 @app.post("/api/chat/send")
 async def send_chat_message(message: dict):
     """Send a message to Claude and get response with conversation tracking."""

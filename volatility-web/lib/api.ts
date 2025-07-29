@@ -111,10 +111,87 @@ export const volatilityAPI = {
 
 // Polymarket API
 export const polymarketAPI = {
-  getMarkets: (search?: string) => {
-    const params = new URLSearchParams()
-    if (search) params.append('search', search)
-    return fetchAPI(`/api/polymarket/markets${params.toString() ? '?' + params.toString() : ''}`)
+  getMarkets: async (search?: string) => {
+    try {
+      const params = new URLSearchParams()
+      if (search && search.trim()) params.append('search', search.trim())
+      
+      const response = await fetchAPI(`/api/polymarket/markets${params.toString() ? '?' + params.toString() : ''}`)
+      
+      // Validate response structure
+      if (!response || typeof response !== 'object') {
+        throw new Error('Invalid response format from Polymarket API')
+      }
+      
+      if (!Array.isArray(response.markets)) {
+        throw new Error('Markets data is not in expected format')
+      }
+      
+      // Validate market data structure
+      response.markets.forEach((market: any, index: number) => {
+        if (!market.id || !market.question) {
+          console.warn(`Market at index ${index} missing required fields:`, market)
+        }
+        
+        // Ensure percentages are numbers
+        if (typeof market.yes_percentage !== 'number' || typeof market.no_percentage !== 'number') {
+          console.warn(`Market at index ${index} has invalid percentage values:`, market)
+        }
+      })
+      
+      return response
+    } catch (error) {
+      console.error('Polymarket API error:', error)
+      
+      // Re-throw with more context
+      if (error instanceof Error) {
+        throw new Error(`Failed to fetch Polymarket data: ${error.message}`)
+      } else {
+        throw new Error('Failed to fetch Polymarket data: Unknown error')
+      }
+    }
+  },
+  
+  getVolatility: async (search?: string, limit: number = 50) => {
+    try {
+      const params = new URLSearchParams()
+      if (search && search.trim()) params.append('search', search.trim())
+      if (limit !== 50) params.append('limit', limit.toString())
+      
+      const response = await fetchAPI(`/api/polymarket/volatility${params.toString() ? '?' + params.toString() : ''}`)
+      
+      // Validate response structure
+      if (!response || typeof response !== 'object') {
+        throw new Error('Invalid response format from Polymarket volatility API')
+      }
+      
+      if (!Array.isArray(response.markets)) {
+        throw new Error('Markets data is not in expected format')
+      }
+      
+      // Validate volatility data structure
+      response.markets.forEach((market: any, index: number) => {
+        if (!market.id || !market.question) {
+          console.warn(`Market at index ${index} missing required fields:`, market)
+        }
+        
+        // Validate volatility fields
+        if (market.implied_volatility !== null && typeof market.implied_volatility !== 'number') {
+          console.warn(`Market at index ${index} has invalid volatility value:`, market.implied_volatility)
+        }
+      })
+      
+      return response
+    } catch (error) {
+      console.error('Polymarket volatility API error:', error)
+      
+      // Re-throw with more context
+      if (error instanceof Error) {
+        throw new Error(`Failed to fetch Polymarket volatility data: ${error.message}`)
+      } else {
+        throw new Error('Failed to fetch Polymarket volatility data: Unknown error')
+      }
+    }
   },
 }
 
