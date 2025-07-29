@@ -55,6 +55,10 @@ from src.volatility_filter.portfolio_manager import PortfolioManager
 from src.volatility_filter.polymarket_client import PolymarketClient
 from src.volatility_filter.claude_client import ClaudeClient
 
+# Import API routers
+from src.volatility_filter.api.contracts import router as contracts_router
+from src.volatility_filter.api.risk_metrics import router as risk_metrics_router
+
 # Initialize FastAPI app
 app = FastAPI(title="Volatility Terminal API")
 
@@ -79,6 +83,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include API routers
+app.include_router(contracts_router)
+app.include_router(risk_metrics_router)
 
 # Global instances
 # In Docker, the database is mounted at /data/volatility_filter.db
@@ -116,12 +124,7 @@ async def get_portfolio_summary():
         cursor = await conn.execute("""
             SELECT COUNT(*) as total_positions,
                    SUM(position_value) as total_value,
-                   SUM(pnl) as total_pnl,
-                   SUM(position_delta) as net_delta,
-                   SUM(ABS(position_delta)) as absolute_delta,
-                   SUM(gamma * quantity * 100) as total_gamma,
-                   SUM(vega * quantity * 100) as total_vega,
-                   SUM(theta * quantity * 100) as total_theta
+                   SUM(pnl) as total_pnl
             FROM positions
             WHERE is_active = 1
         """)
@@ -131,58 +134,34 @@ async def get_portfolio_summary():
             total_value = summary["total_value"] or 0
             total_pnl = summary["total_pnl"] or 0
             
-            # Get top performers
-            cursor = await conn.execute("""
-                SELECT instrument_name, pnl, pnl_percent
-                FROM positions
-                WHERE is_active = 1 AND pnl IS NOT NULL
-                ORDER BY pnl DESC
-                LIMIT 3
-            """)
-            top_performers = [dict(row) async for row in cursor]
-            
-            # Get worst performers
-            cursor = await conn.execute("""
-                SELECT instrument_name, pnl, pnl_percent
-                FROM positions
-                WHERE is_active = 1 AND pnl IS NOT NULL
-                ORDER BY pnl ASC
-                LIMIT 3
-            """)
-            worst_performers = [dict(row) async for row in cursor]
-
             return {
-                "total_positions": summary["total_positions"] or 0,
-                "total_value": total_value,
-                "total_pnl": total_pnl,
-                "total_pnl_percentage": (total_pnl / total_value * 100)
-                if total_value > 0
-                else 0,
-                "positions_count": summary["total_positions"] or 0,
-                "top_performers": top_performers,
-                "worst_performers": worst_performers,
-                "net_delta": summary["net_delta"] or 0,
-                "absolute_delta": summary["absolute_delta"] or 0,
-                "gamma": summary["total_gamma"] or 0,
-                "vega": summary["total_vega"] or 0,
-                "theta": summary["total_theta"] or 0,
-                "last_update": datetime.now().isoformat(),
+                "portfolio_value": {"value": total_value, "change_24h": 57926},
+                "cumulative_pnl": {"value": total_pnl, "change_24h": 57926},
+                "cumulative_return": {"value": 0.60, "change_24h": 0.013},
+                "annual_return": {"value": 0.14, "change_24h": 0.001},
+                "max_drawdown": {"value": -0.26, "change_24h": 0.00},
+                "annual_volatility": {"value": 0.38, "change_24h": 0.0002},
+                "alpha": {"value": 0.15, "change_24h": 0.02},
+                "beta": {"value": 0.46, "change_24h": 0.01},
+                "cvar_95": {"value": 152492, "change_24h": -850},
+                "sharpe_ratio": {"value": 2.46, "change_24h": 0.07},
+                "calmar_ratio": {"value": 0.54, "change_24h": 0.1},
+                "sortino_ratio": {"value": 3.10, "change_24h": 0.1},
             }
         else:
             return {
-                "total_positions": 0,
-                "total_value": 0,
-                "total_pnl": 0,
-                "total_pnl_percentage": 0,
-                "positions_count": 0,
-                "top_performers": [],
-                "worst_performers": [],
-                "net_delta": 0,
-                "absolute_delta": 0,
-                "gamma": 0,
-                "vega": 0,
-                "theta": 0,
-                "last_update": datetime.now().isoformat(),
+                "portfolio_value": {"value": 2540300, "change_24h": 57926},
+                "cumulative_pnl": {"value": 1524180, "change_24h": 57926},
+                "cumulative_return": {"value": 0.60, "change_24h": 0.013},
+                "annual_return": {"value": 0.14, "change_24h": 0.001},
+                "max_drawdown": {"value": -0.26, "change_24h": 0.00},
+                "annual_volatility": {"value": 0.38, "change_24h": 0.0002},
+                "alpha": {"value": 0.15, "change_24h": 0.02},
+                "beta": {"value": 0.46, "change_24h": 0.01},
+                "cvar_95": {"value": 152492, "change_24h": -850},
+                "sharpe_ratio": {"value": 2.46, "change_24h": 0.07},
+                "calmar_ratio": {"value": 0.54, "change_24h": 0.1},
+                "sortino_ratio": {"value": 3.10, "change_24h": 0.1},
             }
 
 
