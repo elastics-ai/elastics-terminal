@@ -2,6 +2,7 @@
 
 import json
 import logging
+import os
 import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timedelta
@@ -34,6 +35,9 @@ class DatabaseManager:
         """Initialize database tables."""
         with self.get_connection() as conn:
             cursor = conn.cursor()
+            
+            # Apply strategy builder migration
+            self._apply_strategy_builder_migration(cursor)
 
             # Historical trades table
             cursor.execute(
@@ -637,8 +641,385 @@ class DatabaseManager:
             """
             )
 
+            # Portfolio metrics history table
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS portfolio_metrics_history (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp BIGINT NOT NULL,
+                    datetime TIMESTAMP NOT NULL,
+                    portfolio_value REAL NOT NULL,
+                    daily_pnl REAL,
+                    daily_return REAL,
+                    cumulative_pnl REAL,
+                    cumulative_return REAL,
+                    annual_return REAL,
+                    annual_volatility REAL,
+                    max_drawdown REAL,
+                    var_95 REAL,
+                    cvar_95 REAL,
+                    beta REAL,
+                    alpha REAL,
+                    sharpe_ratio REAL,
+                    net_delta REAL,
+                    net_gamma REAL,
+                    net_vega REAL,
+                    net_theta REAL,
+                    active_positions INTEGER,
+                    active_strategies INTEGER,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """
+            )
+
+            # Create indexes for portfolio metrics history
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_portfolio_metrics_timestamp
+                ON portfolio_metrics_history(timestamp)
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_portfolio_metrics_datetime
+                ON portfolio_metrics_history(datetime)
+            """
+            )
+
+            # Portfolio snapshots table for storing complete portfolio state
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS portfolio_snapshots (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp BIGINT NOT NULL,
+                    datetime TIMESTAMP NOT NULL,
+                    snapshot_type TEXT NOT NULL CHECK(snapshot_type IN ('daily', 'intraday', 'real_time')),
+                    portfolio_data TEXT NOT NULL,  -- JSON blob of complete portfolio state
+                    risk_metrics TEXT,  -- JSON blob of risk calculations
+                    performance_metrics TEXT,  -- JSON blob of performance stats
+                    allocation_data TEXT,  -- JSON blob of asset/strategy allocations
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """
+            )
+
+            # Create indexes for portfolio snapshots
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_portfolio_snapshots_timestamp
+                ON portfolio_snapshots(timestamp)
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_portfolio_snapshots_type
+                ON portfolio_snapshots(snapshot_type)
+            """
+            )
+
+            # News feed table
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS news_feed (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    news_id TEXT UNIQUE NOT NULL,
+                    title TEXT NOT NULL,
+                    summary TEXT,
+                    content TEXT,
+                    source TEXT NOT NULL,
+                    author TEXT,
+                    url TEXT,
+                    published_at TIMESTAMP NOT NULL,
+                    timestamp BIGINT NOT NULL,
+                    category TEXT,
+                    tags TEXT,  -- JSON array of tags
+                    is_critical BOOLEAN DEFAULT FALSE,
+                    relevance_score REAL,
+                    sentiment_score REAL,
+                    impact_score REAL,
+                    related_symbols TEXT,  -- JSON array of related symbols
+                    is_processed BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """
+            )
+
+            # Create indexes for news feed
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_news_feed_timestamp
+                ON news_feed(timestamp)
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_news_feed_published
+                ON news_feed(published_at)
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_news_feed_source
+                ON news_feed(source)
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_news_feed_critical
+                ON news_feed(is_critical)
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_news_feed_relevance
+                ON news_feed(relevance_score)
+            """
+            )
+
+            # AI insights table for storing AI-generated trading insights
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS ai_insights (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    insight_id TEXT UNIQUE NOT NULL,
+                    type TEXT NOT NULL CHECK(type IN ('opportunity', 'risk', 'market_analysis', 'strategy_suggestion')),
+                    title TEXT NOT NULL,
+                    description TEXT NOT NULL,
+                    priority TEXT NOT NULL CHECK(priority IN ('low', 'medium', 'high', 'critical')),
+                    confidence REAL CHECK(confidence >= 0 AND confidence <= 1),
+                    suggested_actions TEXT,  -- JSON array of suggested actions
+                    related_instruments TEXT,  -- JSON array of related instruments
+                    supporting_data TEXT,  -- JSON blob of supporting analysis
+                    timestamp BIGINT NOT NULL,
+                    datetime TIMESTAMP NOT NULL,
+                    expiry_timestamp BIGINT,
+                    is_acknowledged BOOLEAN DEFAULT FALSE,
+                    acknowledged_at TIMESTAMP,
+                    user_feedback TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """
+            )
+
+            # Create indexes for AI insights
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_ai_insights_timestamp
+                ON ai_insights(timestamp)
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_ai_insights_type
+                ON ai_insights(type)
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_ai_insights_priority
+                ON ai_insights(priority)
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_ai_insights_acknowledged
+                ON ai_insights(is_acknowledged)
+            """
+            )
+
+            # Risk alerts table for portfolio risk notifications
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS risk_alerts (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    alert_id TEXT UNIQUE NOT NULL,
+                    type TEXT NOT NULL CHECK(type IN ('var_breach', 'concentration_risk', 'correlation_risk', 'liquidity_risk', 'margin_risk', 'custom')),
+                    title TEXT NOT NULL,
+                    description TEXT NOT NULL,
+                    severity TEXT NOT NULL CHECK(severity IN ('low', 'medium', 'high', 'critical')),
+                    threshold_type TEXT,
+                    threshold_value REAL,
+                    current_value REAL,
+                    breach_percentage REAL,
+                    affected_positions TEXT,  -- JSON array of affected position IDs
+                    recommended_actions TEXT,  -- JSON array of recommended actions
+                    timestamp BIGINT NOT NULL,
+                    datetime TIMESTAMP NOT NULL,
+                    is_resolved BOOLEAN DEFAULT FALSE,
+                    resolved_at TIMESTAMP,
+                    resolution_notes TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """
+            )
+
+            # Create indexes for risk alerts
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_risk_alerts_timestamp
+                ON risk_alerts(timestamp)
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_risk_alerts_type
+                ON risk_alerts(type)
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_risk_alerts_severity
+                ON risk_alerts(severity)
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_risk_alerts_resolved
+                ON risk_alerts(is_resolved)
+            """
+            )
+
+            # Portfolio strategies table for tracking strategy performance
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS portfolio_strategies (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    strategy_id TEXT UNIQUE NOT NULL,
+                    strategy_name TEXT NOT NULL,
+                    description TEXT,
+                    strategy_type TEXT NOT NULL,
+                    allocation_percentage REAL,
+                    target_allocation REAL,
+                    inception_date DATE NOT NULL,
+                    is_active BOOLEAN DEFAULT TRUE,
+                    risk_limit REAL,
+                    max_drawdown_limit REAL,
+                    benchmark TEXT,
+                    parameters TEXT,  -- JSON blob of strategy parameters
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """
+            )
+
+            # Create indexes for portfolio strategies
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_portfolio_strategies_name
+                ON portfolio_strategies(strategy_name)
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_portfolio_strategies_active
+                ON portfolio_strategies(is_active)
+            """
+            )
+
+            # Strategy performance table for tracking strategy-specific metrics
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS strategy_performance (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    strategy_id TEXT NOT NULL,
+                    timestamp BIGINT NOT NULL,
+                    datetime TIMESTAMP NOT NULL,
+                    strategy_value REAL NOT NULL,
+                    daily_pnl REAL,
+                    daily_return REAL,
+                    cumulative_pnl REAL,
+                    cumulative_return REAL,
+                    annual_return REAL,
+                    annual_volatility REAL,
+                    max_drawdown REAL,
+                    sharpe_ratio REAL,
+                    alpha REAL,
+                    beta REAL,
+                    positions_count INTEGER,
+                    active_positions_count INTEGER,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (strategy_id) REFERENCES portfolio_strategies(strategy_id)
+                )
+            """
+            )
+
+            # Create indexes for strategy performance
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_strategy_performance_strategy
+                ON strategy_performance(strategy_id)
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_strategy_performance_timestamp
+                ON strategy_performance(timestamp)
+            """
+            )
+
+            # Market indicators table for storing key market metrics
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS market_indicators (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp BIGINT NOT NULL,
+                    datetime TIMESTAMP NOT NULL,
+                    indicator_name TEXT NOT NULL,
+                    value REAL NOT NULL,
+                    previous_value REAL,
+                    change_percentage REAL,
+                    source TEXT,
+                    category TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """
+            )
+
+            # Create indexes for market indicators
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_market_indicators_timestamp
+                ON market_indicators(timestamp)
+            """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_market_indicators_name
+                ON market_indicators(indicator_name)
+            """
+            )
+
             conn.commit()
 
+    def _apply_strategy_builder_migration(self, cursor):
+        """Apply strategy builder database migration."""
+        try:
+            # Read and execute migration SQL
+            migration_path = os.path.join(
+                os.path.dirname(__file__), 
+                'migrations', 
+                'add_strategy_builder_tables.sql'
+            )
+            
+            if os.path.exists(migration_path):
+                with open(migration_path, 'r') as f:
+                    migration_sql = f.read()
+                
+                # Execute each statement separately
+                statements = migration_sql.split(';')
+                for statement in statements:
+                    statement = statement.strip()
+                    if statement and not statement.startswith('--'):
+                        cursor.execute(statement)
+                        
+                logger.info("Strategy builder migration applied successfully")
+            else:
+                logger.warning(f"Migration file not found: {migration_path}")
+                
+        except Exception as e:
+            logger.error(f"Error applying strategy builder migration: {e}")
+            # Don't raise - continue with normal initialization
+    
     def insert_historical_trades(self, trades: List[Dict[str, Any]]) -> int:
         """Bulk insert historical trades."""
         with self.get_connection() as conn:
@@ -2350,3 +2731,543 @@ class DatabaseManager:
             )[:10]
 
             return stats
+
+    # Portfolio metrics methods
+    def insert_portfolio_metrics(self, metrics_data: Dict[str, Any]) -> Optional[int]:
+        """Insert portfolio metrics snapshot."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+
+            try:
+                cursor.execute(
+                    """
+                    INSERT INTO portfolio_metrics_history
+                    (timestamp, datetime, portfolio_value, daily_pnl, daily_return,
+                     cumulative_pnl, cumulative_return, annual_return, annual_volatility,
+                     max_drawdown, var_95, cvar_95, beta, alpha, sharpe_ratio,
+                     net_delta, net_gamma, net_vega, net_theta, active_positions, active_strategies)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                    (
+                        metrics_data["timestamp"],
+                        datetime.fromtimestamp(metrics_data["timestamp"] / 1000),
+                        metrics_data["portfolio_value"],
+                        metrics_data.get("daily_pnl"),
+                        metrics_data.get("daily_return"),
+                        metrics_data.get("cumulative_pnl"),
+                        metrics_data.get("cumulative_return"),
+                        metrics_data.get("annual_return"),
+                        metrics_data.get("annual_volatility"),
+                        metrics_data.get("max_drawdown"),
+                        metrics_data.get("var_95"),
+                        metrics_data.get("cvar_95"),
+                        metrics_data.get("beta"),
+                        metrics_data.get("alpha"),
+                        metrics_data.get("sharpe_ratio"),
+                        metrics_data.get("net_delta"),
+                        metrics_data.get("net_gamma"),
+                        metrics_data.get("net_vega"),
+                        metrics_data.get("net_theta"),
+                        metrics_data.get("active_positions"),
+                        metrics_data.get("active_strategies"),
+                    ),
+                )
+
+                conn.commit()
+                return cursor.lastrowid
+            except Exception as e:
+                logger.error(f"Error inserting portfolio metrics: {e}")
+                return None
+
+    def get_portfolio_metrics_history(
+        self, start_time=None, end_time=None, limit=None
+    ) -> pd.DataFrame:
+        """Get portfolio metrics history."""
+        with self.get_connection() as conn:
+            query = "SELECT * FROM portfolio_metrics_history"
+            params = []
+            conditions = []
+
+            if start_time:
+                conditions.append("timestamp >= ?")
+                params.append(start_time)
+            if end_time:
+                conditions.append("timestamp <= ?")
+                params.append(end_time)
+
+            if conditions:
+                query += " WHERE " + " AND ".join(conditions)
+
+            query += " ORDER BY timestamp DESC"
+
+            if limit:
+                query += " LIMIT ?"
+                params.append(limit)
+
+            df = pd.read_sql_query(query, conn, params=params)
+            return df
+
+    def insert_portfolio_snapshot(self, snapshot_data: Dict[str, Any]) -> Optional[int]:
+        """Insert complete portfolio snapshot."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+
+            try:
+                cursor.execute(
+                    """
+                    INSERT INTO portfolio_snapshots
+                    (timestamp, datetime, snapshot_type, portfolio_data,
+                     risk_metrics, performance_metrics, allocation_data)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                    (
+                        snapshot_data["timestamp"],
+                        datetime.fromtimestamp(snapshot_data["timestamp"] / 1000),
+                        snapshot_data["snapshot_type"],
+                        json.dumps(snapshot_data["portfolio_data"]),
+                        json.dumps(snapshot_data.get("risk_metrics", {})),
+                        json.dumps(snapshot_data.get("performance_metrics", {})),
+                        json.dumps(snapshot_data.get("allocation_data", {})),
+                    ),
+                )
+
+                conn.commit()
+                return cursor.lastrowid
+            except Exception as e:
+                logger.error(f"Error inserting portfolio snapshot: {e}")
+                return None
+
+    # News feed methods
+    def insert_news_item(self, news_data: Dict[str, Any]) -> Optional[int]:
+        """Insert news feed item."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+
+            try:
+                cursor.execute(
+                    """
+                    INSERT OR IGNORE INTO news_feed
+                    (news_id, title, summary, content, source, author, url,
+                     published_at, timestamp, category, tags, is_critical,
+                     relevance_score, sentiment_score, impact_score,
+                     related_symbols, is_processed)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                    (
+                        news_data["news_id"],
+                        news_data["title"],
+                        news_data.get("summary"),
+                        news_data.get("content"),
+                        news_data["source"],
+                        news_data.get("author"),
+                        news_data.get("url"),
+                        news_data["published_at"],
+                        news_data["timestamp"],
+                        news_data.get("category"),
+                        json.dumps(news_data.get("tags", [])),
+                        news_data.get("is_critical", False),
+                        news_data.get("relevance_score"),
+                        news_data.get("sentiment_score"),
+                        news_data.get("impact_score"),
+                        json.dumps(news_data.get("related_symbols", [])),
+                        news_data.get("is_processed", False),
+                    ),
+                )
+
+                conn.commit()
+                return cursor.lastrowid
+            except Exception as e:
+                logger.error(f"Error inserting news item: {e}")
+                return None
+
+    def get_news_feed(
+        self, limit=50, source=None, is_critical=None, start_time=None
+    ) -> List[Dict[str, Any]]:
+        """Get news feed items."""
+        with self.get_connection() as conn:
+            query = "SELECT * FROM news_feed"
+            params = []
+            conditions = []
+
+            if source:
+                conditions.append("source = ?")
+                params.append(source)
+            if is_critical is not None:
+                conditions.append("is_critical = ?")
+                params.append(is_critical)
+            if start_time:
+                conditions.append("timestamp >= ?")
+                params.append(start_time)
+
+            if conditions:
+                query += " WHERE " + " AND ".join(conditions)
+
+            query += " ORDER BY timestamp DESC LIMIT ?"
+            params.append(limit)
+
+            df = pd.read_sql_query(query, conn, params=params)
+
+            # Parse JSON fields
+            news_items = []
+            for _, row in df.iterrows():
+                item = dict(row)
+                if item.get("tags"):
+                    item["tags"] = json.loads(item["tags"])
+                if item.get("related_symbols"):
+                    item["related_symbols"] = json.loads(item["related_symbols"])
+                news_items.append(item)
+
+            return news_items
+
+    # AI insights methods
+    def insert_ai_insight(self, insight_data: Dict[str, Any]) -> Optional[int]:
+        """Insert AI-generated insight."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+
+            try:
+                cursor.execute(
+                    """
+                    INSERT OR REPLACE INTO ai_insights
+                    (insight_id, type, title, description, priority, confidence,
+                     suggested_actions, related_instruments, supporting_data,
+                     timestamp, datetime, expiry_timestamp, is_acknowledged)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                    (
+                        insight_data["insight_id"],
+                        insight_data["type"],
+                        insight_data["title"],
+                        insight_data["description"],
+                        insight_data["priority"],
+                        insight_data.get("confidence"),
+                        json.dumps(insight_data.get("suggested_actions", [])),
+                        json.dumps(insight_data.get("related_instruments", [])),
+                        json.dumps(insight_data.get("supporting_data", {})),
+                        insight_data["timestamp"],
+                        datetime.fromtimestamp(insight_data["timestamp"] / 1000),
+                        insight_data.get("expiry_timestamp"),
+                        insight_data.get("is_acknowledged", False),
+                    ),
+                )
+
+                conn.commit()
+                logger.info(f"AI insight created: {insight_data['title']}")
+                return cursor.lastrowid
+            except Exception as e:
+                logger.error(f"Error inserting AI insight: {e}")
+                return None
+
+    def get_ai_insights(
+        self, priority=None, acknowledged=None, limit=50
+    ) -> List[Dict[str, Any]]:
+        """Get AI insights."""
+        with self.get_connection() as conn:
+            query = "SELECT * FROM ai_insights"
+            params = []
+            conditions = []
+
+            if priority:
+                conditions.append("priority = ?")
+                params.append(priority)
+            if acknowledged is not None:
+                conditions.append("is_acknowledged = ?")
+                params.append(acknowledged)
+
+            if conditions:
+                query += " WHERE " + " AND ".join(conditions)
+
+            query += " ORDER BY timestamp DESC LIMIT ?"
+            params.append(limit)
+
+            df = pd.read_sql_query(query, conn, params=params)
+
+            # Parse JSON fields
+            insights = []
+            for _, row in df.iterrows():
+                insight = dict(row)
+                if insight.get("suggested_actions"):
+                    insight["suggested_actions"] = json.loads(insight["suggested_actions"])
+                if insight.get("related_instruments"):
+                    insight["related_instruments"] = json.loads(insight["related_instruments"])
+                if insight.get("supporting_data"):
+                    insight["supporting_data"] = json.loads(insight["supporting_data"])
+                insights.append(insight)
+
+            return insights
+
+    def acknowledge_ai_insight(self, insight_id: str, user_feedback: str = None) -> bool:
+        """Mark an AI insight as acknowledged."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+
+            try:
+                cursor.execute(
+                    """
+                    UPDATE ai_insights
+                    SET is_acknowledged = TRUE, acknowledged_at = CURRENT_TIMESTAMP,
+                        user_feedback = ?
+                    WHERE insight_id = ?
+                """,
+                    (user_feedback, insight_id),
+                )
+
+                conn.commit()
+                return cursor.rowcount > 0
+            except Exception as e:
+                logger.error(f"Error acknowledging AI insight: {e}")
+                return False
+
+    # Risk alerts methods
+    def insert_risk_alert(self, alert_data: Dict[str, Any]) -> Optional[int]:
+        """Insert risk alert."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+
+            try:
+                cursor.execute(
+                    """
+                    INSERT INTO risk_alerts
+                    (alert_id, type, title, description, severity, threshold_type,
+                     threshold_value, current_value, breach_percentage,
+                     affected_positions, recommended_actions, timestamp, datetime)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                    (
+                        alert_data["alert_id"],
+                        alert_data["type"],
+                        alert_data["title"],
+                        alert_data["description"],
+                        alert_data["severity"],
+                        alert_data.get("threshold_type"),
+                        alert_data.get("threshold_value"),
+                        alert_data.get("current_value"),
+                        alert_data.get("breach_percentage"),
+                        json.dumps(alert_data.get("affected_positions", [])),
+                        json.dumps(alert_data.get("recommended_actions", [])),
+                        alert_data["timestamp"],
+                        datetime.fromtimestamp(alert_data["timestamp"] / 1000),
+                    ),
+                )
+
+                conn.commit()
+                logger.info(f"Risk alert created: {alert_data['title']}")
+                return cursor.lastrowid
+            except Exception as e:
+                logger.error(f"Error inserting risk alert: {e}")
+                return None
+
+    def resolve_risk_alert(self, alert_id: str, resolution_notes: str = None) -> bool:
+        """Mark a risk alert as resolved."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+
+            try:
+                cursor.execute(
+                    """
+                    UPDATE risk_alerts
+                    SET is_resolved = TRUE, resolved_at = CURRENT_TIMESTAMP,
+                        resolution_notes = ?
+                    WHERE alert_id = ?
+                """,
+                    (resolution_notes, alert_id),
+                )
+
+                conn.commit()
+                return cursor.rowcount > 0
+            except Exception as e:
+                logger.error(f"Error resolving risk alert: {e}")
+                return False
+
+    def get_risk_alerts(
+        self, resolved=None, severity=None, limit=50
+    ) -> List[Dict[str, Any]]:
+        """Get risk alerts."""
+        with self.get_connection() as conn:
+            query = "SELECT * FROM risk_alerts"
+            params = []
+            conditions = []
+
+            if resolved is not None:
+                conditions.append("is_resolved = ?")
+                params.append(resolved)
+            if severity:
+                conditions.append("severity = ?")
+                params.append(severity)
+
+            if conditions:
+                query += " WHERE " + " AND ".join(conditions)
+
+            query += " ORDER BY timestamp DESC LIMIT ?"
+            params.append(limit)
+
+            df = pd.read_sql_query(query, conn, params=params)
+
+            # Parse JSON fields
+            alerts = []
+            for _, row in df.iterrows():
+                alert = dict(row)
+                if alert.get("affected_positions"):
+                    alert["affected_positions"] = json.loads(alert["affected_positions"])
+                if alert.get("recommended_actions"):
+                    alert["recommended_actions"] = json.loads(alert["recommended_actions"])
+                alerts.append(alert)
+
+            return alerts
+
+    # Portfolio strategies methods
+    def insert_portfolio_strategy(self, strategy_data: Dict[str, Any]) -> Optional[int]:
+        """Insert portfolio strategy."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+
+            try:
+                cursor.execute(
+                    """
+                    INSERT OR REPLACE INTO portfolio_strategies
+                    (strategy_id, strategy_name, description, strategy_type,
+                     allocation_percentage, target_allocation, inception_date,
+                     is_active, risk_limit, max_drawdown_limit, benchmark,
+                     parameters, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                """,
+                    (
+                        strategy_data["strategy_id"],
+                        strategy_data["strategy_name"],
+                        strategy_data.get("description"),
+                        strategy_data["strategy_type"],
+                        strategy_data.get("allocation_percentage"),
+                        strategy_data.get("target_allocation"),
+                        strategy_data["inception_date"],
+                        strategy_data.get("is_active", True),
+                        strategy_data.get("risk_limit"),
+                        strategy_data.get("max_drawdown_limit"),
+                        strategy_data.get("benchmark"),
+                        json.dumps(strategy_data.get("parameters", {})),
+                    ),
+                )
+
+                conn.commit()
+                return cursor.lastrowid
+            except Exception as e:
+                logger.error(f"Error inserting portfolio strategy: {e}")
+                return None
+
+    def insert_strategy_performance(self, performance_data: Dict[str, Any]) -> Optional[int]:
+        """Insert strategy performance metrics."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+
+            try:
+                cursor.execute(
+                    """
+                    INSERT INTO strategy_performance
+                    (strategy_id, timestamp, datetime, strategy_value, daily_pnl,
+                     daily_return, cumulative_pnl, cumulative_return, annual_return,
+                     annual_volatility, max_drawdown, sharpe_ratio, alpha, beta,
+                     positions_count, active_positions_count)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                    (
+                        performance_data["strategy_id"],
+                        performance_data["timestamp"],
+                        datetime.fromtimestamp(performance_data["timestamp"] / 1000),
+                        performance_data["strategy_value"],
+                        performance_data.get("daily_pnl"),
+                        performance_data.get("daily_return"),
+                        performance_data.get("cumulative_pnl"),
+                        performance_data.get("cumulative_return"),
+                        performance_data.get("annual_return"),
+                        performance_data.get("annual_volatility"),
+                        performance_data.get("max_drawdown"),
+                        performance_data.get("sharpe_ratio"),
+                        performance_data.get("alpha"),
+                        performance_data.get("beta"),
+                        performance_data.get("positions_count"),
+                        performance_data.get("active_positions_count"),
+                    ),
+                )
+
+                conn.commit()
+                return cursor.lastrowid
+            except Exception as e:
+                logger.error(f"Error inserting strategy performance: {e}")
+                return None
+
+    # Market indicators methods
+    def insert_market_indicator(self, indicator_data: Dict[str, Any]) -> Optional[int]:
+        """Insert market indicator."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+
+            try:
+                cursor.execute(
+                    """
+                    INSERT INTO market_indicators
+                    (timestamp, datetime, indicator_name, value, previous_value,
+                     change_percentage, source, category)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                    (
+                        indicator_data["timestamp"],
+                        datetime.fromtimestamp(indicator_data["timestamp"] / 1000),
+                        indicator_data["indicator_name"],
+                        indicator_data["value"],
+                        indicator_data.get("previous_value"),
+                        indicator_data.get("change_percentage"),
+                        indicator_data.get("source"),
+                        indicator_data.get("category"),
+                    ),
+                )
+
+                conn.commit()
+                return cursor.lastrowid
+            except Exception as e:
+                logger.error(f"Error inserting market indicator: {e}")
+                return None
+
+    def get_market_indicators(
+        self, indicator_names=None, limit=100
+    ) -> Dict[str, Any]:
+        """Get latest market indicators."""
+        with self.get_connection() as conn:
+            if indicator_names:
+                placeholders = ",".join("?" * len(indicator_names))
+                query = f"""
+                    SELECT indicator_name, value, previous_value, change_percentage,
+                           timestamp, datetime, source
+                    FROM market_indicators
+                    WHERE indicator_name IN ({placeholders})
+                      AND timestamp = (
+                          SELECT MAX(timestamp) FROM market_indicators mi2
+                          WHERE mi2.indicator_name = market_indicators.indicator_name
+                      )
+                    ORDER BY indicator_name
+                """
+                df = pd.read_sql_query(query, conn, params=indicator_names)
+            else:
+                query = """
+                    SELECT indicator_name, value, previous_value, change_percentage,
+                           timestamp, datetime, source
+                    FROM market_indicators
+                    WHERE timestamp = (
+                        SELECT MAX(timestamp) FROM market_indicators mi2
+                        WHERE mi2.indicator_name = market_indicators.indicator_name
+                    )
+                    ORDER BY indicator_name
+                    LIMIT ?
+                """
+                df = pd.read_sql_query(query, conn, params=(limit,))
+
+            # Convert to dictionary format
+            indicators = {}
+            for _, row in df.iterrows():
+                indicators[row["indicator_name"]] = {
+                    "value": row["value"],
+                    "previous_value": row["previous_value"],
+                    "change_percentage": row["change_percentage"],
+                    "timestamp": row["timestamp"],
+                    "source": row["source"],
+                }
+
+            return indicators
