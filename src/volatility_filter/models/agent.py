@@ -27,7 +27,7 @@ class AgentStatus(str, Enum):
 
 class NodePosition(BaseModel):
     """Position of a node in the workflow canvas."""
-    x: float
+     e  x: float
     y: float
 
 
