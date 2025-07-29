@@ -1,166 +1,186 @@
-'use client'
-
 import React from 'react'
-import { Settings, Clock, TrendingUp, Tag, DollarSign } from 'lucide-react'
+import { Card } from '@/components/ui/card'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
+import { Slider } from '@/components/ui/slider'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Settings, Clock, AlertTriangle, Save } from 'lucide-react'
 
 interface RebalancingConfigProps {
-  config: {
-    timeFrequency: string
-    driftFrequency: number
-    slippageBudget: number
-    optimizer: string
-    tags: string[]
-    tradableMarkets: string[]
-  }
-  onChange: (config: any) => void
+  autoRebalance: boolean
+  rebalanceInterval: string
+  maxDeviation: number
+  onAutoRebalanceChange: (value: boolean) => void
+  onIntervalChange: (value: string) => void
+  onMaxDeviationChange: (value: number) => void
 }
 
-export function RebalancingConfig({ config, onChange }: RebalancingConfigProps) {
-  const availableTags = ['macro', 'crypto', 'politics', 'commodities', 'fx', 'rates']
-  const availableMarkets = ['Kalshi', 'Polymarket', 'Deribit', 'Binance', 'Coinbase']
-
-  const handleChange = (field: string, value: any) => {
-    onChange({ ...config, [field]: value })
-  }
-
-  const toggleTag = (tag: string) => {
-    const newTags = config.tags.includes(tag)
-      ? config.tags.filter(t => t !== tag)
-      : [...config.tags, tag]
-    handleChange('tags', newTags)
-  }
-
-  const toggleMarket = (market: string) => {
-    const newMarkets = config.tradableMarkets.includes(market)
-      ? config.tradableMarkets.filter(m => m !== market)
-      : [...config.tradableMarkets, market]
-    handleChange('tradableMarkets', newMarkets)
-  }
-
+export function RebalancingConfig({
+  autoRebalance,
+  rebalanceInterval,
+  maxDeviation,
+  onAutoRebalanceChange,
+  onIntervalChange,
+  onMaxDeviationChange
+}: RebalancingConfigProps) {
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
-      <div className="flex items-center space-x-2 mb-6">
-        <Settings className="h-5 w-5 text-gray-600" />
-        <h3 className="text-lg font-semibold text-gray-900">Rebalancing Configuration</h3>
-      </div>
-
-      <div className="space-y-6">
-        {/* Time Frequency */}
-        <div>
-          <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
-            <Clock className="h-4 w-4" />
-            <span>Time Frequency</span>
-          </label>
-          <select
-            value={config.timeFrequency}
-            onChange={(e) => handleChange('timeFrequency', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="hourly">Hourly</option>
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-          </select>
+    <div className="space-y-4">
+      <Card className="p-6">
+        <div className="flex items-center mb-4">
+          <Settings className="w-5 h-5 mr-2" />
+          <h3 className="text-lg font-medium">Auto-Rebalancing Settings</h3>
         </div>
-
-        {/* Drift Frequency */}
-        <div>
-          <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
-            <TrendingUp className="h-4 w-4" />
-            <span>Drift Frequency (%)</span>
-          </label>
-          <input
-            type="number"
-            value={config.driftFrequency}
-            onChange={(e) => handleChange('driftFrequency', parseInt(e.target.value))}
-            min="1"
-            max="100"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            Rebalance when portfolio drifts by this percentage
-          </p>
-        </div>
-
-        {/* Slippage Budget */}
-        <div>
-          <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
-            <DollarSign className="h-4 w-4" />
-            <span>Slippage Budget (bps)</span>
-          </label>
-          <input
-            type="number"
-            value={config.slippageBudget}
-            onChange={(e) => handleChange('slippageBudget', parseInt(e.target.value))}
-            min="1"
-            max="200"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            Maximum acceptable slippage in basis points
-          </p>
-        </div>
-
-        {/* Optimizer */}
-        <div>
-          <label className="text-sm font-medium text-gray-700 mb-2 block">
-            Optimizer
-          </label>
-          <select
-            value={config.optimizer}
-            onChange={(e) => handleChange('optimizer', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="linear">Linear</option>
-            <option value="quadratic">Quadratic</option>
-            <option value="mean-variance">Mean-Variance</option>
-            <option value="black-litterman">Black-Litterman</option>
-          </select>
-        </div>
-
-        {/* Tags */}
-        <div>
-          <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
-            <Tag className="h-4 w-4" />
-            <span>Tags</span>
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {availableTags.map(tag => (
-              <button
-                key={tag}
-                onClick={() => toggleTag(tag)}
-                className={`px-3 py-1 text-sm rounded-full transition-colors ${
-                  config.tags.includes(tag)
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {tag}
-              </button>
-            ))}
+        
+        <div className="space-y-6">
+          {/* Auto-rebalance toggle */}
+          <div className="flex items-center justify-between">
+            <div>
+              <Label htmlFor="auto-rebalance">Enable Auto-Rebalancing</Label>
+              <p className="text-sm text-gray-500 mt-1">
+                Automatically rebalance portfolio when Greeks deviate from targets
+              </p>
+            </div>
+            <Switch
+              id="auto-rebalance"
+              checked={autoRebalance}
+              onCheckedChange={onAutoRebalanceChange}
+            />
           </div>
-        </div>
 
-        {/* Tradable Markets */}
-        <div>
-          <label className="text-sm font-medium text-gray-700 mb-2 block">
-            Tradable Markets
-          </label>
+          {/* Rebalance interval */}
           <div className="space-y-2">
-            {availableMarkets.map(market => (
-              <label key={market} className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={config.tradableMarkets.includes(market)}
-                  onChange={() => toggleMarket(market)}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  aria-label={market}
-                />
-                <span className="text-sm text-gray-700">{market}</span>
-              </label>
-            ))}
+            <Label htmlFor="interval">Rebalance Interval</Label>
+            <Select
+              value={rebalanceInterval}
+              onValueChange={onIntervalChange}
+              disabled={!autoRebalance}
+            >
+              <SelectTrigger id="interval">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5m">Every 5 minutes</SelectItem>
+                <SelectItem value="15m">Every 15 minutes</SelectItem>
+                <SelectItem value="30m">Every 30 minutes</SelectItem>
+                <SelectItem value="1h">Every hour</SelectItem>
+                <SelectItem value="4h">Every 4 hours</SelectItem>
+                <SelectItem value="1d">Daily</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Max deviation */}
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <Label htmlFor="deviation">Maximum Deviation (%)</Label>
+              <span className="text-sm text-gray-500">{maxDeviation}%</span>
+            </div>
+            <Slider
+              id="deviation"
+              value={[maxDeviation]}
+              onValueChange={([value]) => onMaxDeviationChange(value)}
+              min={1}
+              max={50}
+              step={1}
+              disabled={!autoRebalance}
+              className="w-full"
+            />
+            <p className="text-sm text-gray-500">
+              Trigger rebalancing when any Greek deviates by more than {maxDeviation}% from target
+            </p>
           </div>
         </div>
+      </Card>
+
+      <Card className="p-6">
+        <div className="flex items-center mb-4">
+          <AlertTriangle className="w-5 h-5 mr-2" />
+          <h3 className="text-lg font-medium">Risk Controls</h3>
+        </div>
+        
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="max-trades">Max Trades per Rebalance</Label>
+              <Input
+                id="max-trades"
+                type="number"
+                defaultValue="10"
+                disabled={!autoRebalance}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="max-cost">Max Cost per Rebalance ($)</Label>
+              <Input
+                id="max-cost"
+                type="number"
+                defaultValue="50000"
+                disabled={!autoRebalance}
+              />
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="position-limits">Position Limits</Label>
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                placeholder="Min position size"
+                type="number"
+                defaultValue="1"
+                disabled={!autoRebalance}
+              />
+              <Input
+                placeholder="Max position size"
+                type="number"
+                defaultValue="100"
+                disabled={!autoRebalance}
+              />
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      <Card className="p-6">
+        <div className="flex items-center mb-4">
+          <Clock className="w-5 h-5 mr-2" />
+          <h3 className="text-lg font-medium">Trading Hours</h3>
+        </div>
+        
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <Label>Only rebalance during market hours</Label>
+            <Switch defaultChecked disabled={!autoRebalance} />
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Start Time</Label>
+              <Input
+                type="time"
+                defaultValue="09:30"
+                disabled={!autoRebalance}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>End Time</Label>
+              <Input
+                type="time"
+                defaultValue="16:00"
+                disabled={!autoRebalance}
+              />
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      <div className="flex justify-end">
+        <Button>
+          <Save className="w-4 h-4 mr-2" />
+          Save Settings
+        </Button>
       </div>
     </div>
   )
