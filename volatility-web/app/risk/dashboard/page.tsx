@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { Shield, AlertTriangle, TrendingUp, Activity, Brain } from 'lucide-react'
 import { RiskHeatmap } from '@/components/risk/risk-heatmap'
 import { GreeksDisplay } from '@/components/risk/greeks-display'
-import { AIInsights } from '@/components/dashboard/ai-suggestions'
+import { AISuggestions } from '@/components/dashboard/ai-suggestions'
 
 export default function RiskDashboardPage() {
   const [loading, setLoading] = useState(true)
@@ -149,11 +149,7 @@ export default function RiskDashboardPage() {
       </div>
 
       <div className="mb-6">
-        <AIInsights
-          title="AI Risk Analysis"
-          icon={Brain}
-          suggestions={aiSuggestions}
-        />
+        <AISuggestions />
       </div>
 
       <div className="grid grid-cols-2 gap-6">
