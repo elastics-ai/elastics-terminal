@@ -208,6 +208,7 @@ __marimo__/
 
 # Large files
 design/design.pdf
-volatility-web/design.fig*.db
+volatility-web/design.fig
+*.db
 .claude/
 .env.azure
