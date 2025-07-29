@@ -307,18 +307,34 @@ class TestGetCurrentUser:
     @pytest.mark.asyncio
     async def test_get_current_user_no_header_azure_mode(self, mock_azure_env_vars):
         """Test get_current_user without authorization header in Azure mode"""
-        with pytest.raises(HTTPException) as exc_info:
-            await get_current_user(None)
-        
-        assert exc_info.value.status_code == status.HTTP_401_UNAUTHORIZED
-        assert "Authorization header required" in str(exc_info.value.detail)
+        # Create a new service instance to pick up the environment variables
+        from src.volatility_filter.auth.azure_auth import AzureAuthService
+        with patch('src.volatility_filter.auth.azure_auth.azure_auth_service') as mock_service:
+            service = AzureAuthService()
+            service.has_azure_config = True  # Ensure it's in Azure mode
+            mock_service.has_azure_config = True
+            mock_service.extract_token_from_header.return_value = None
+            
+            with pytest.raises(HTTPException) as exc_info:
+                await get_current_user(None)
+            
+            assert exc_info.value.status_code == status.HTTP_401_UNAUTHORIZED
+            assert "Authorization header required" in str(exc_info.value.detail)
     
     @pytest.mark.asyncio
     async def test_get_current_user_no_header_local_dev(self, mock_local_dev_env_vars):
         """Test get_current_user without authorization header in local dev mode"""
         result = await get_current_user(None)
         
-        assert result == MOCK_LOCAL_DEV_USER
+        # Compare all fields except timestamp which varies
+        expected = MOCK_LOCAL_DEV_USER.copy()
+        expected.pop('issued_at', None)
+        actual = result.copy()
+        actual.pop('issued_at', None)
+        
+        assert actual == expected
+        # Check timestamp is recent (within last 5 seconds)
+        assert abs(result['issued_at'] - int(time.time())) <= 5
     
     @pytest.mark.asyncio
     async def test_get_current_user_invalid_header_format(self, mock_azure_env_vars):
@@ -384,7 +400,15 @@ class TestAuthTestScenarios:
             
             result = await service.validate_token("any-token")
             
-            assert result == scenario['expected_user']
+            # Compare all fields except timestamp which varies
+            expected = scenario['expected_user'].copy()
+            expected.pop('issued_at', None)
+            actual = result.copy()
+            actual.pop('issued_at', None)
+            
+            assert actual == expected
+            # Check timestamp is recent (within last 5 seconds)
+            assert abs(result['issued_at'] - int(time.time())) <= 5
     
     @pytest.mark.asyncio
     async def test_expired_token_scenario(self):
