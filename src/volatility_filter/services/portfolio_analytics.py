@@ -10,6 +10,7 @@ from ..models.portfolio import (
     PortfolioAnalytics, StrategyPerformance, PerformanceHistory,
     Position, DashboardData, PortfolioSummary, NewsItem, AIInsight
 )
+from ..database import DatabaseManager
 
 
 @dataclass
@@ -28,9 +29,10 @@ class RiskMetrics:
 class PortfolioAnalyticsService:
     """Service for calculating portfolio performance and risk metrics."""
     
-    def __init__(self):
+    def __init__(self, db_manager: Optional[DatabaseManager] = None):
         self.risk_free_rate = 0.02  # 2% annual risk-free rate
         self.trading_days_per_year = 252
+        self.db = db_manager or DatabaseManager()
     
     def calculate_portfolio_analytics(
         self,
@@ -256,6 +258,145 @@ class PortfolioAnalyticsService:
             annual_volatility=annual_volatility
         )
     
+    def save_portfolio_metrics_to_db(
+        self,
+        analytics: PortfolioAnalytics,
+        positions: List[Position],
+        timestamp: Optional[int] = None
+    ) -> bool:
+        """Save portfolio metrics to database."""
+        if timestamp is None:
+            timestamp = int(datetime.now().timestamp() * 1000)
+        
+        metrics_data = {
+            "timestamp": timestamp,
+            "portfolio_value": analytics.portfolio_value,
+            "daily_pnl": 0,  # Would be calculated from previous day
+            "daily_return": 0,  # Would be calculated from previous day  
+            "cumulative_pnl": analytics.cumulative_pnl,
+            "cumulative_return": analytics.cumulative_return,
+            "annual_return": analytics.annual_return,
+            "annual_volatility": analytics.annual_volatility,
+            "max_drawdown": analytics.max_drawdown,
+            "var_95": analytics.var_95,
+            "cvar_95": analytics.cvar_95,
+            "beta": analytics.beta,
+            "alpha": analytics.alpha,
+            "sharpe_ratio": 0,  # Would be calculated from risk metrics
+            "net_delta": analytics.net_delta,
+            "net_gamma": analytics.net_gamma,
+            "net_vega": analytics.net_vega,
+            "net_theta": analytics.net_theta,
+            "active_positions": len(positions),
+            "active_strategies": analytics.active_strategies
+        }
+        
+        result = self.db.insert_portfolio_metrics(metrics_data)
+        return result is not None
+
+    def save_portfolio_snapshot(
+        self,
+        positions: List[Position],
+        analytics: PortfolioAnalytics,
+        snapshot_type: str = "real_time",
+        timestamp: Optional[int] = None
+    ) -> bool:
+        """Save complete portfolio snapshot to database."""
+        if timestamp is None:
+            timestamp = int(datetime.now().timestamp() * 1000)
+        
+        # Prepare portfolio data
+        portfolio_data = {
+            "positions": [
+                {
+                    "instrument": pos.instrument,
+                    "type": pos.type,
+                    "quantity": pos.quantity,
+                    "entry_price": pos.entry_price,
+                    "current_price": pos.current_price,
+                    "value": pos.value,
+                    "pnl": pos.pnl,
+                    "pnl_percentage": pos.pnl_percentage,
+                    "delta": pos.delta,
+                    "gamma": pos.gamma,
+                    "vega": pos.vega,
+                    "theta": pos.theta,
+                    "iv": pos.iv
+                }
+                for pos in positions
+            ],
+            "total_positions": len(positions),
+            "total_value": analytics.portfolio_value
+        }
+        
+        # Prepare risk metrics
+        risk_metrics = {
+            "var_95": analytics.var_95,
+            "cvar_95": analytics.cvar_95,
+            "max_drawdown": analytics.max_drawdown,
+            "beta": analytics.beta,
+            "alpha": analytics.alpha,
+            "net_delta": analytics.net_delta,
+            "net_gamma": analytics.net_gamma,
+            "net_vega": analytics.net_vega,
+            "net_theta": analytics.net_theta
+        }
+        
+        # Prepare performance metrics
+        performance_metrics = {
+            "cumulative_pnl": analytics.cumulative_pnl,
+            "cumulative_return": analytics.cumulative_return,
+            "annual_return": analytics.annual_return,
+            "annual_volatility": analytics.annual_volatility
+        }
+        
+        # Calculate allocations
+        allocation_data = self._calculate_allocations(positions)
+        
+        snapshot_data = {
+            "timestamp": timestamp,
+            "snapshot_type": snapshot_type,
+            "portfolio_data": portfolio_data,
+            "risk_metrics": risk_metrics,
+            "performance_metrics": performance_metrics,
+            "allocation_data": allocation_data
+        }
+        
+        result = self.db.insert_portfolio_snapshot(snapshot_data)
+        return result is not None
+
+    def _calculate_allocations(self, positions: List[Position]) -> Dict[str, Dict]:
+        """Calculate asset and strategy allocations."""
+        total_value = sum(abs(pos.value) for pos in positions)
+        if total_value == 0:
+            return {"asset_allocation": {}, "strategy_allocation": {}}
+        
+        # Asset allocation
+        asset_allocation = {}
+        for pos in positions:
+            asset = pos.instrument.split('-')[0] if '-' in pos.instrument else pos.instrument
+            if asset not in asset_allocation:
+                asset_allocation[asset] = 0
+            asset_allocation[asset] += abs(pos.value) / total_value * 100
+        
+        # Strategy allocation
+        strategy_allocation = {}
+        for pos in positions:
+            if 'strategy' in pos.instrument.lower():
+                strategy = pos.instrument
+                if strategy not in strategy_allocation:
+                    strategy_allocation[strategy] = 0
+                strategy_allocation[strategy] += abs(pos.value) / total_value * 100
+            else:
+                if 'Direct Positions' not in strategy_allocation:
+                    strategy_allocation['Direct Positions'] = 0
+                strategy_allocation['Direct Positions'] += abs(pos.value) / total_value * 100
+        
+        return {
+            "asset_allocation": asset_allocation,
+            "strategy_allocation": strategy_allocation
+        }
+    
     def _annualize_return(self, returns: pd.Series) -> float:
         """Annualize returns."""
         if len(returns) == 0:
@@ -392,3 +533,219 @@ class AIInsightService:
         ]
         
         return sample_insights
+
+
+class NewsService:
+    """Service for managing news feed items."""
+    
+    def __init__(self, db_manager: Optional[DatabaseManager] = None):
+        self.db = db_manager or DatabaseManager()
+
+    def generate_sample_news(self) -> List[NewsItem]:
+        """Generate sample news items matching the design."""
+        
+        sample_news = [
+            NewsItem(
+                id="news_1",
+                title="Polymarket data feed offline",
+                summary="We Are 5G announced DD limit service for on to integrat Copilot across Azure ecosystem.",
+                source="Polymarket",
+                relevance_score=0.85,
+                symbols=["POLY", "PREDICTION"],
+                timestamp=datetime.now() - timedelta(hours=2),
+                is_critical=True
+            ),
+            NewsItem(
+                id="news_2", 
+                title="Overpriced vs skew",
+                summary="Kalshi discounted model shows value on Polymarket relative to skew.",
+                source="Kalshi",
+                relevance_score=0.72,
+                symbols=["KALSHI", "POLYMARKET"],
+                timestamp=datetime.now() - timedelta(hours=4),
+                is_critical=False
+            ),
+            NewsItem(
+                id="news_3",
+                title="Latency spike on Deribit API",  
+                summary="Users report 5x expected latency on calls to retrieve data; underlying spreads up 5 bp in pre-market.",
+                source="Deribit",
+                relevance_score=0.65,
+                symbols=["DERIBIT", "BTC", "ETH"],
+                timestamp=datetime.now() - timedelta(hours=6),
+                is_critical=False
+            ),
+            NewsItem(
+                id="news_4",
+                title="Latency spike on Deribit API",
+                summary="OpenAI API announces new partnership with OpenAI to integrate CoPilot across Azure ecosystem.",
+                source="Deribit", 
+                relevance_score=0.90,
+                symbols=["BTC", "ETH"],
+                timestamp=datetime.now() - timedelta(hours=8),
+                is_critical=False
+            )
+        ]
+        
+        # Save to database
+        for news_item in sample_news:
+            self.save_news_item_to_db(news_item)
+        
+        return sample_news
+
+    def save_news_item_to_db(self, news_item: NewsItem) -> bool:
+        """Save news item to database."""
+        news_data = {
+            "news_id": news_item.id,
+            "title": news_item.title,
+            "summary": news_item.summary,
+            "source": news_item.source,
+            "published_at": news_item.timestamp,
+            "timestamp": int(news_item.timestamp.timestamp() * 1000),
+            "is_critical": news_item.is_critical,
+            "relevance_score": news_item.relevance_score,
+            "related_symbols": news_item.symbols,
+            "tags": [],
+            "is_processed": False
+        }
+        
+        result = self.db.insert_news_item(news_data)
+        return result is not None
+
+    def get_news_feed_from_db(
+        self, 
+        limit: int = 50, 
+        source: Optional[str] = None,
+        is_critical: Optional[bool] = None
+    ) -> List[NewsItem]:
+        """Get news feed from database."""
+        news_items_data = self.db.get_news_feed(
+            limit=limit, 
+            source=source, 
+            is_critical=is_critical
+        )
+        
+        news_items = []
+        for item_data in news_items_data:
+            news_items.append(NewsItem(
+                id=item_data["news_id"],
+                title=item_data["title"],
+                summary=item_data["summary"],
+                source=item_data["source"],
+                relevance_score=item_data.get("relevance_score", 0),
+                symbols=item_data.get("related_symbols", []),
+                timestamp=datetime.fromtimestamp(item_data["timestamp"] / 1000),
+                is_critical=item_data.get("is_critical", False)
+            ))
+        
+        return news_items
+
+
+class AIInsightService:
+    """Service for managing AI insights."""
+    
+    def __init__(self, db_manager: Optional[DatabaseManager] = None):
+        self.db = db_manager or DatabaseManager()
+
+    def generate_sample_insights(self) -> List[AIInsight]:
+        """Generate sample AI insights matching the design."""
+        
+        sample_insights = [
+            AIInsight(
+                id="insight_1",
+                type="risk",
+                title="Suggest a constraint to reduce portfolio Vega by 40%",
+                description="Current vega exposure is above risk limits. Consider reducing position sizes in high-vega instruments.",
+                confidence=0.85,
+                priority="high",
+                suggested_actions=["Reduce BTC options positions", "Hedge with short vega trades"],
+                related_positions=["BTC-OPTIONS", "ETH-OPTIONS"]
+            ),
+            AIInsight(
+                id="insight_2",
+                type="opportunity", 
+                title="Compare Alpha vs Beta across all strategies",
+                description="Strategy performance analysis shows opportunity for rebalancing.",
+                confidence=0.72,
+                priority="medium",
+                suggested_actions=["Rebalance strategy allocation", "Review underperforming strategies"],
+                related_positions=["STRATEGY-A", "STRATEGY-B"]
+            ),
+            AIInsight(
+                id="insight_3",
+                type="alert",
+                title="Explain health metrics",
+                description="Portfolio health metrics require attention for optimal performance.",
+                confidence=0.65,
+                priority="low", 
+                suggested_actions=["Review health dashboard", "Update risk parameters"],
+                related_positions=[]
+            ),
+            AIInsight(
+                id="insight_4",
+                type="opportunity",
+                title="Breakdown risk contribution by tag",
+                description="Risk analysis shows concentration in specific asset classes.",
+                confidence=0.78,
+                priority="medium",
+                suggested_actions=["Diversify across asset classes", "Review tag-based allocation"],
+                related_positions=["BTC", "ETH", "DEFI"]
+            )
+        ]
+        
+        # Save to database
+        for insight in sample_insights:
+            self.save_ai_insight_to_db(insight)
+        
+        return sample_insights
+
+    def save_ai_insight_to_db(self, insight: AIInsight) -> bool:
+        """Save AI insight to database."""
+        insight_data = {
+            "insight_id": insight.id,
+            "type": insight.type,
+            "title": insight.title,
+            "description": insight.description,
+            "priority": insight.priority,
+            "confidence": insight.confidence,
+            "suggested_actions": insight.suggested_actions,
+            "related_instruments": insight.related_positions,
+            "supporting_data": {},
+            "timestamp": int(datetime.now().timestamp() * 1000),
+            "is_acknowledged": False
+        }
+        
+        result = self.db.insert_ai_insight(insight_data)
+        return result is not None
+
+    def get_ai_insights_from_db(
+        self, 
+        priority: Optional[str] = None,
+        acknowledged: Optional[bool] = None,
+        limit: int = 50
+    ) -> List[AIInsight]:
+        """Get AI insights from database."""
+        insights_data = self.db.get_ai_insights(
+            priority=priority,
+            acknowledged=acknowledged,
+            limit=limit
+        )
+        
+        insights = []
+        for insight_data in insights_data:
+            insights.append(AIInsight(
+                id=insight_data["insight_id"],
+                type=insight_data["type"],
+                title=insight_data["title"],
+                description=insight_data["description"],
+                confidence=insight_data.get("confidence", 0),
+                priority=insight_data["priority"],
+                suggested_actions=insight_data.get("suggested_actions", []),
+                related_positions=insight_data.get("related_instruments", [])
+            ))
+        
+        return insights
+
+    def acknowledge_insight(self, insight_id: str, user_feedback: Optional[str] = None) -> bool:
+        """Mark an AI insight as acknowledged."""
+        return self.db.acknowledge_ai_insight(insight_id, user_feedback)
