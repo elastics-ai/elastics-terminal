@@ -41,3 +41,23 @@ global.IntersectionObserver = class IntersectionObserver {
   observe() {}
   unobserve() {}
 }
+
+// Mock ResizeObserver
+global.ResizeObserver = class ResizeObserver {
+  constructor(callback) {
+    this.callback = callback
+  }
+  observe() {
+    // Trigger the callback with a mock entry
+    this.callback([
+      {
+        contentRect: {
+          width: 800,
+          height: 600,
+        },
+      },
+    ])
+  }
+  unobserve() {}
+  disconnect() {}
+}

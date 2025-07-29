@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { Bell } from "lucide-react"
 import { useState, useEffect } from 'react'
 

@@ -11,10 +11,11 @@ const customJestConfig = {
   testEnvironment: 'jest-environment-jsdom',
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
+    '^react-markdown$': '<rootDir>/__mocks__/react-markdown.js',
   },
   testPathIgnorePatterns: ['/node_modules/', '/.next/', '/e2e/', '/tests/e2e/'],
   transformIgnorePatterns: [
-    'node_modules/(?!(react-markdown|remark|unified|bail|is-plain-obj|trough|vfile|unist-util-stringify-position|mdast-util-.*|micromark.*|decode-named-character-reference|character-entities|property-information|hast-util-whitespace|remark-.*|space-separated-tokens|comma-separated-tokens|pretty-bytes|ccount|@xyflow)/)',
+    'node_modules/(?!(react-markdown|remark|unified|bail|is-plain-obj|trough|vfile|unist-util-stringify-position|mdast-util-.*|micromark.*|decode-named-character-reference|character-entities|property-information|hast-util-whitespace|remark-.*|space-separated-tokens|comma-separated-tokens|pretty-bytes|ccount|@xyflow|react-plotly)/)',
   ],
   transform: {
     '^.+\\.(js|jsx|ts|tsx|mjs)$': ['ts-jest', {

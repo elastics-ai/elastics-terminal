@@ -116,6 +116,13 @@ export default function DashboardPage() {
     portfolio_value: point.portfolio_value
   }))
 
+  // Transform performance history for alpha/beta chart
+  const alphaData = performance_history.slice(-30).map(point => ({
+    date: new Date(point.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    alpha: portfolio_analytics.alpha,
+    beta: portfolio_analytics.beta
+  }))
+
   function getMockDashboardData(): DashboardData {
     return {
       portfolio_summary: {
