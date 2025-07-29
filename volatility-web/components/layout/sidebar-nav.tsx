@@ -25,6 +25,7 @@ const navigation = [
   { name: 'Agents', href: '/agents', icon: Bot },
   { name: 'Modules', href: '/modules', icon: Package },
   { name: 'Volatility Surface', href: '/modules/volatility', icon: Activity },
+  { name: '3D Vol Surfaces', href: '/volatility/surfaces', icon: TrendingUp },
   { name: 'Bookkeeper', href: '/modules/bookkeeper', icon: TrendingUp },
   { name: 'Data Library', href: '/data-library', icon: Database },
   { name: 'Backtester', href: '/backtester', icon: Activity },
