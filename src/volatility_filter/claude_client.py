@@ -18,6 +18,7 @@ from .chat_examples import ChatExamples
 from .finance_glossary import FinanceGlossary
 from .sql_agent import SQLAgent
 from .database import DatabaseManager
+from .polymarket_volatility import polymarket_vol_calculator, analyze_market_volatilities
 
 logger = logging.getLogger(__name__)
 
@@ -103,16 +104,40 @@ Position {i + 1}: {pos.get("instrument_name")}
 - Options Tracked: {stats.get("num_options", 0)}"""
             )
 
-        # Polymarket prediction markets
+        # Polymarket prediction markets with volatility analysis
         if "polymarket_data" in db_context and db_context["polymarket_data"]:
             context_parts.append("\nRelevant Prediction Markets:")
-            for market in db_context["polymarket_data"][:5]:  # Top 5 markets
+            
+            # Calculate volatility insights for the markets
+            markets_data = db_context["polymarket_data"][:5]  # Top 5 markets
+            volatility_insights = analyze_market_volatilities(markets_data)
+            
+            # Add individual market data with volatility
+            for market in markets_data:
+                implied_vol = polymarket_vol_calculator.calculate_implied_volatility(market)
+                vol_text = ""
+                if implied_vol is not None:
+                    vol_pct = implied_vol * 100
+                    vol_level = "Low" if vol_pct < 20 else "Moderate" if vol_pct < 40 else "High" if vol_pct < 60 else "Very High"
+                    vol_text = f"\n- Implied Volatility: {vol_pct:.1f}% ({vol_level})"
+                
                 context_parts.append(
                     f"""
 Market: {market.get("question", "Unknown")}
-- Yes: {market.get("yes_price", 0) * 100:.1f}% | No: {market.get("no_price", 0) * 100:.1f}%
+- Yes: {market.get("yes_percentage", 0):.1f}% | No: {market.get("no_percentage", 0):.1f}%
 - Volume: ${market.get("volume", 0):,.0f}
-- Category: {market.get("category", "Unknown")}"""
+- Category: {market.get("category", "Unknown")}{vol_text}"""
+                )
+            
+            # Add volatility summary if we have statistics
+            if volatility_insights.get('statistics') and volatility_insights['calculable_markets'] > 0:
+                stats = volatility_insights['statistics']
+                context_parts.append(f"""
+Volatility Analysis Summary ({volatility_insights['calculable_markets']} markets):
+- Average Implied Vol: {stats['mean_iv'] * 100:.1f}%
+- Volatility Range: {stats['min_iv'] * 100:.1f}% - {stats['max_iv'] * 100:.1f}%
+- High volatility markets: {len(volatility_insights['high_vol_markets'])}
+- Low volatility markets: {len(volatility_insights['low_vol_markets'])}"""
                 )
 
         return "\n".join(context_parts)
@@ -128,7 +153,8 @@ Market: {market.get("question", "Unknown")}
 You have access to:
 1. Real-time portfolio data, volatility metrics, and options market information
 2. A SQL database containing detailed trading history, positions, and Greeks
-3. Prediction market data from Polymarket
+3. Prediction market data from Polymarket with implied volatility calculations
+4. Advanced volatility analysis tools using the elastics-options library
 
 Your capabilities:
 1. Analyze portfolio positions and risk metrics using both provided context and SQL queries
@@ -136,7 +162,15 @@ Your capabilities:
 3. Explain volatility events and market conditions
 4. Provide insights on Greeks exposure and hedging strategies
 5. Answer questions about options pricing and implied volatility
-6. Correlate market volatility with prediction market probabilities
+6. Calculate and analyze implied volatility for Polymarket prediction market contracts
+7. Correlate market volatility with prediction market probabilities
+8. Compare volatility levels across different market categories and time periods
+
+When analyzing Polymarket contracts:
+- Treat them as binary options with $1 payout for the winning outcome
+- Use the elastics-options library calculations for implied volatility
+- Consider time to expiry, market prices, and risk-free rates
+- Provide volatility insights in the context of market uncertainty and risk
 
 IMPORTANT: When a user asks a question that requires specific data (like "what is my delta exposure for X strike"), you should:
 1. First think about what SQL query would answer this question
@@ -348,8 +382,78 @@ Then I will execute it and provide the results.""",
             suggestions.append(
                 "How do Polymarket probabilities relate to my portfolio risk?"
             )
+            suggestions.append(
+                "What is the implied volatility of this contract?"
+            )
+            suggestions.append(
+                "Which Polymarket contracts have the highest implied volatility?"
+            )
+            suggestions.append(
+                "How does the implied vol compare across different market categories?"
+            )
 
         return suggestions
+
+    def _detect_volatility_query(self, question: str) -> bool:
+        """Detect if the question is specifically about volatility calculations."""
+        volatility_keywords = [
+            'implied vol', 'implied volatility', 'iv', 'volatility',
+            'vol surface', 'contract vol', 'market vol',
+            'high vol', 'low vol', 'vol analysis', 'vol comparison'
+        ]
+        question_lower = question.lower()
+        return any(keyword in question_lower for keyword in volatility_keywords)
+
+    def _enhance_volatility_response(self, question: str, db_context: Dict[str, Any], base_response: str) -> str:
+        """Enhance response with detailed volatility analysis if applicable."""
+        if not self._detect_volatility_query(question) or not db_context.get("polymarket_data"):
+            return base_response
+        
+        try:
+            markets_data = db_context["polymarket_data"]
+            volatility_insights = analyze_market_volatilities(markets_data)
+            
+            if volatility_insights['calculable_markets'] == 0:
+                return base_response
+            
+            # Add detailed volatility analysis
+            vol_analysis = ["\n\n**Detailed Volatility Analysis:**"]
+            
+            # High volatility markets
+            if volatility_insights['high_vol_markets']:
+                vol_analysis.append("**Highest Volatility Markets:**")
+                for market in volatility_insights['high_vol_markets'][:3]:
+                    vol_analysis.append(
+                        f"• {market['question'][:60]}... - {market['implied_vol']*100:.1f}% IV"
+                    )
+            
+            # Low volatility markets
+            if volatility_insights['low_vol_markets']:
+                vol_analysis.append("\n**Lowest Volatility Markets:**")
+                for market in volatility_insights['low_vol_markets'][:3]:
+                    vol_analysis.append(
+                        f"• {market['question'][:60]}... - {market['implied_vol']*100:.1f}% IV"
+                    )
+            
+            # Category analysis
+            category_vols = {}
+            for market in volatility_insights['market_volatilities']:
+                category = market['category']
+                if category not in category_vols:
+                    category_vols[category] = []
+                category_vols[category].append(market['implied_vol'])
+            
+            if len(category_vols) > 1:
+                vol_analysis.append("\n**Volatility by Category:**")
+                for category, vols in category_vols.items():
+                    avg_vol = sum(vols) / len(vols) * 100
+                    vol_analysis.append(f"• {category}: {avg_vol:.1f}% avg IV ({len(vols)} markets)")
+            
+            return base_response + "\n".join(vol_analysis)
+        
+        except Exception as e:
+            logger.error(f"Error enhancing volatility response: {e}")
+            return base_response
 
     async def ask_with_history(
         self,
@@ -496,11 +600,14 @@ Then I will execute it and provide the results.""",
                 "context_snapshot": json.dumps(db_context),
             })
 
+            # Enhance response with volatility analysis if applicable
+            enhanced_response = self._enhance_volatility_response(question, db_context, final_response)
+            
             # Get suggested questions for response
             suggestions = self.get_suggested_questions(db_context)
 
             return {
-                "response": final_response,
+                "response": enhanced_response,
                 "timestamp": datetime.now().isoformat(),
                 "conversation_id": conversation_id,
                 "message_id": assistant_message_id,
