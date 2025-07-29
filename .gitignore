@@ -210,3 +210,4 @@ __marimo__/
 design/design.pdf
 volatility-web/design.fig*.db
 .claude/
+.env.azure
