@@ -13,6 +13,13 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 import asyncio
 
+# Add parent directory to path to import volatility_filter modules
+parent_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(parent_dir))
+
+# Import volatility API endpoints
+from src.volatility_filter.api.volatility_endpoints import router as volatility_router
+
 # Initialize Sentry SDK for error tracking
 import sentry_sdk
 from sentry_sdk.integrations.fastapi import FastApiIntegration
@@ -46,10 +53,6 @@ if glitchtip_dsn:
 else:
     logger.warning("GLITCHTIP_DSN not set, error tracking disabled")
 
-# Add parent directory to path to import volatility_filter modules
-parent_dir = Path(__file__).parent.parent
-sys.path.insert(0, str(parent_dir))
-
 from src.volatility_filter.database import DatabaseManager
 from src.volatility_filter.portfolio_manager import PortfolioManager
 from src.volatility_filter.polymarket_client import PolymarketClient
@@ -61,6 +64,9 @@ from src.volatility_filter.api.risk_metrics import router as risk_metrics_router
 
 # Initialize FastAPI app
 app = FastAPI(title="Volatility Terminal API")
+
+# Include routers
+app.include_router(volatility_router)
 
 
 # Shutdown handler
@@ -163,6 +169,79 @@ async def get_portfolio_summary():
                 "calmar_ratio": {"value": 0.54, "change_24h": 0.1},
                 "sortino_ratio": {"value": 3.10, "change_24h": 0.1},
             }
+
+
+@app.get("/api/portfolio/overview")
+async def get_portfolio_overview():
+    """Get comprehensive portfolio overview including metrics, performance, and news."""
+    async with get_db() as conn:
+        # Get portfolio metrics
+        cursor = await conn.execute("""
+            SELECT COUNT(*) as total_positions,
+                   SUM(position_value) as total_value,
+                   SUM(pnl) as total_pnl
+            FROM positions
+            WHERE is_active = 1
+        """)
+        summary = await cursor.fetchone()
+        
+        # Default values matching the design
+        portfolio_data = {
+            "portfolio": {
+                "total_value": 2540300,
+                "cumulative_pnl": 91024.18,
+                "cumulative_return": 0.60,
+                "annual_return": 0.14,
+                "max_drawdown": -0.26,
+                "annual_volatility": 0.38
+            },
+            "positions": [
+                {
+                    "symbol": "Alpha",
+                    "value": 152492,
+                    "change_24h": 2.46,
+                    "sharpe_ratio": 0.54,
+                    "sortino_ratio": 3.10
+                },
+                {
+                    "symbol": "Beta",
+                    "value": 182400,
+                    "change_24h": 0.48,
+                    "sharpe_ratio": 0.46,
+                    "sortino_ratio": 2.50
+                }
+            ],
+            "performance": {
+                "dates": ["2023-04", "2023-05", "2023-06", "2023-07", "2023-08", "2023-09"],
+                "returns": [0.05, 0.08, 0.12, 0.15, 0.18, 0.20],
+                "cumulative": [1.05, 1.13, 1.27, 1.46, 1.72, 2.06]
+            },
+            "exposure": {
+                "crypto": 0.25,
+                "forex": 0.15,
+                "fixed_income": 0.15,
+                "commodities": 0.15,
+                "cash": 0.05,
+                "private_markets": 0.15,
+                "equities": 0.10
+            },
+            "news": [
+                {
+                    "id": "1",
+                    "title": "Economic Data",
+                    "description": "GDP Growth QoQ",
+                    "sentiment": "Extremely Negative",
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+            ]
+        }
+        
+        # Override with actual data if available
+        if summary and summary["total_positions"] and summary["total_positions"] > 0:
+            portfolio_data["portfolio"]["total_value"] = summary["total_value"] or 2540300
+            portfolio_data["portfolio"]["cumulative_pnl"] = summary["total_pnl"] or 91024.18
+        
+        return portfolio_data
 
 
 @app.get("/api/portfolio/positions")
