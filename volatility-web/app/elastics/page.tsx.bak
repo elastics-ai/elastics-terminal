@@ -1,0 +1,315 @@
+'use client'
+
+import { AppLayout } from "@/components/layout/app-layout"
+import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { 
+  ChevronDown, 
+  Filter, 
+  Search,
+  MoreHorizontal,
+  CheckCircle
+} from "lucide-react"
+import { useState } from "react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { DataGrid } from "@/components/elastics/data-grid"
+
+// Sample data for exchanges
+const exchangesData = [
+  {
+    id: 1,
+    name: "Deribiteth US Equities",
+    category: "MSFT",
+    schema: "DOGE",
+    publisher: "SPY",
+    region: "North America",
+    history: "Since 2016",
+    status: "active",
+    lastUpdate: "20,948 products",
+    features: { btc: true, eth: true, bnb: false, sol: true }
+  },
+  {
+    id: 2,
+    name: "OKEX",
+    category: "SPY",
+    schema: "1002",
+    publisher: "SPY",
+    region: "North America",
+    history: "Since 2013",
+    status: "active",
+    lastUpdate: "7,728 products",
+    features: { btc: false, eth: false, bnb: false, sol: false }
+  },
+  {
+    id: 3,
+    name: "CME Globex MDP 3.0",
+    category: "ES",
+    schema: "GL",
+    publisher: "SPY",
+    region: "North America",
+    history: "Since 2010",
+    status: "active",
+    lastUpdate: "4,391 products",
+    features: { btc: false, eth: false, bnb: false, sol: true }
+  },
+  {
+    id: 4,
+    name: "ICE Europe Commodities",
+    category: "BRN",
+    schema: "SI",
+    publisher: "G",
+    region: "Europe",
+    history: "Since 2013",
+    status: "active",
+    lastUpdate: "4,391 products",
+    features: { btc: false, eth: false, bnb: false, sol: false }
+  }
+]
+
+// Majors data
+const majorsData = [
+  {
+    id: 1,
+    name: "CoinGecko Majors",
+    provider: "CoinGecko",
+    description: "Tracks top crypto market cap assets.\nPolled from CoinGecko's top 1-1000.",
+    products: "1,521 products",
+    status: "Global",
+    since: "Since 2013",
+    features: { btc: true, eth: true, bnb: true, sol: true }
+  },
+  {
+    id: 2,
+    name: "ICE Europe Financials",
+    provider: "ICE Europe",
+    description: "Covers European equity and interest\nrate derivatives from ICE Europe.",
+    products: "5,134 products",
+    status: "Europe",
+    since: "Since 2025",
+    features: { btc: false, eth: false, bnb: false, sol: true }
+  },
+  {
+    id: 3,
+    name: "ICE Endex",
+    provider: "ICE Endex",
+    description: "Leading European energy exchange for\ngas, power, and renewables.",
+    products: "2,649 products",
+    status: "Europe",
+    since: "Since 2016",
+    features: { btc: false, eth: false, bnb: false, sol: false }
+  },
+  {
+    id: 4,
+    name: "ICE Futures US",
+    provider: "ICE",
+    description: "Covers soft 20% of global crude oil\nand natural futures trading from ICE.",
+    products: "2,649 products",
+    status: "US",
+    since: "Since 2016",
+    features: { btc: false, eth: false, bnb: false, sol: false }
+  }
+]
+
+export default function ElasticsPage() {
+  const [searchQuery, setSearchQuery] = useState("")
+
+  const getFeatureColor = (active: boolean) => {
+    return active ? 'text-[hsl(var(--elastics-green))]' : 'text-[hsl(var(--muted-foreground))]/30'
+  }
+
+  return (
+    <AppLayout>
+      <div className="flex-1 p-6 overflow-y-auto bg-background">
+        <div className="max-w-[1800px] mx-auto space-y-6">
+          {/* Header with breadcrumb */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold">Elastics</h1>
+              <nav className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                <span>Data</span>
+              </nav>
+            </div>
+            <div className="flex items-center gap-4">
+              <Badge variant="secondary" className="bg-orange-100 text-orange-600">
+                Critical: 3
+              </Badge>
+              <Badge variant="secondary" className="bg-amber-100 text-amber-600">
+                Warning: 2
+              </Badge>
+              <Badge variant="secondary" className="bg-blue-100 text-blue-600">
+                Info: 6
+              </Badge>
+              <span className="text-sm text-muted-foreground">09:11:43 UTC</span>
+            </div>
+          </div>
+
+          {/* Top filters bar */}
+          <div className="flex items-center gap-3">
+            <Button variant="outline" size="sm">
+              <Filter className="w-4 h-4 mr-2" />
+              Category
+              <ChevronDown className="w-4 h-4 ml-2" />
+            </Button>
+            <Button variant="outline" size="sm">
+              Schema
+              <ChevronDown className="w-4 h-4 ml-2" />
+            </Button>
+            <Button variant="outline" size="sm">
+              Publisher
+              <ChevronDown className="w-4 h-4 ml-2" />
+            </Button>
+            <Button variant="outline" size="sm">
+              Region
+              <ChevronDown className="w-4 h-4 ml-2" />
+            </Button>
+            <Button variant="outline" size="sm">
+              Available History
+              <ChevronDown className="w-4 h-4 ml-2" />
+            </Button>
+            <div className="relative ml-auto">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input 
+                type="search" 
+                placeholder="Search" 
+                className="pl-10 w-64" 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Main content grid */}
+          <div className="grid grid-cols-2 gap-6">
+            {/* Left Column - Exchanges */}
+            <div className="space-y-6">
+              <Card className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold">Deribiteth US Equities</h2>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem>View Details</DropdownMenuItem>
+                      <DropdownMenuItem>Export</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                <p className="text-sm text-muted-foreground mb-2">Deribit</p>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Daily live US equities exchanges 
+                  over all ETFs make a global product
+                </p>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-600" />
+                    <span className="text-sm font-medium">20,948 products</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <Badge variant="secondary">North America</Badge>
+                    <Badge variant="secondary">Since 2016</Badge>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 text-xs">
+                  <span className={getFeatureColor(true)}>BTC</span>
+                  <span className={getFeatureColor(true)}>ETH</span>
+                  <span className={getFeatureColor(false)}>BNB</span>
+                  <span className={getFeatureColor(true)}>SOL</span>
+                </div>
+              </Card>
+
+              <DataGrid 
+                data={exchangesData}
+                title="All Exchanges"
+                className="h-[400px]"
+              />
+            </div>
+
+            {/* Right Column - Majors */}
+            <div className="space-y-6">
+              {/* Majors Cards Grid */}
+              <div className="grid grid-cols-2 gap-4">
+                {majorsData.map((major) => (
+                  <Card key={major.id} className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="font-medium text-sm">{major.name}</h3>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem>View Details</DropdownMenuItem>
+                          <DropdownMenuItem>Export</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-1">{major.provider}</p>
+                    <p className="text-xs text-muted-foreground mb-3 whitespace-pre-line">{major.description}</p>
+                    <div className="flex items-center justify-between text-xs mb-2">
+                      <span className="font-medium">{major.products}</span>
+                      <div className="flex items-center gap-1">
+                        <Badge variant="secondary" className="text-xs h-5">{major.status}</Badge>
+                        <Badge variant="secondary" className="text-xs h-5">{major.since}</Badge>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className={getFeatureColor(major.features.btc)}>BTC</span>
+                      <span className={getFeatureColor(major.features.eth)}>ETH</span>
+                      <span className={getFeatureColor(major.features.bnb)}>BNB</span>
+                      <span className={getFeatureColor(major.features.sol)}>SOL</span>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Bottom info sections */}
+              <div className="grid grid-cols-3 gap-4">
+                <Card className="p-4">
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Compare MBI and GL futures contracts
+                  </p>
+                  <Button variant="link" size="sm" className="h-auto p-0 text-xs">
+                    See More →
+                  </Button>
+                </Card>
+                <Card className="p-4">
+                  <p className="text-xs text-muted-foreground mb-2">
+                    What&apos;s included in CME MDP 3.0 Futures?
+                  </p>
+                  <Button variant="link" size="sm" className="h-auto p-0 text-xs">
+                    See More →
+                  </Button>
+                </Card>
+                <Card className="p-4">
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Showcase all US options datasets
+                  </p>
+                  <Button variant="link" size="sm" className="h-auto p-0 text-xs">
+                    See More →
+                  </Button>
+                </Card>
+              </div>
+
+              <Card className="p-4">
+                <p className="text-xs text-muted-foreground">
+                  Which dataset is best for Volatility equity vol modeling?
+                </p>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </div>
+    </AppLayout>
+  )
+}
