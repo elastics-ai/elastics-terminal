@@ -372,6 +372,11 @@ class TestFullApplicationFlow:
             assert data["user"]["email"] == MOCK_AZURE_USER["email"]
             assert data["user"]["roles"] == MOCK_AZURE_USER["roles"]
     
+    @patch.dict(os.environ, {
+        "AUTH_AZURE_AD_CLIENT_ID": "test-client-id",
+        "AUTH_AZURE_AD_CLIENT_SECRET": "test-secret", 
+        "AUTH_AZURE_AD_TENANT_ID": "test-tenant-id"
+    })
     def test_user_profile_unauthenticated(self, full_client):
         """Test user profile endpoint without authentication"""
         response = full_client.get("/api/user/profile")
