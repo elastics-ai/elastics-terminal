@@ -24,53 +24,84 @@ describe('Portfolio Overview Page', () => {
     ;(global.fetch as jest.Mock).mockResolvedValue({
       ok: true,
       json: async () => ({
-        portfolio: {
+        portfolio_summary: {
+          total_positions: 4,
           total_value: 2540300,
-          cumulative_pnl: 91024.18,
-          cumulative_return: 0.60,
-          annual_return: 0.14,
-          max_drawdown: -0.26,
-          annual_volatility: 0.38
+          total_pnl: 91024.18,
+          total_pnl_percentage: 6.0,
+          net_delta: 2.55,
+          absolute_delta: 4.9,
+          gamma: 0.003,
+          vega: 19.5,
+          theta: -4.8
         },
-        positions: [
+        portfolio_analytics: {
+          portfolio_value: 2540300,
+          cumulative_pnl: 91024.18,
+          cumulative_return: 60.0,
+          annual_return: 14.0,
+          max_drawdown: -26.0,
+          annual_volatility: 38.0,
+          active_strategies: 1,
+          var_95: 8750,
+          cvar_95: 12300,
+          beta: 0.85,
+          alpha: 0.024,
+          net_delta: 2.55,
+          net_gamma: 0.003,
+          net_vega: 19.5,
+          net_theta: -4.8
+        },
+        performance_history: [
           {
-            symbol: 'Alpha',
-            value: 152492,
-            change_24h: 2.46,
-            sharpe_ratio: 0.54,
-            sortino_ratio: 3.10
-          },
-          {
-            symbol: 'Beta',
-            value: 182400,
-            change_24h: 0.48,
-            sharpe_ratio: 0.46,
-            sortino_ratio: 2.50
+            date: '2023-04-01T00:00:00Z',
+            portfolio_value: 2450000,
+            daily_return: 0.5,
+            cumulative_return: 50.0,
+            drawdown: -2.0,
+            volatility: 35.0,
+            benchmark_return: 45.0
           }
         ],
-        performance: {
-          dates: ['2023-04', '2023-05', '2023-06'],
-          returns: [0.05, 0.08, 0.12],
-          cumulative: [1.05, 1.13, 1.27]
-        },
-        exposure: {
-          crypto: 0.25,
-          forex: 0.15,
-          fixed_income: 0.15,
-          commodities: 0.15,
-          cash: 0.05,
-          private_markets: 0.15,
-          equities: 0.10
-        },
-        news: [
+        news_feed: [
           {
             id: '1',
-            title: 'Economic Data',
-            description: 'GDP Growth Q3Q4',
-            sentiment: 'Extremely Negative',
-            timestamp: new Date().toISOString()
+            title: 'Economic Data Update',
+            summary: 'GDP Growth Q3Q4 showing positive trends',
+            source: 'Economic Data',
+            relevance_score: 0.85,
+            symbols: ['SPX', 'BTC'],
+            timestamp: new Date().toISOString(),
+            is_critical: false
           }
-        ]
+        ],
+        ai_insights: [
+          {
+            id: 'insight_1',
+            type: 'risk',
+            title: 'Portfolio risk exposure elevated',
+            description: 'Consider reducing position sizes',
+            confidence: 0.85,
+            priority: 'medium',
+            suggested_actions: ['Reduce BTC positions'],
+            related_positions: ['BTC'],
+            acknowledged: false
+          }
+        ],
+        asset_allocation: {
+          'BTC': 45.2,
+          'ETH': 32.1,
+          'Options': 15.7,
+          'Cash': 7.0
+        },
+        strategy_allocation: {
+          'Strategy-Alpha-01': 60.0,
+          'Direct Positions': 40.0
+        },
+        market_indicators: {
+          vix: 18.5,
+          btc_iv: 75.2
+        }
       })
     })
   })
@@ -89,11 +120,11 @@ describe('Portfolio Overview Page', () => {
     })
 
     // Check other metric cards
-    expect(screen.getByText('Cumulative PnL')).toBeInTheDocument()
-    expect(screen.getByText('+$91,024.18')).toBeInTheDocument()
+    expect(screen.getByText('Cumulative P&L')).toBeInTheDocument()
+    expect(screen.getByText('+$91,024')).toBeInTheDocument()
     
     expect(screen.getByText('Annual Return')).toBeInTheDocument()
-    expect(screen.getByText('+14%')).toBeInTheDocument()
+    expect(screen.getByText('+14.0%')).toBeInTheDocument()
   })
 
   it('should display portfolio exposure chart', async () => {
@@ -109,20 +140,18 @@ describe('Portfolio Overview Page', () => {
 
     await waitFor(() => {
       expect(screen.getByText('News Feed')).toBeInTheDocument()
-      expect(screen.getByText('Economic Data')).toBeInTheDocument()
-      expect(screen.getByText('GDP Growth Q3Q4')).toBeInTheDocument()
+      expect(screen.getByText('Economic Data Update')).toBeInTheDocument()
+      expect(screen.getByText('GDP Growth Q3Q4 showing positive trends')).toBeInTheDocument()
     })
   })
 
-  it('should display positions table', async () => {
+  it('should display AI insights', async () => {
     render(<HomePage />)
 
     await waitFor(() => {
-      expect(screen.getByText('Active Positions')).toBeInTheDocument()
-      expect(screen.getByText('Alpha')).toBeInTheDocument()
-      expect(screen.getByText('Beta')).toBeInTheDocument()
-      expect(screen.getByText('$152,492')).toBeInTheDocument()
-      expect(screen.getByText('$182,400')).toBeInTheDocument()
+      expect(screen.getByText('AI Suggestions')).toBeInTheDocument()
+      expect(screen.getByText('Portfolio risk exposure elevated')).toBeInTheDocument()
+      expect(screen.getByText('Consider reducing position sizes')).toBeInTheDocument()
     })
   })
 
@@ -132,7 +161,7 @@ describe('Portfolio Overview Page', () => {
     render(<HomePage />)
 
     await waitFor(() => {
-      expect(screen.getByText(/Error loading portfolio data/i)).toBeInTheDocument()
+      expect(screen.getByText(/Error loading dashboard/i)).toBeInTheDocument()
       expect(screen.getByText('Retry')).toBeInTheDocument()
     })
   })
