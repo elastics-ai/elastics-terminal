@@ -14,7 +14,24 @@
       "Bash(pkill:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(mkdir:*)",
+      "Bash(touch:*)",
+      "Bash(git submodule:*)",
+      "Bash(npm install:*)",
+      "Bash(rm:*)",
+      "Bash(python:*)",
+      "Bash(true)",
+      "Bash(docker-compose:*)",
+      "Bash(docker system prune:*)",
+      "Bash(docker image prune:*)",
+      "Bash(npm run build:*)",
+      "Bash(curl:*)",
+      "Bash(docker logs:*)",
+      "Bash(docker exec:*)",
+      "Bash(gh repo rename:*)",
+      "Bash(git remote get-url:*)",
+      "Bash(git commit:*)"
     ],
     "deny": []
   }
