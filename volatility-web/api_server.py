@@ -19,6 +19,7 @@ sys.path.insert(0, str(parent_dir))
 
 # Import volatility API endpoints
 from src.volatility_filter.api.volatility_endpoints import router as volatility_router
+from src.volatility_filter.api.dashboard_endpoints import router as dashboard_router
 
 # Initialize Sentry SDK for error tracking
 import sentry_sdk
@@ -93,6 +94,7 @@ app.add_middleware(
 # Include API routers
 app.include_router(contracts_router)
 app.include_router(risk_metrics_router)
+app.include_router(dashboard_router)
 
 # Global instances
 # In Docker, the database is mounted at /data/volatility_filter.db
