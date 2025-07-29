@@ -313,6 +313,116 @@ export function useVolSurfaceWebSocket(onUpdate?: (data: VolSurfaceData) => void
   return surfaceData
 }
 
+// New portfolio-specific WebSocket hooks for dashboard
+export function usePortfolioAnalyticsWebSocket(onUpdate?: (data: any) => void) {
+  const [analyticsData, setAnalyticsData] = useState<any>(null)
+  
+  useWebSocket<WebSocketMessage>('portfolio_analytics', (message) => {
+    if (message.data) {
+      setAnalyticsData(message.data)
+      onUpdate?.(message.data)
+    }
+  })
+  
+  return analyticsData
+}
+
+export function usePerformanceWebSocket(onUpdate?: (data: any) => void) {
+  const [performanceData, setPerformanceData] = useState<any>(null)
+  
+  useWebSocket<WebSocketMessage>('performance_update', (message) => {
+    if (message.data) {
+      setPerformanceData(message.data)
+      onUpdate?.(message.data)
+    }
+  })
+  
+  return performanceData
+}
+
+export function useNewsWebSocket(onUpdate?: (data: any) => void) {
+  const [newsData, setNewsData] = useState<any>(null)
+  
+  useWebSocket<WebSocketMessage>('news_update', (message) => {
+    if (message.data) {
+      setNewsData(message.data)
+      onUpdate?.(message.data)
+    }
+  })
+  
+  return newsData
+}
+
+export function useAIInsightsWebSocket(onUpdate?: (data: any) => void) {
+  const [insightsData, setInsightsData] = useState<any>(null)
+  
+  useWebSocket<WebSocketMessage>('ai_insight', (message) => {
+    if (message.data) {
+      setInsightsData(message.data)
+      onUpdate?.(message.data)
+    }
+  })
+  
+  return insightsData
+}
+
+export function useRiskAlertsWebSocket(onUpdate?: (data: any) => void) {
+  const [riskData, setRiskData] = useState<any>(null)
+  
+  useWebSocket<WebSocketMessage>('risk_alert', (message) => {
+    if (message.data) {
+      setRiskData(message.data)
+      onUpdate?.(message.data)
+    }
+  })
+  
+  return riskData
+}
+
+// Comprehensive dashboard WebSocket hook
+export function useDashboardWebSocket(onUpdate?: (eventType: string, data: any) => void) {
+  const [dashboardData, setDashboardData] = useState({
+    portfolio: null,
+    analytics: null,
+    performance: null,
+    news: null,
+    insights: null,
+    risks: null
+  })
+  
+  const portfolioEvents = [
+    'portfolio_update',
+    'portfolio_analytics', 
+    'performance_update',
+    'news_update',
+    'ai_insight',
+    'risk_alert'
+  ]
+  
+  useEffect(() => {
+    const unsubscribes = portfolioEvents.map(event => 
+      wsClient.subscribe(event, (message: WebSocketMessage) => {
+        if (message.data) {
+          const eventKey = event.replace('_update', '').replace('_', '')
+          setDashboardData(prev => ({
+            ...prev,
+            [eventKey === 'portfolioanalytics' ? 'analytics' : 
+             eventKey === 'aiinsight' ? 'insights' :
+             eventKey === 'riskalert' ? 'risks' : eventKey]: message.data
+          }))
+          onUpdate?.(event, message.data)
+        }
+      })
+    )
+    
+    return () => {
+      unsubscribes.forEach(unsubscribe => unsubscribe())
+    }
+  }, [onUpdate])
+  
+  return dashboardData
+}
+
 export function useMarketDataWebSocket(symbol: string, onUpdate?: (data: any) => void) {
   const [marketData, setMarketData] = useState<any>(null)
   

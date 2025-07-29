@@ -3,6 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useSession, signOut } from 'next-auth/react'
 import { cn } from '@/lib/utils'
 import { 
   Home, 
@@ -14,10 +15,21 @@ import {
   Database,
   Newspaper,
   Book,
-  BotMessageSquare
+  BotMessageSquare,
+  LogOut,
+  User
 } from 'lucide-react'
 import { Header } from './header'
 import { FixedChatInput } from '@/components/chat/FixedChatInput'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import Image from 'next/image'
 
 const navigation = [
@@ -40,6 +52,11 @@ const bottomNavigation = [
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const { data: session, status } = useSession()
+
+  const handleSignOut = async () => {
+    await signOut({ callbackUrl: '/auth/signin' })
+  }
 
   return (
     <div className="flex h-screen bg-background text-foreground">
@@ -101,15 +118,105 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </nav>
 
           <div className="p-2 rounded-lg">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[hsl(var(--sidebar-active))] flex items-center justify-center">
-                <span className="text-sm font-medium text-white">W</span>
+            {status === 'loading' ? (
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gray-300 animate-pulse"></div>
+                <div className="flex-1">
+                  <div className="w-20 h-4 bg-gray-300 rounded animate-pulse mb-1"></div>
+                  <div className="w-32 h-3 bg-gray-300 rounded animate-pulse"></div>
+                </div>
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-[hsl(var(--sidebar-text))]">Wojtek</p>
-                <p className="text-xs text-[hsl(var(--sidebar-text))]/60">wojtek@elastics.ai</p>
+            ) : session?.user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-3 w-full hover:bg-[hsl(var(--sidebar-hover))] p-2 rounded-md transition-colors">
+                    <div className="w-10 h-10 rounded-full bg-[hsl(var(--sidebar-active))] flex items-center justify-center">
+                      {session.user.image ? (
+                        <Image
+                          src={session.user.image}
+                          alt={session.user.name || 'User'}
+                          width={40}
+                          height={40}
+                          className="rounded-full"
+                        />
+                      ) : (
+                        <span className="text-sm font-medium text-white">
+                          {session.user.name?.charAt(0)?.toUpperCase() || 
+                           session.user.email?.charAt(0)?.toUpperCase() || 'U'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="text-sm font-medium text-[hsl(var(--sidebar-text))]">
+                        {session.user.name || 'User'}
+                      </p>
+                      <p className="text-xs text-[hsl(var(--sidebar-text))]/60 truncate">
+                        {session.user.email}
+                      </p>
+                    </div>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent 
+                  className="w-56" 
+                  align="end" 
+                  forceMount
+                >
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">
+                        {session.user.name}
+                      </p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {session.user.email}
+                      </p>
+                      {(session as any).tenantId && (
+                        <p className="text-xs leading-none text-muted-foreground">
+                          Tenant: {(session as any).tenantId}
+                        </p>
+                      )}
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/settings" className="flex items-center gap-2">
+                      <User className="w-4 h-4" />
+                      Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/settings" className="flex items-center gap-2">
+                      <Settings className="w-4 h-4" />
+                      Settings
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={handleSignOut}
+                    className="flex items-center gap-2 text-red-600 focus:text-red-600"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gray-400 flex items-center justify-center">
+                  <User className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-[hsl(var(--sidebar-text))]">Not signed in</p>
+                  <Button
+                    onClick={() => window.location.href = '/auth/signin'}
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-[hsl(var(--sidebar-text))]/60 hover:text-[hsl(var(--sidebar-text))] p-0 h-auto font-normal"
+                  >
+                    Sign in
+                  </Button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

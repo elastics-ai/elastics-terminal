@@ -22,6 +22,15 @@ def mock_claude_client():
     with patch("volatility-web.api_server.ClaudeClient") as mock_claude:
         mock_instance = Mock()
         mock_instance.ask.return_value = "Test response from Claude"
+        # Add ask_with_history mock that returns expected format
+        mock_instance.ask_with_history = AsyncMock()
+        mock_instance.ask_with_history.return_value = {
+            "response": "Test response from Claude with history",
+            "timestamp": datetime.now().isoformat(),
+            "conversation_id": 123,
+            "message_id": 456,
+            "suggestions": ["Test suggestion 1", "Test suggestion 2"]
+        }
         mock_claude.return_value = mock_instance
         yield mock_claude, mock_instance
 
@@ -279,3 +288,81 @@ class TestAPIChatEndpoints:
             assert response.status_code == 200
             data = response.json()
             assert data["response"] == "Test response from Claude"
+
+    @pytest.mark.unit
+    def test_send_chat_message_with_history_method(
+        self, test_client, mock_claude_client, monkeypatch
+    ):
+        """Test that the API correctly calls ask_with_history method."""
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+
+        response = test_client.post(
+            "/api/chat/send", 
+            json={
+                "content": "What is my portfolio value?",
+                "session_id": "test_session_123",
+                "conversation_id": 456
+            }
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        
+        # Verify response format matches ask_with_history return
+        assert data["response"] == "Test response from Claude with history"
+        assert "timestamp" in data
+        assert data["conversation_id"] == 123
+        assert data["message_id"] == 456
+        assert "suggestions" in data
+        assert len(data["suggestions"]) == 2
+
+        # Verify ask_with_history was called instead of ask
+        _, mock_instance = mock_claude_client
+        mock_instance.ask_with_history.assert_called_once()
+        
+        # Verify the parameters passed to ask_with_history
+        call_args = mock_instance.ask_with_history.call_args
+        assert call_args.kwargs["question"] == "What is my portfolio value?"
+        assert call_args.kwargs["session_id"] == "test_session_123"
+        assert call_args.kwargs["conversation_id"] == 456
+        assert "db_context" in call_args.kwargs
+
+    @pytest.mark.unit
+    def test_chat_method_exists_and_is_async(
+        self, mock_claude_client, monkeypatch
+    ):
+        """Test that ask_with_history method exists and is properly async."""
+        from src.volatility_filter.claude_client import ClaudeClient
+        import inspect
+        
+        # Test that the method exists
+        assert hasattr(ClaudeClient, 'ask_with_history')
+        
+        # Test that the method is async
+        method = getattr(ClaudeClient, 'ask_with_history')
+        assert inspect.iscoroutinefunction(method)
+
+    @pytest.mark.unit
+    def test_send_chat_message_missing_ask_with_history_method(
+        self, test_client, monkeypatch
+    ):
+        """Test error handling when ask_with_history method is missing."""
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+        
+        # Mock ClaudeClient without ask_with_history method
+        with patch("volatility-web.api_server.ClaudeClient") as mock_claude:
+            mock_instance = Mock()
+            # Deliberately don't add ask_with_history method
+            mock_claude.return_value = mock_instance
+            
+            response = test_client.post(
+                "/api/chat/send", 
+                json={"content": "Test message"}
+            )
+
+            # Should return error response, not crash
+            assert response.status_code == 200
+            data = response.json()
+            assert "error" in data
+            assert data["error"] == "api_error"
+            assert "Sorry, I encountered an error" in data["response"]

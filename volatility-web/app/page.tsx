@@ -1,12 +1,20 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts'
-import { Bell, TrendingUp, AlertTriangle, Info, CheckCircle, X } from 'lucide-react'
+import { Bell, TrendingUp, AlertTriangle, Info, CheckCircle, X, Wifi, WifiOff } from 'lucide-react'
+import { 
+  wsClient, 
+  useWebSocketConnection,
+  useDashboardWebSocket,
+  usePortfolioAnalyticsWebSocket,
+  useNewsWebSocket,
+  useAIInsightsWebSocket 
+} from '@/lib/websocket'
 
 interface DashboardData {
   portfolio_summary: any
@@ -23,8 +31,81 @@ export default function DashboardPage() {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null)
 
-  // Fetch dashboard data
+  // WebSocket connection status
+  const isConnected = useWebSocketConnection()
+
+  // Initialize WebSocket connection
+  useEffect(() => {
+    wsClient.connect()
+    return () => wsClient.disconnect()
+  }, [])
+
+  // Handle real-time dashboard updates via WebSocket
+  const handleWebSocketUpdate = useCallback((eventType: string, data: any) => {
+    console.log(`[Dashboard] WebSocket update: ${eventType}`, data)
+    setLastUpdateTime(new Date())
+    
+    setDashboardData(prev => {
+      if (!prev) return prev
+
+      switch (eventType) {
+        case 'portfolio_update':
+          return {
+            ...prev,
+            portfolio_summary: data.portfolio_summary || prev.portfolio_summary,
+            asset_allocation: data.asset_allocation || prev.asset_allocation,
+            strategy_allocation: data.strategy_allocation || prev.strategy_allocation
+          }
+        case 'portfolio_analytics':
+          return {
+            ...prev,
+            portfolio_analytics: data.update_type === 'incremental' 
+              ? { ...prev.portfolio_analytics, ...data }
+              : data
+          }
+        case 'performance_update':
+          return {
+            ...prev,
+            performance_history: data.performance_history || prev.performance_history,
+            market_indicators: data.market_indicators || prev.market_indicators
+          }
+        case 'news_update':
+          return {
+            ...prev,
+            news_feed: data.news_feed || prev.news_feed
+          }
+        case 'ai_insight':
+          // Merge new insights with existing ones
+          const existingInsights = prev.ai_insights || []
+          const newInsights = data.insights || []
+          const updatedInsights = [...existingInsights]
+          
+          // Update or add new insights
+          newInsights.forEach((newInsight: any) => {
+            const existingIndex = updatedInsights.findIndex(insight => insight.id === newInsight.id)
+            if (existingIndex >= 0) {
+              updatedInsights[existingIndex] = newInsight
+            } else {
+              updatedInsights.unshift(newInsight) // Add to front
+            }
+          })
+          
+          return {
+            ...prev,
+            ai_insights: updatedInsights.slice(0, 10) // Keep only latest 10
+          }
+        default:
+          return prev
+      }
+    })
+  }, [])
+
+  // Subscribe to WebSocket updates
+  useDashboardWebSocket(handleWebSocketUpdate)
+
+  // Initial data fetch
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
@@ -35,21 +116,19 @@ export default function DashboardPage() {
         }
         const data = await response.json()
         setDashboardData(data)
+        setLastUpdateTime(new Date())
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error')
         console.error('Error fetching dashboard data:', err)
         // Fall back to mock data
         setDashboardData(getMockDashboardData())
+        setLastUpdateTime(new Date())
       } finally {
         setLoading(false)
       }
     }
 
     fetchDashboardData()
-    
-    // Set up polling for real-time updates
-    const interval = setInterval(fetchDashboardData, 30000) // Update every 30 seconds
-    return () => clearInterval(interval)
   }, [])
 
   // Acknowledge AI insight
@@ -186,7 +265,28 @@ export default function DashboardPage() {
       <div className="p-6 bg-gray-50 min-h-screen">
         {/* Portfolio Overview Header */}
         <div className="mb-6">
-          <h1 className="text-xl font-normal text-gray-900 mb-6">Portfolio Overview</h1>
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-xl font-normal text-gray-900">Portfolio Overview</h1>
+            
+            {/* Real-time Status Indicator */}
+            <div className="flex items-center gap-3 text-sm">
+              <div className="flex items-center gap-2">
+                {isConnected ? (
+                  <Wifi className="w-4 h-4 text-green-600" />
+                ) : (
+                  <WifiOff className="w-4 h-4 text-red-600" />
+                )}
+                <span className={isConnected ? 'text-green-600' : 'text-red-600'}>
+                  {isConnected ? 'Live' : 'Offline'}
+                </span>
+              </div>
+              {lastUpdateTime && (
+                <div className="text-gray-500">
+                  Last update: {lastUpdateTime.toLocaleTimeString()}
+                </div>
+              )}
+            </div>
+          </div>
           
           {/* Portfolio Metrics Cards */}
           <div className="grid grid-cols-6 gap-4 mb-8">

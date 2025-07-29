@@ -9,7 +9,13 @@ import {
   useVolatilityWebSocket,
   useVolSurfaceWebSocket,
   useMarketDataWebSocket,
-  useMultiChannelWebSocket
+  useMultiChannelWebSocket,
+  usePortfolioAnalyticsWebSocket,
+  usePerformanceWebSocket,
+  useNewsWebSocket,
+  useAIInsightsWebSocket,
+  useRiskAlertsWebSocket,
+  useDashboardWebSocket
 } from '@/lib/websocket'
 
 // Mock WebSocket
@@ -453,6 +459,326 @@ describe.skip('WebSocket Client', () => {
         })
 
         expect(onUpdate).toHaveBeenCalledTimes(2)
+      })
+    })
+
+    describe('usePortfolioAnalyticsWebSocket', () => {
+      it('should handle portfolio analytics updates', async () => {
+        wsClient.connect(WS_URL)
+        await server.connected
+
+        const onUpdate = jest.fn()
+        const { result } = renderHook(() => usePortfolioAnalyticsWebSocket(onUpdate))
+
+        const analyticsData = {
+          portfolio_value: 174500,
+          cumulative_pnl: 9650,
+          cumulative_return: 5.86,
+          annual_return: 12.4,
+          max_drawdown: -8.2,
+          annual_volatility: 24.5,
+          var_95: 8750,
+          beta: 0.85,
+          alpha: 0.024
+        }
+
+        act(() => {
+          server.send({
+            type: 'portfolio_analytics',
+            timestamp: Date.now(),
+            data: analyticsData
+          })
+        })
+
+        await waitFor(() => {
+          expect(result.current).toEqual(analyticsData)
+        })
+
+        expect(onUpdate).toHaveBeenCalledWith(analyticsData)
+      })
+    })
+
+    describe('usePerformanceWebSocket', () => {
+      it('should handle performance updates', async () => {
+        wsClient.connect(WS_URL)
+        await server.connected
+
+        const { result } = renderHook(() => usePerformanceWebSocket())
+
+        const performanceData = {
+          performance_history: [
+            {
+              date: '2024-01-01',
+              portfolio_value: 165000,
+              daily_return: 1.2,
+              cumulative_return: 5.8,
+              drawdown: -2.1
+            }
+          ],
+          market_indicators: {
+            vix: 18.5,
+            btc_iv: 75.2
+          }
+        }
+
+        act(() => {
+          server.send({
+            type: 'performance_update',
+            timestamp: Date.now(),
+            data: performanceData
+          })
+        })
+
+        await waitFor(() => {
+          expect(result.current).toEqual(performanceData)
+        })
+      })
+    })
+
+    describe('useNewsWebSocket', () => {
+      it('should handle news updates', async () => {
+        wsClient.connect(WS_URL)
+        await server.connected
+
+        const { result } = renderHook(() => useNewsWebSocket())
+
+        const newsData = {
+          news_feed: [
+            {
+              id: 'news-1',
+              title: 'Bitcoin reaches new highs',
+              summary: 'Bitcoin price surged to $52,000',
+              source: 'CoinDesk',
+              timestamp: '2024-01-01T12:00:00Z',
+              is_critical: false,
+              relevance_score: 0.85
+            }
+          ]
+        }
+
+        act(() => {
+          server.send({
+            type: 'news_update',
+            timestamp: Date.now(),
+            data: newsData
+          })
+        })
+
+        await waitFor(() => {
+          expect(result.current).toEqual(newsData)
+        })
+      })
+    })
+
+    describe('useAIInsightsWebSocket', () => {
+      it('should handle AI insight updates', async () => {
+        wsClient.connect(WS_URL)
+        await server.connected
+
+        const { result } = renderHook(() => useAIInsightsWebSocket())
+
+        const insightData = {
+          insights: [
+            {
+              id: 'insight-1',
+              type: 'opportunity',
+              title: 'Volatility arbitrage opportunity',
+              description: 'Current implied volatility is trading below historical levels',
+              priority: 'high',
+              confidence: 0.85,
+              suggested_actions: ['Consider long volatility positions'],
+              acknowledged: false
+            }
+          ]
+        }
+
+        act(() => {
+          server.send({
+            type: 'ai_insight',
+            timestamp: Date.now(),
+            data: insightData
+          })
+        })
+
+        await waitFor(() => {
+          expect(result.current).toEqual(insightData)
+        })
+      })
+    })
+
+    describe('useRiskAlertsWebSocket', () => {
+      it('should handle risk alert updates', async () => {
+        wsClient.connect(WS_URL)
+        await server.connected
+
+        const { result } = renderHook(() => useRiskAlertsWebSocket())
+
+        const riskData = {
+          alerts: [
+            {
+              id: 'risk-1',
+              type: 'risk',
+              title: 'High portfolio concentration',
+              description: 'Portfolio has high concentration in BTC positions',
+              priority: 'medium',
+              threshold_breached: 'concentration_limit',
+              current_value: 0.75,
+              threshold_value: 0.6
+            }
+          ]
+        }
+
+        act(() => {
+          server.send({
+            type: 'risk_alert',
+            timestamp: Date.now(),
+            data: riskData
+          })
+        })
+
+        await waitFor(() => {
+          expect(result.current).toEqual(riskData)
+        })
+      })
+    })
+
+    describe('useDashboardWebSocket', () => {
+      it('should handle comprehensive dashboard updates', async () => {
+        wsClient.connect(WS_URL)
+        await server.connected
+
+        const onUpdate = jest.fn()
+        const { result } = renderHook(() => useDashboardWebSocket(onUpdate))
+
+        // Test portfolio update
+        act(() => {
+          server.send({
+            type: 'portfolio_update',
+            timestamp: Date.now(),
+            data: { total_value: 100000 }
+          })
+        })
+
+        await waitFor(() => {
+          expect(result.current.portfolio).toEqual({ total_value: 100000 })
+        })
+
+        expect(onUpdate).toHaveBeenCalledWith('portfolio_update', { total_value: 100000 })
+
+        // Test analytics update
+        act(() => {
+          server.send({
+            type: 'portfolio_analytics',
+            timestamp: Date.now(),
+            data: { annual_return: 12.5 }
+          })
+        })
+
+        await waitFor(() => {
+          expect(result.current.analytics).toEqual({ annual_return: 12.5 })
+        })
+
+        expect(onUpdate).toHaveBeenCalledWith('portfolio_analytics', { annual_return: 12.5 })
+
+        // Test news update
+        act(() => {
+          server.send({
+            type: 'news_update',
+            timestamp: Date.now(),
+            data: { news_feed: [] }
+          })
+        })
+
+        await waitFor(() => {
+          expect(result.current.news).toEqual({ news_feed: [] })
+        })
+
+        expect(onUpdate).toHaveBeenCalledWith('news_update', { news_feed: [] })
+
+        // Test AI insight update
+        act(() => {
+          server.send({
+            type: 'ai_insight',
+            timestamp: Date.now(),
+            data: { insights: [] }
+          })
+        })
+
+        await waitFor(() => {
+          expect(result.current.insights).toEqual({ insights: [] })
+        })
+
+        expect(onUpdate).toHaveBeenCalledWith('ai_insight', { insights: [] })
+      })
+
+      it('should handle all portfolio event types', async () => {
+        wsClient.connect(WS_URL)
+        await server.connected
+
+        const onUpdate = jest.fn()
+        renderHook(() => useDashboardWebSocket(onUpdate))
+
+        const portfolioEvents = [
+          'portfolio_update',
+          'portfolio_analytics', 
+          'performance_update',
+          'news_update',
+          'ai_insight',
+          'risk_alert'
+        ]
+
+        // Send message for each event type
+        for (const eventType of portfolioEvents) {
+          act(() => {
+            server.send({
+              type: eventType,
+              timestamp: Date.now(),
+              data: { test: `${eventType}_data` }
+            })
+          })
+        }
+
+        await waitFor(() => {
+          expect(onUpdate).toHaveBeenCalledTimes(portfolioEvents.length)
+        })
+
+        // Verify each event was handled
+        portfolioEvents.forEach(eventType => {
+          expect(onUpdate).toHaveBeenCalledWith(
+            eventType, 
+            { test: `${eventType}_data` }
+          )
+        })
+      })
+
+      it('should cleanup subscriptions on unmount', async () => {
+        wsClient.connect(WS_URL)
+        await server.connected
+
+        const { unmount } = renderHook(() => useDashboardWebSocket())
+
+        // Wait for initial subscriptions
+        await waitFor(() => {
+          expect(server.messages).toHaveLength(1)
+        })
+
+        // Unmount should clean up all subscriptions
+        unmount()
+
+        await waitFor(() => {
+          expect(server.messages).toHaveLength(2) // subscribe + unsubscribe
+        })
+
+        const unsubscribeMessage = server.messages[1]
+        expect(unsubscribeMessage.type).toBe('unsubscribe')
+        expect(unsubscribeMessage.events).toEqual([
+          'portfolio_update',
+          'portfolio_analytics', 
+          'performance_update',
+          'news_update',
+          'ai_insight',
+          'risk_alert'
+        ])
       })
     })
   })

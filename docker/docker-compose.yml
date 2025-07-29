@@ -27,6 +27,14 @@ services:
       - OPTION_STRIKE_RANGE=0.25
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - GLITCHTIP_DSN=${GLITCHTIP_DSN:-}
+      # Azure AD Authentication
+      - AUTH_AZURE_AD_CLIENT_ID=${AUTH_AZURE_AD_CLIENT_ID:-}
+      - AUTH_AZURE_AD_CLIENT_SECRET=${AUTH_AZURE_AD_CLIENT_SECRET:-}
+      - AUTH_AZURE_AD_TENANT_ID=${AUTH_AZURE_AD_TENANT_ID:-}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-development-secret-key-change-in-production}
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
+      # Set to 'true' to enable Azure AD, otherwise uses local development auth
+      - NEXT_PUBLIC_AZURE_AD_ENABLED=${NEXT_PUBLIC_AZURE_AD_ENABLED:-false}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000"]

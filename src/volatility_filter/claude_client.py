@@ -17,6 +17,7 @@ from anthropic import Anthropic, AsyncAnthropic
 from .chat_examples import ChatExamples
 from .finance_glossary import FinanceGlossary
 from .sql_agent import SQLAgent
+from .database import DatabaseManager
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +40,9 @@ class ClaudeClient:
         self.client = Anthropic(api_key=self.api_key)
         self.async_client = AsyncAnthropic(api_key=self.api_key)
 
-        # Initialize SQL agent
+        # Initialize SQL agent and database manager
         self.sql_agent = SQLAgent(db_path=db_path)
+        self.db_manager = DatabaseManager(db_path=db_path)
 
         # Build enhanced system prompt
         self.system_prompt = self._build_system_prompt()
@@ -246,7 +248,7 @@ Then I will execute it and provide the results.""",
 
             # First call - Claude may generate a SQL query
             response = await self.async_client.messages.create(
-                model="claude-3-5-sonnet-20240620",
+                model="claude-3-5-sonnet-20241022",
                 max_tokens=1000,
                 temperature=0.3,
                 system=self.system_prompt,
@@ -280,7 +282,7 @@ Then I will execute it and provide the results.""",
 
                 # Second call - Claude interprets results
                 final_response = await self.async_client.messages.create(
-                    model="claude-3-5-sonnet-20240620",
+                    model="claude-3-5-sonnet-20241022",
                     max_tokens=1500,
                     temperature=0.3,
                     system=self.system_prompt,
@@ -348,3 +350,167 @@ Then I will execute it and provide the results.""",
             )
 
         return suggestions
+
+    async def ask_with_history(
+        self,
+        question: str,
+        db_context: Dict[str, Any],
+        session_id: str,
+        user_id: Optional[str] = None,
+        conversation_id: Optional[int] = None,
+        parent_message_id: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """Ask Claude a question with conversation history tracking and SQL module saving."""
+        try:
+            # Create or get conversation
+            if not conversation_id:
+                conversation_data = {
+                    "session_id": session_id,
+                    "user_id": user_id,
+                    "title": question[:100] if len(question) > 100 else question,
+                    "use_case": "portfolio_analysis",
+                    "parent_message_id": parent_message_id,
+                }
+                conversation_id = self.db_manager.create_chat_conversation(conversation_data)
+            
+            # Store user message
+            user_message_id = self.db_manager.insert_chat_message({
+                "conversation_id": conversation_id,
+                "role": "user",
+                "content": question,
+                "metadata": {"session_id": session_id, "user_id": user_id},
+            })
+
+            # Get conversation history for context
+            conversation_history = self.db_manager.get_chat_messages(conversation_id, limit=10)
+            
+            # Convert to format expected by Claude
+            claude_history = []
+            for msg in conversation_history[:-1]:  # Exclude the just-added message
+                claude_history.append({
+                    "role": msg["role"],
+                    "content": msg["content"]
+                })
+
+            # Build context
+            context = self.create_conversation_context(db_context)
+
+            # Build messages
+            messages = []
+
+            # Add context as first user message
+            messages.append({
+                "role": "user",
+                "content": f"Here is the current portfolio and market data:\n\n{context}",
+            })
+
+            # Add conversation history if any
+            if claude_history:
+                messages.extend(claude_history)
+
+            # Add current question with SQL instruction
+            messages.append({
+                "role": "user",
+                "content": f"""{question}
+
+If you need specific data to answer this question, please generate a SQL query. Format it as:
+```sql
+SELECT ...
+```
+
+Then I will execute it and provide the results.""",
+            })
+
+            # First call - Claude may generate a SQL query
+            response = await self.async_client.messages.create(
+                model="claude-3-5-sonnet-20241022",
+                max_tokens=1000,
+                temperature=0.3,
+                system=self.system_prompt,
+                messages=messages,
+            )
+
+            initial_response = response.content[0].text
+            sql_query = None
+            sql_results = None
+            final_response = initial_response
+
+            # Check if Claude generated a SQL query
+            extracted_sql = self.extract_sql_query(initial_response)
+
+            if extracted_sql:
+                logger.info(f"Executing SQL query: {extracted_sql}")
+                sql_query = extracted_sql
+
+                # Execute the query
+                results = self.sql_agent.execute_query(sql_query)
+                sql_results = results
+
+                # Format results for Claude
+                formatted_results = self.sql_agent.format_results_for_llm(results)
+
+                # Add Claude's response with SQL to history
+                messages.append({"role": "assistant", "content": initial_response})
+
+                # Add query results
+                messages.append({
+                    "role": "user",
+                    "content": f"Query results:\n\n{formatted_results}\n\nNow please provide a complete answer based on these results.",
+                })
+
+                # Second call - Claude interprets results
+                final_response_obj = await self.async_client.messages.create(
+                    model="claude-3-5-sonnet-20241022",
+                    max_tokens=1500,
+                    temperature=0.3,
+                    system=self.system_prompt,
+                    messages=messages,
+                )
+
+                final_response = final_response_obj.content[0].text
+
+                # Save SQL module if query was successful
+                if results.get("success", False):
+                    try:
+                        import json
+                        self.db_manager.create_or_update_sql_module(
+                            sql_query=sql_query,
+                            message_id=user_message_id,
+                            conversation_id=conversation_id,
+                            execution_time_ms=results.get("execution_time_ms", 0),
+                            row_count=results.get("row_count", 0),
+                            query_results=json.dumps(results.get("data", [])[:10]) if results.get("data") else None,
+                        )
+                        logger.info(f"Saved SQL module for query: {sql_query[:50]}...")
+                    except Exception as e:
+                        logger.error(f"Failed to save SQL module: {e}")
+
+            # Store assistant message
+            assistant_message_id = self.db_manager.insert_chat_message({
+                "conversation_id": conversation_id,
+                "role": "assistant", 
+                "content": final_response,
+                "metadata": {"session_id": session_id},
+                "sql_query": sql_query,
+                "query_results": json.dumps(sql_results) if sql_results else None,
+                "context_snapshot": json.dumps(db_context),
+            })
+
+            # Get suggested questions for response
+            suggestions = self.get_suggested_questions(db_context)
+
+            return {
+                "response": final_response,
+                "timestamp": datetime.now().isoformat(),
+                "conversation_id": conversation_id,
+                "message_id": assistant_message_id,
+                "suggestions": suggestions[:4],  # Limit to 4 suggestions
+            }
+
+        except Exception as e:
+            logger.error(f"Error in ask_with_history: {e}")
+            return {
+                "response": f"Sorry, I encountered an error: {str(e)}",
+                "timestamp": datetime.now().isoformat(),
+                "error": "api_error",
+            }

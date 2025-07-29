@@ -1,61 +1,61 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { auth } from "@/lib/auth"
+import { NextResponse } from "next/server"
+import type { NextRequest } from "next/server"
 
 /**
- * Basic Authentication Middleware for Azure deployment
- * Only applies when AZURE_DEPLOYMENT environment variable is set
+ * Azure AD Authentication Middleware using NextAuth.js
+ * Provides enterprise-grade authentication with Azure Active Directory
  */
 
-const BASIC_AUTH_EMAIL = process.env.BASIC_AUTH_EMAIL || 'wojciech@elastics.ai'
-const BASIC_AUTH_PASSWORD = process.env.BASIC_AUTH_PASSWORD || 'demo123!'
-const AZURE_DEPLOYMENT = process.env.AZURE_DEPLOYMENT === 'true'
+export default auth((req) => {
+  const { pathname } = req.nextUrl
 
-function isValidCredentials(authorization: string): boolean {
-  try {
-    const encoded = authorization.replace('Basic ', '')
-    const decoded = Buffer.from(encoded, 'base64').toString('utf-8')
-    const [email, password] = decoded.split(':')
-    
-    return email === BASIC_AUTH_EMAIL && password === BASIC_AUTH_PASSWORD
-  } catch (error) {
-    return false
-  }
-}
-
-export function middleware(request: NextRequest) {
-  // Only apply basic auth for Azure deployment
-  if (!AZURE_DEPLOYMENT) {
-    return NextResponse.next()
-  }
-
-  // Skip auth for health check endpoints
-  const pathname = request.nextUrl.pathname
-  if (pathname === '/api/health' || pathname === '/health') {
-    return NextResponse.next()
-  }
-
-  // Skip auth for static assets and Next.js internals
+  // Allow access to auth pages, API routes, and static assets
   if (
-    pathname.startsWith('/_next/') ||
-    pathname.startsWith('/static/') ||
-    pathname.includes('.') && !pathname.endsWith('/') // files with extensions but not directories
+    pathname.startsWith("/auth/") ||
+    pathname.startsWith("/api/auth/") ||
+    pathname.startsWith("/_next/") ||
+    pathname.startsWith("/static/") ||
+    pathname === "/api/health" ||
+    pathname === "/health" ||
+    pathname === "/favicon.ico" ||
+    pathname.includes('.') && !pathname.endsWith('/') // files with extensions
   ) {
     return NextResponse.next()
   }
 
-  const authorization = request.headers.get('authorization')
+  // Check if user is authenticated
+  if (!req.auth) {
+    // Redirect to sign-in page with callback URL
+    const signInUrl = new URL("/auth/signin", req.url)
+    signInUrl.searchParams.set("callbackUrl", pathname)
+    return NextResponse.redirect(signInUrl)
+  }
 
-  if (!authorization || !isValidCredentials(authorization)) {
-    return new NextResponse('Authentication required for Elastics Terminal', {
-      status: 401,
-      headers: {
-        'WWW-Authenticate': 'Basic realm="Elastics Terminal - Use email: wojciech@elastics.ai"',
-        'Content-Type': 'text/plain'
-      }
+  // Optional: Add additional authorization checks here
+  // For example, check user roles or tenant permissions
+  const user = req.auth.user
+  if (user) {
+    // Add custom headers for downstream services
+    const requestHeaders = new Headers(req.headers)
+    requestHeaders.set('x-user-id', user.id || '')
+    requestHeaders.set('x-user-email', user.email || '')
+    requestHeaders.set('x-user-name', user.name || '')
+    
+    // Add tenant information if available
+    if ((req.auth as any).tenantId) {
+      requestHeaders.set('x-tenant-id', (req.auth as any).tenantId)
+    }
+
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
     })
   }
 
   return NextResponse.next()
-}
+})
 
 export const config = {
   matcher: [

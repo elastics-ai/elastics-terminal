@@ -15,15 +15,11 @@ const customJestConfig = {
   },
   testPathIgnorePatterns: ['/node_modules/', '/.next/', '/e2e/', '/tests/e2e/'],
   transformIgnorePatterns: [
-    'node_modules/(?!(react-markdown|remark|unified|bail|is-plain-obj|trough|vfile|unist-util-stringify-position|mdast-util-.*|micromark.*|decode-named-character-reference|character-entities|property-information|hast-util-whitespace|remark-.*|space-separated-tokens|comma-separated-tokens|pretty-bytes|ccount|@xyflow|react-plotly)/)',
+    'node_modules/(?!(react-markdown|remark.*|unified.*|bail|is-plain-obj|trough|vfile.*|unist-util-.*|mdast-util-.*|micromark.*|decode-named-character-reference|character-entities|property-information|hast-util-.*|space-separated-tokens|comma-separated-tokens|pretty-bytes|ccount|@xyflow|react-plotly|devlop|zwitch)/)',
   ],
   transform: {
-    '^.+\\.(js|jsx|ts|tsx|mjs)$': ['ts-jest', {
-      tsconfig: {
-        jsx: 'react',
-        allowJs: true
-      }
-    }]
+    '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest'],
+    '^.+\\.mjs$': 'babel-jest',
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'mjs'],
   collectCoverageFrom: [
