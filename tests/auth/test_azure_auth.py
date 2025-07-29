@@ -36,10 +36,10 @@ class TestAzureAuthService:
         service = AzureAuthService()
         
         assert service.has_azure_config is True
-        assert service.tenant_id == "test-client-id"
+        assert service.tenant_id == "test-tenant-id"
         assert service.client_id == "test-client-id" 
         assert service.client_secret == "test-client-secret"
-        assert service.authority == "https://login.microsoftonline.com/test-client-id"
+        assert service.authority == "https://login.microsoftonline.com/test-tenant-id"
         assert service.jwks_uri.startswith("https://login.microsoftonline.com/")
         assert service.jwks_client is not None
         assert service.credential is not None
