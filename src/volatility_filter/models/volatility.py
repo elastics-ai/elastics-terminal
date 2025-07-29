@@ -2,7 +2,7 @@
 
 from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List, Dict, Any
-from datetime import datetime
+from datetime import datetime as dt
 
 
 class VolatilityAlert(BaseModel):
@@ -47,7 +47,7 @@ class VolatilityEvent(BaseModel):
     volatility: Optional[float] = Field(None, description="Volatility value")
     threshold: Optional[float] = Field(None, description="Threshold value")
     details: Optional[Dict[str, Any]] = Field(None, description="Event details")
-    created_at: datetime = Field(default_factory=datetime.now)
+    created_at: dt = Field(default_factory=lambda: dt.now())
 
 
 class ImpliedVolData(BaseModel):
@@ -64,7 +64,7 @@ class ImpliedVolData(BaseModel):
     ask_iv: Optional[float] = Field(None, description="Ask implied volatility")
     volume: Optional[float] = Field(None, description="Trading volume")
     open_interest: Optional[float] = Field(None, description="Open interest")
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: dt = Field(default_factory=lambda: dt.now())
 
 
 class VolatilityCurve(BaseModel):
@@ -76,7 +76,7 @@ class VolatilityCurve(BaseModel):
     ttms: List[float] = Field(..., description="Time to maturities")
     ivs: List[float] = Field(..., description="Implied volatilities")
     spot_price: float = Field(..., description="Current spot price")
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: dt = Field(default_factory=lambda: dt.now())
     
     
 class VolatilitySmile(BaseModel):
@@ -91,4 +91,4 @@ class VolatilitySmile(BaseModel):
     spot_price: float = Field(..., description="Current spot price")
     atm_strike: float = Field(..., description="At-the-money strike")
     atm_iv: float = Field(..., description="At-the-money IV")
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: dt = Field(default_factory=lambda: dt.now())

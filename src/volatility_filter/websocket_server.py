@@ -57,6 +57,13 @@ class WebSocketBroadcastServer:
                         "iv_surface_update",
                         "option_volatility_event",
                         "vol_surface",
+                        "portfolio_update",
+                        "portfolio_analytics",
+                        "performance_update",
+                        "news_update",
+                        "ai_insight",
+                        "risk_alert",
+                        "position_update",
                     ],
                     "timestamp": int(time.time() * 1000),
                 }
@@ -100,6 +107,13 @@ class WebSocketBroadcastServer:
                     "iv_surface_update",
                     "option_volatility_event",
                     "vol_surface",
+                    "portfolio_update",
+                    "portfolio_analytics",
+                    "performance_update",
+                    "news_update",
+                    "ai_insight",
+                    "risk_alert",
+                    "position_update",
                     "all",
                 }
                 events = [e for e in events if e in valid_events]
@@ -399,6 +413,14 @@ class WebSocketBroadcastServer:
             "option_greeks_update": 0,
             "iv_surface_update": 0,
             "option_volatility_event": 0,
+            "vol_surface": 0,
+            "portfolio_update": 0,
+            "portfolio_analytics": 0,
+            "performance_update": 0,
+            "news_update": 0,
+            "ai_insight": 0,
+            "risk_alert": 0,
+            "position_update": 0,
             "all": 0,
         }
 
@@ -415,3 +437,75 @@ class WebSocketBroadcastServer:
             asyncio.run_coroutine_threadsafe(
                 self.broadcast_event("vol_surface", surface_data), self.loop
             )
+
+    # Portfolio-specific broadcast methods
+    def broadcast_portfolio_update(self, portfolio_data: Dict[str, Any]):
+        """Broadcast portfolio update with current positions and summary."""
+        if self.loop and self.running:
+            # Ensure datetime fields are serializable
+            self._serialize_datetime_fields(portfolio_data)
+            asyncio.run_coroutine_threadsafe(
+                self.broadcast_event("portfolio_update", portfolio_data), self.loop
+            )
+
+    def broadcast_portfolio_analytics(self, analytics_data: Dict[str, Any]):
+        """Broadcast portfolio analytics and risk metrics update."""
+        if self.loop and self.running:
+            self._serialize_datetime_fields(analytics_data)
+            asyncio.run_coroutine_threadsafe(
+                self.broadcast_event("portfolio_analytics", analytics_data), self.loop
+            )
+
+    def broadcast_performance_update(self, performance_data: Dict[str, Any]):
+        """Broadcast performance history and metrics update."""
+        if self.loop and self.running:
+            self._serialize_datetime_fields(performance_data)
+            asyncio.run_coroutine_threadsafe(
+                self.broadcast_event("performance_update", performance_data), self.loop
+            )
+
+    def broadcast_news_update(self, news_data: Dict[str, Any]):
+        """Broadcast news feed update."""
+        if self.loop and self.running:
+            self._serialize_datetime_fields(news_data)
+            asyncio.run_coroutine_threadsafe(
+                self.broadcast_event("news_update", news_data), self.loop
+            )
+
+    def broadcast_ai_insight(self, insight_data: Dict[str, Any]):
+        """Broadcast AI insight or suggestion."""
+        if self.loop and self.running:
+            self._serialize_datetime_fields(insight_data)
+            asyncio.run_coroutine_threadsafe(
+                self.broadcast_event("ai_insight", insight_data), self.loop
+            )
+
+    def broadcast_risk_alert(self, risk_data: Dict[str, Any]):
+        """Broadcast risk alert or threshold breach."""
+        if self.loop and self.running:
+            self._serialize_datetime_fields(risk_data)
+            asyncio.run_coroutine_threadsafe(
+                self.broadcast_event("risk_alert", risk_data), self.loop
+            )
+
+    def broadcast_position_update(self, position_data: Dict[str, Any]):
+        """Broadcast individual position update."""
+        if self.loop and self.running:
+            self._serialize_datetime_fields(position_data)
+            asyncio.run_coroutine_threadsafe(
+                self.broadcast_event("position_update", position_data), self.loop
+            )
+
+    def _serialize_datetime_fields(self, data: Dict[str, Any]):
+        """Recursively serialize datetime objects in data structure."""
+        for key, value in data.items():
+            if hasattr(value, 'isoformat'):
+                data[key] = value.isoformat()
+            elif isinstance(value, dict):
+                self._serialize_datetime_fields(value)
+            elif isinstance(value, list):
+                for i, item in enumerate(value):
+                    if hasattr(item, 'isoformat'):
+                        value[i] = item.isoformat()
+                    elif isinstance(item, dict):
+                        self._serialize_datetime_fields(item)

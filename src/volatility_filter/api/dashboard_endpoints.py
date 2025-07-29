@@ -15,7 +15,7 @@ from ..models.portfolio import (
 from ..services.portfolio_analytics import (
     PortfolioAnalyticsService, NewsService, AIInsightService
 )
-from ..database import get_db_connection
+from ..database import DatabaseManager
 
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
