@@ -1,0 +1,3 @@
+[submodule "elastics-options"]
+	path = elastics-options
+	url = https://github.com/elastics-ai/options
