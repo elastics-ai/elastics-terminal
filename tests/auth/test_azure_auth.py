@@ -263,7 +263,7 @@ class TestAzureAuthService:
         # Test various invalid formats
         assert service.extract_token_from_header("Token test-token") is None
         assert service.extract_token_from_header("Bearer") is None
-        assert service.extract_token_from_header("bearer test-token") is None  # case sensitive
+        assert service.extract_token_from_header("bearer test-token") == "test-token"  # case insensitive
         assert service.extract_token_from_header("") is None
         assert service.extract_token_from_header(None) is None
     
