@@ -147,8 +147,11 @@ class TestAuthenticationMiddleware:
     async def test_middleware_adds_user_headers(self, middleware, mock_azure_env_vars):
         """Test that middleware adds user information to request headers"""
         async def mock_call_next(request):
-            # Check that user headers were added
-            assert b"x-user-id" in [header[0] for header in request.headers.__dict__.get("_store", [])]
+            # Check that user headers were added (mock dict format)
+            assert "x-user-id" in request.headers
+            assert "x-user-email" in request.headers
+            assert "x-user-name" in request.headers
+            assert "x-tenant-id" in request.headers
             return JSONResponse({"message": "success"})
         
         valid_token = create_mock_jwt_token()
