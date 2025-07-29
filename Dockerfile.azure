@@ -1,0 +1,137 @@
+# Azure-optimized Dockerfile for Elastics Terminal
+# Multi-stage build optimized for Azure Container Apps
+
+# Stage 1: Build Next.js application
+FROM node:20-alpine AS frontend-builder
+
+WORKDIR /app
+
+# Copy package files
+COPY volatility-web/package*.json ./
+
+# Install dependencies (using legacy peer deps for React 19 compatibility)
+RUN npm install --legacy-peer-deps && npm install react-plotly.js plotly.js --save --legacy-peer-deps
+
+# Copy all source code and config files
+COPY volatility-web/ ./
+
+# Build the Next.js app for production
+RUN npm run build
+
+# Stage 2: Python backend with Next.js frontend (Azure optimized)
+FROM python:3.11-slim AS runtime
+
+WORKDIR /app
+
+# Install system dependencies (optimized for Azure)
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    curl \
+    gnupg2 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js 20 (matching the builder stage)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy Python requirements and elastics-options
+COPY requirements.txt .
+COPY volatility-web/requirements.txt ./web-requirements.txt
+COPY elastics-options/ ./elastics-options/
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r web-requirements.txt
+
+# Install additional Azure-specific dependencies
+RUN pip install --no-cache-dir \
+    azure-identity \
+    azure-keyvault-secrets \
+    azure-monitor-opentelemetry-exporter
+
+# Copy Python source code
+COPY src/ ./src/
+COPY scripts/ ./scripts/
+
+# Copy web app API server
+COPY volatility-web/api_server.py ./volatility-web/
+
+# Copy the standalone build from frontend builder
+COPY --from=frontend-builder /app/.next/standalone ./volatility-web/
+COPY --from=frontend-builder /app/.next/static ./volatility-web/.next/static
+COPY --from=frontend-builder /app/public ./volatility-web/public
+
+# Copy additional authentication middleware
+COPY azure/middleware/ ./volatility-web/middleware/ 2>/dev/null || true
+
+# Create necessary directories
+RUN mkdir -p /data /tmp
+
+# Create Azure-optimized startup script with basic auth
+RUN echo '#!/bin/bash\n\
+set -e\n\
+\n\
+echo "Starting Elastics Terminal on Azure Container Apps..."\n\
+\n\
+# Validate required environment variables\n\
+if [ -z "$BASIC_AUTH_EMAIL" ] || [ -z "$BASIC_AUTH_PASSWORD" ]; then\n\
+    echo "ERROR: Basic auth credentials not configured"\n\
+    exit 1\n\
+fi\n\
+\n\
+# Start WebSocket server in background\n\
+echo "Starting WebSocket server on port 8765..."\n\
+python scripts/run_combined_filter.py &\n\
+WEBSOCKET_PID=$!\n\
+\n\
+# Wait for WebSocket server to start\n\
+sleep 5\n\
+\n\
+# Start API server in background\n\
+echo "Starting API server on port 8000..."\n\
+(cd volatility-web && python api_server.py) &\n\
+API_PID=$!\n\
+\n\
+# Wait for API server to start\n\
+sleep 3\n\
+\n\
+# Start Next.js production server with basic auth\n\
+echo "Starting web app on port 3000 with basic authentication..."\n\
+(cd volatility-web && HOSTNAME=0.0.0.0 PORT=3000 node server.js) &\n\
+NEXTJS_PID=$!\n\
+\n\
+# Function to handle shutdown gracefully\n\
+shutdown() {\n\
+    echo "Shutting down services gracefully..."\n\
+    kill -TERM $WEBSOCKET_PID $API_PID $NEXTJS_PID 2>/dev/null\n\
+    wait $WEBSOCKET_PID $API_PID $NEXTJS_PID 2>/dev/null\n\
+    exit 0\n\
+}\n\
+\n\
+# Set up signal handlers for graceful shutdown\n\
+trap shutdown SIGTERM SIGINT\n\
+\n\
+# Wait for all processes\n\
+wait $WEBSOCKET_PID $API_PID $NEXTJS_PID\n\
+' > /app/start-azure.sh && chmod +x /app/start-azure.sh
+
+# Create volume for data persistence (Azure Files integration)
+VOLUME ["/data"]
+
+# Expose ports for Azure Container Apps
+EXPOSE 3000 8000 8765
+
+# Set environment variables for Azure
+ENV PYTHONUNBUFFERED=1
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV AZURE_DEPLOYMENT=true
+
+# Health check optimized for Azure Container Apps
+HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=3 \
+  CMD curl -f http://localhost:3000/api/health || exit 1
+
+# Run the Azure-optimized startup script
+CMD ["/app/start-azure.sh"]
