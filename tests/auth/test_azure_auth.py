@@ -93,7 +93,15 @@ class TestAzureAuthService:
         
         result = await service.validate_token("any-token")
         
-        assert result == MOCK_LOCAL_DEV_USER
+        # Compare all fields except timestamp which varies
+        expected = MOCK_LOCAL_DEV_USER.copy()
+        expected.pop('issued_at', None)
+        actual = result.copy()
+        actual.pop('issued_at', None)
+        
+        assert actual == expected
+        # Check timestamp is recent (within last 5 seconds)
+        assert abs(result['issued_at'] - int(time.time())) <= 5
         assert result['id'] == 'local-dev-user'
         assert result['email'] == 'wojciech@elastics.ai'
         assert result['name'] == 'Wojtek'
@@ -265,7 +273,15 @@ class TestAzureAuthService:
         
         result = service._get_local_dev_user()
         
-        assert result == MOCK_LOCAL_DEV_USER
+        # Compare all fields except timestamp which varies
+        expected = MOCK_LOCAL_DEV_USER.copy()
+        expected.pop('issued_at', None)
+        actual = result.copy()
+        actual.pop('issued_at', None)
+        
+        assert actual == expected
+        # Check timestamp is recent (within last 5 seconds)
+        assert abs(result['issued_at'] - int(time.time())) <= 5
         assert result['id'] == 'local-dev-user'
         assert result['email'] == 'wojciech@elastics.ai'
         assert result['roles'] == ['admin']
