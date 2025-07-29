@@ -31,7 +31,8 @@
       "Bash(docker exec:*)",
       "Bash(gh repo rename:*)",
       "Bash(git remote get-url:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git restore:*)"
     ],
     "deny": []
   }
