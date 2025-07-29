@@ -1,5 +1,5 @@
 # Core dependencies
--e ./elastics-options
+# -e ./elastics-options  # TODO: Fix submodule or integrate elastics-options directly
 websocket-client>=1.6.0
 websockets>=11.0
 pandas>=2.0.0
