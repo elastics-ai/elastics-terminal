@@ -116,8 +116,11 @@ class TestClaudeClient:
         assert client.api_key == "env-test-key"
 
     @pytest.mark.unit
-    def test_init_without_key_raises_error(self, mock_sql_agent):
+    def test_init_without_key_raises_error(self, mock_sql_agent, monkeypatch):
         """Test initialization without API key raises error."""
+        # Ensure no API key is available from environment
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+        
         with pytest.raises(ValueError, match="No API key provided"):
             ClaudeClient(db_path="test.db")
 
@@ -205,12 +208,15 @@ This will get all active positions."""
         ]
 
         # Setup mock to return different responses
+        first_future = asyncio.Future()
+        second_future = asyncio.Future()
+        first_future.set_result(first_response)
+        second_future.set_result(second_response)
+        
         mock_async_client.messages.create.side_effect = [
-            asyncio.Future(),
-            asyncio.Future(),
+            first_future,
+            second_future,
         ]
-        mock_async_client.messages.create.side_effect[0].set_result(first_response)
-        mock_async_client.messages.create.side_effect[1].set_result(second_response)
 
         client = ClaudeClient(api_key="test-key")
         response = await client.ask_async("Show me all my positions", db_context)
@@ -273,7 +279,7 @@ This will get all active positions."""
         assert "financial analysis assistant" in client.system_prompt
         assert "SQL database" in client.system_prompt
         assert "DATABASE SCHEMA" in client.system_prompt
-        assert "FINANCE GLOSSARY" in client.system_prompt
+        assert "OPTIONS TRADING GLOSSARY" in client.system_prompt
         assert "EXAMPLE INTERACTIONS" in client.system_prompt
         assert "RESPONSE GUIDELINES" in client.system_prompt
 
