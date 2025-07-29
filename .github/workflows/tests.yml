@@ -129,6 +129,6 @@ jobs:
         cd docker
         docker compose up -d
         sleep 10
-        curl -f http://localhost:8000/api/health || exit 1
-        curl -f http://localhost:3000 || exit 1
+        curl -f http://localhost:7000/api/health || exit 1
+        curl -f http://localhost:3001 || exit 1
         docker compose down
