@@ -60,8 +60,8 @@ class TestAuthenticationMiddleware:
             response = await middleware.dispatch(request, mock_call_next)
             
             assert response.status_code == 200
-            # Verify that get_current_user was not called
-            assert not hasattr(request.state, 'user')
+            # Verify that authentication was skipped (user remains None/unchanged)
+            assert request.state.user is None
     
     @pytest.mark.asyncio
     async def test_static_files_skip_auth(self, middleware):
