@@ -11,18 +11,18 @@ import time
 from unittest.mock import Mock, patch, AsyncMock
 from datetime import datetime
 
-from src.volatility_filter.websocket_server import WebSocketServer
+from src.volatility_filter.websocket_server import WebSocketBroadcastServer
 from src.volatility_filter.services.realtime_portfolio_service import RealtimePortfolioService
 from src.volatility_filter.models.portfolio import DashboardData, PortfolioSummary, Position
 
 
-class TestWebSocketServer:
+class TestWebSocketBroadcastServer:
     """Test WebSocket server functionality"""
     
     @pytest.fixture
     def server(self):
         """Create WebSocket server instance"""
-        return WebSocketServer(host="localhost", port=8765)
+        return WebSocketBroadcastServer(host="localhost", port=8765)
     
     @pytest.fixture
     def server_thread(self, server):
@@ -419,7 +419,7 @@ class TestWebSocketPortfolioIntegration:
         # This test requires actual services to be running
         # Skip if services are not available
         try:
-            websocket_server = WebSocketServer(host="localhost", port=8766)
+            websocket_server = WebSocketBroadcastServer(host="localhost", port=8766)
             
             # Start server in background
             server_task = asyncio.create_task(websocket_server.run_async())
@@ -474,7 +474,7 @@ class TestWebSocketPortfolioIntegration:
     
     def test_websocket_server_configuration(self):
         """Test WebSocket server configuration"""
-        server = WebSocketServer(host="0.0.0.0", port=8765)
+        server = WebSocketBroadcastServer(host="0.0.0.0", port=8765)
         
         assert server.host == "0.0.0.0"
         assert server.port == 8765
@@ -493,7 +493,7 @@ class TestWebSocketPortfolioIntegration:
     
     def test_client_management(self):
         """Test client connection management"""
-        server = WebSocketServer()
+        server = WebSocketBroadcastServer()
         
         # Mock websocket clients
         mock_client1 = Mock()
@@ -515,7 +515,7 @@ class TestWebSocketPortfolioIntegration:
     
     def test_subscription_management(self):
         """Test subscription management"""
-        server = WebSocketServer()
+        server = WebSocketBroadcastServer()
         
         # Add subscriptions
         server.subscriptions["client1"] = ["portfolio_update", "news_update"]

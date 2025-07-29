@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 from fastapi import FastAPI
 
 # Import the endpoint function and client
-from volatility_filter.api_server import get_polymarket_markets
+from src.volatility_filter.api_server import get_polymarket_markets
 from src.volatility_filter.polymarket_client import PolymarketClient
 
 
