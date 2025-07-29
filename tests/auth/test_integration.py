@@ -379,9 +379,10 @@ class TestFullApplicationFlow:
     })
     def test_user_profile_unauthenticated(self, full_client):
         """Test user profile endpoint without authentication"""
-        response = full_client.get("/api/user/profile")
-        
-        assert response.status_code == 401
+        with patch('src.volatility_filter.auth.azure_auth.azure_auth_service.has_azure_config', True):
+            response = full_client.get("/api/user/profile")
+            
+            assert response.status_code == 401
     
     def test_portfolio_with_user_role(self, full_client):
         """Test portfolio endpoint with User role"""
