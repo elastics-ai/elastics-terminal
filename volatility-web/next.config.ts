@@ -23,6 +23,11 @@ const nextConfig: NextConfig = {
   assetPrefix: undefined,
   // Enable production source maps for debugging
   productionBrowserSourceMaps: false,
+  // Skip static optimization during build
+  trailingSlash: false,
+  experimental: {
+    esmExternals: false,
+  },
 };
 
 export default nextConfig;
