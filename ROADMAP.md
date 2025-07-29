@@ -1,9 +1,9 @@
 # Volatility Filter Project Roadmap
 
 ## Project Overview
-A sophisticated cryptocurrency options volatility monitoring and trading system with real-time alerts, portfolio management, AI-powered analysis.
+A sophisticated cryptocurrency options volatility monitoring and trading system with real-time alerts, portfolio management, AI-powered analysis, and professional Bloomberg-style UI.
 
-## Current State (v.01)
+## Current State (v1.0)
 ### ✅ Completed Features
 - **Core Volatility Engine**
   - Real-time volatility filtering using AR models

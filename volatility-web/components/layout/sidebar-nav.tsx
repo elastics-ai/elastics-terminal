@@ -29,7 +29,7 @@ const navigation = [
   { name: 'Data Library', href: '/data-library', icon: Database },
   { name: 'Backtester', href: '/backtester', icon: Activity },
   { name: 'Markets', href: '/markets', icon: LayoutDashboard },
-  { name: 'Data', href: '/data', icon: Database },
+  { name: 'Data', href: '/elastics', icon: Database },
   { name: 'News', href: '/news', icon: FileText },
 ]
 
