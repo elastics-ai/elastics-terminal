@@ -81,27 +81,28 @@ export function ElasticsSidebar() {
 
   return (
     <div className={cn(
-      "flex flex-col h-full bg-white border-r border-gray-200 transition-all duration-300",
+      "flex flex-col h-full transition-all duration-300",
+      "bg-[hsl(var(--sidebar-bg))] border-r border-[hsl(var(--sidebar-border))]",
       isCollapsed ? "w-16" : "w-64"
     )}>
       {/* Header */}
-      <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
+      <div className="flex items-center justify-between h-16 px-4 border-b border-[hsl(var(--sidebar-border))]">
         {!isCollapsed && (
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-blue-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">E</span>
             </div>
-            <span className="font-semibold text-gray-900">Elastics</span>
+            <span className="font-semibold text-[hsl(var(--sidebar-text))]">Elastics</span>
           </div>
         )}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-1.5 hover:bg-[hsl(var(--sidebar-hover))] rounded-lg transition-colors"
         >
           {isCollapsed ? (
-            <ChevronRight className="w-4 h-4 text-gray-600" />
+            <ChevronRight className="w-4 h-4 text-[hsl(var(--sidebar-text))]" />
           ) : (
-            <ChevronLeft className="w-4 h-4 text-gray-600" />
+            <ChevronLeft className="w-4 h-4 text-[hsl(var(--sidebar-text))]" />
           )}
         </button>
       </div>
@@ -111,7 +112,7 @@ export function ElasticsSidebar() {
         {navSections.map((section) => (
           <div key={section.title} className="mb-6">
             {!isCollapsed && (
-              <h3 className="px-3 mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              <h3 className="px-3 mb-2 text-xs font-semibold text-[hsl(var(--sidebar-text))] opacity-60 uppercase tracking-wider">
                 {section.title}
               </h3>
             )}
@@ -128,13 +129,13 @@ export function ElasticsSidebar() {
                       className={cn(
                         "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors relative group",
                         isActive
-                          ? "bg-green-50 text-green-700"
-                          : "text-gray-700 hover:bg-gray-100"
+                          ? "bg-[hsl(var(--sidebar-active))] text-white"
+                          : "text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-hover))]"
                       )}
                     >
                       <Icon className={cn(
                         "w-5 h-5 flex-shrink-0",
-                        isActive ? "text-green-600" : "text-gray-500"
+                        isActive ? "text-white" : "text-[hsl(var(--sidebar-text))] opacity-80"
                       )} />
                       {!isCollapsed && (
                         <>
@@ -172,7 +173,7 @@ export function ElasticsSidebar() {
       </nav>
 
       {/* Bottom Navigation */}
-      <div className="border-t border-gray-200 py-3 px-3">
+      <div className="border-t border-[hsl(var(--sidebar-border))] py-3 px-3">
         {bottomNavItems.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
@@ -184,11 +185,11 @@ export function ElasticsSidebar() {
               className={cn(
                 "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors relative group",
                 isActive
-                  ? "bg-gray-100 text-gray-900"
-                  : "text-gray-700 hover:bg-gray-100"
+                  ? "bg-[hsl(var(--sidebar-hover))] text-[hsl(var(--sidebar-text))]"
+                  : "text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-hover))]"
               )}
             >
-              <Icon className="w-5 h-5 flex-shrink-0 text-gray-500" />
+              <Icon className="w-5 h-5 flex-shrink-0 text-[hsl(var(--sidebar-text))] opacity-80" />
               {!isCollapsed && (
                 <span className="text-sm font-medium">{item.name}</span>
               )}

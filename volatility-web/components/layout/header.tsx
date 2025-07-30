@@ -25,24 +25,24 @@ export function Header() {
   };
 
   return (
-    <header className="flex items-center justify-between h-16 px-6 border-b border-border bg-white">
+    <header className="flex items-center justify-between h-16 px-6 border-b border-border bg-background">
       <div>
         <h1 className="text-xl font-semibold">Portfolio Overview</h1>
       </div>
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2 text-sm">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-red-500"></span>
+            <span className="w-2 h-2 rounded-full bg-[hsl(var(--critical))]"></span>
             <span className="text-muted-foreground">Critical</span>
             <span className="status-badge status-critical">1</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+            <span className="w-2 h-2 rounded-full bg-[hsl(var(--warning))]"></span>
             <span className="text-muted-foreground">Warning</span>
             <span className="status-badge status-warning">4</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+            <span className="w-2 h-2 rounded-full bg-[hsl(var(--info))]"></span>
             <span className="text-muted-foreground">Info</span>
             <span className="status-badge status-info">14</span>
           </div>

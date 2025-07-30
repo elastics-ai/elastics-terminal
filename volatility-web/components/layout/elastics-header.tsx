@@ -18,10 +18,10 @@ interface StatusBadgeProps {
 
 function StatusBadge({ label, value, status }: StatusBadgeProps) {
   const statusColors = {
-    critical: 'text-red-600 bg-red-50',
-    warning: 'text-amber-600 bg-amber-50',
-    info: 'text-blue-600 bg-blue-50',
-    success: 'text-green-600 bg-green-50',
+    critical: 'text-[hsl(var(--critical))] bg-[hsl(var(--critical-soft))]',
+    warning: 'text-[hsl(var(--warning))] bg-[hsl(var(--warning-soft))]',
+    info: 'text-[hsl(var(--info))] bg-[hsl(var(--info-soft))]',
+    success: 'text-[hsl(var(--success))] bg-[hsl(var(--success-soft))]',
   }
 
   const statusIcons = {

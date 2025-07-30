@@ -14,6 +14,11 @@ const customJestConfig = {
     '^react-markdown$': '<rootDir>/__mocks__/react-markdown.js',
     '^next-auth$': '<rootDir>/__mocks__/next-auth.js',
     '^next-auth/react$': '<rootDir>/__mocks__/next-auth-react.js',
+    '^plotly.js-dist-min$': '<rootDir>/__mocks__/plotly.js',
+    '^react-plotly.js$': '<rootDir>/__mocks__/react-plotly.js',
+    '^three$': '<rootDir>/__mocks__/three.js',
+    '^three/examples/jsm/(.*)$': '<rootDir>/__mocks__/three-jsm.js',
+    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
   },
   testPathIgnorePatterns: ['/node_modules/', '/.next/', '/e2e/', '/tests/e2e/'],
   transformIgnorePatterns: [

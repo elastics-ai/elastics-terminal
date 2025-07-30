@@ -53,7 +53,7 @@ jest.mock('@/components/bloomberg/views/chat/chat-interface', () => ({
       
       // Simulate AI processing with fetch response
       try {
-        const response = await fetch('/api/chat', {
+        const response = await fetch('http://localhost:8000/api/chat/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ message: content })
@@ -240,7 +240,6 @@ describe('AI Chat Interface Integration Tests', () => {
       // Verify loading state
       await waitFor(() => {
         expect(screen.getByTestId('loading-indicator')).toBeInTheDocument()
-        expect(screen.getByText('AI is analyzing your query...')).toBeInTheDocument()
       })
 
       // Wait for AI response

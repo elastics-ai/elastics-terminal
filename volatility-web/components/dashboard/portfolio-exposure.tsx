@@ -4,12 +4,12 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 
 const data = [
   { name: 'Crypto', value: 50, color: 'hsl(var(--chart-primary))' },
-  { name: 'Equities', value: 20, color: '#9ca3af' },
-  { name: 'Fixed Income', value: 15, color: '#cbd5e1' },
-  { name: 'Derivatives', value: 15, color: '#a1a1aa' },
-  { name: 'Pred. Markets', value: 15, color: '#a5b4fc' },
-  { name: 'Commodities', value: 10, color: '#d4d4d8' },
-  { name: 'Cash', value: 5, color: '#e5e7eb' },
+  { name: 'Equities', value: 20, color: 'hsl(var(--chart-secondary))' },
+  { name: 'Fixed Income', value: 15, color: 'hsl(var(--chart-tertiary))' },
+  { name: 'Derivatives', value: 15, color: 'hsl(var(--chart-quaternary))' },
+  { name: 'Pred. Markets', value: 15, color: 'hsl(var(--chart-portfolio-1))' },
+  { name: 'Commodities', value: 10, color: 'hsl(var(--chart-portfolio-2))' },
+  { name: 'Cash', value: 5, color: 'hsl(var(--chart-portfolio-3))' },
 ]
 
 export function PortfolioExposure() {

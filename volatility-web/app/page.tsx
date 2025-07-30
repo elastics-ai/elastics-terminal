@@ -152,7 +152,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <AppLayout>
-        <div className="p-6 bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="p-6 bg-background min-h-screen flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Loading dashboard...</p>
@@ -165,7 +165,7 @@ export default function DashboardPage() {
   if (error && !dashboardData) {
     return (
       <AppLayout>
-        <div className="p-6 bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="p-6 bg-background min-h-screen flex items-center justify-center">
           <div className="text-center">
             <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
             <p className="text-red-600 mb-4">Error loading dashboard: {error}</p>
@@ -262,11 +262,11 @@ export default function DashboardPage() {
 
   return (
     <AppLayout>
-      <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="p-6 bg-background min-h-screen">
         {/* Portfolio Overview Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-xl font-normal text-gray-900">Portfolio Overview</h1>
+            <h1 className="text-xl font-normal text-foreground">Portfolio Overview</h1>
             
             {/* Real-time Status Indicator */}
             <div className="flex items-center gap-3 text-sm">
@@ -416,7 +416,7 @@ export default function DashboardPage() {
                     <div 
                       key={insight.id}
                       className={`p-4 rounded-lg border ${
-                        insight.acknowledged ? 'bg-gray-50 border-gray-200' : 'bg-white border-blue-200'
+                        insight.acknowledged ? 'bg-background border-gray-200' : 'bg-white border-blue-200'
                       }`}
                     >
                       <div className="flex items-start justify-between">

@@ -43,10 +43,10 @@ export function SidebarNav() {
   const pathname = usePathname()
 
   return (
-    <div className="flex h-full w-[200px] flex-col bg-[hsl(var(--sidebar-bg))] border-r border-border">
+    <div className="flex h-full w-[200px] flex-col border-r border-[hsl(var(--sidebar-border))]" style={{ backgroundColor: 'hsl(var(--sidebar-bg))' }}>
       {/* Logo */}
-      <div className="flex h-14 items-center px-4 border-b border-border">
-        <span className="text-xl font-semibold text-foreground">Elastics</span>
+      <div className="flex h-14 items-center px-4 border-b border-[hsl(var(--sidebar-border))]">
+        <span className="text-xl font-semibold text-[hsl(var(--sidebar-text))]">Elastics</span>
       </div>
 
       {/* Main Navigation */}
@@ -62,8 +62,8 @@ export function SidebarNav() {
               className={cn(
                 'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-black text-white'
-                  : 'text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-foreground'
+                  ? 'bg-[hsl(var(--sidebar-active))] text-white'
+                  : 'text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-white'
               )}
             >
               <item.icon className="h-4 w-4 flex-shrink-0" />
@@ -74,7 +74,7 @@ export function SidebarNav() {
       </nav>
 
       {/* Bottom Navigation */}
-      <div className="border-t border-border px-2 py-4 space-y-1">
+      <div className="border-t border-[hsl(var(--sidebar-border))] px-2 py-4 space-y-1">
         {bottomNavigation.map((item) => {
           const isActive = pathname === item.href
           
@@ -85,8 +85,8 @@ export function SidebarNav() {
               className={cn(
                 'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-black text-white'
-                  : 'text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-foreground'
+                  ? 'bg-[hsl(var(--sidebar-active))] text-white'
+                  : 'text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-white'
               )}
             >
               <item.icon className="h-4 w-4 flex-shrink-0" />
@@ -97,15 +97,15 @@ export function SidebarNav() {
       </div>
 
       {/* User Profile */}
-      <div className="border-t border-border p-4">
+      <div className="border-t border-[hsl(var(--sidebar-border))] p-4">
         <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center">
-            <span className="text-xs font-medium text-primary">S</span>
+          <div className="h-8 w-8 rounded-full bg-[hsl(var(--sidebar-active))]/20 flex items-center justify-center">
+            <span className="text-xs font-medium text-[hsl(var(--sidebar-active))]">S</span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground truncate">Szymon</p>
-            <p className="text-xs text-muted-foreground truncate">szymon@pavlizacapital.com</p>
-            <p className="text-xs text-muted-foreground">Pavliza Capital</p>
+            <p className="text-sm font-medium text-[hsl(var(--sidebar-text))] truncate">Szymon</p>
+            <p className="text-xs text-[hsl(var(--sidebar-text))]/70 truncate">szymon@pavlizacapital.com</p>
+            <p className="text-xs text-[hsl(var(--sidebar-text))]/70">Pavliza Capital</p>
           </div>
         </div>
       </div>
