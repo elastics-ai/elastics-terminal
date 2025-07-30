@@ -843,9 +843,9 @@ describe('Modules System Integration Tests', () => {
         expect(screen.getByTestId('module-tile-1')).toBeInTheDocument()
       })
 
-      // Check module statistics display
-      expect(screen.getByTestId('execution-count')).toHaveTextContent('45 runs')
-      expect(screen.getByTestId('avg-time')).toHaveTextContent('234ms avg')
+      // Check module statistics display (first module)
+      expect(screen.getAllByTestId('execution-count')[0]).toHaveTextContent('45 runs')
+      expect(screen.getAllByTestId('avg-time')[0]).toHaveTextContent('234ms avg')
 
       // Toggle favorite
       const favoriteButton = screen.getAllByTestId('favorite-button')[0]
