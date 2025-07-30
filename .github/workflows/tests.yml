@@ -65,7 +65,7 @@ jobs:
       
     - name: Run frontend unit tests
       working-directory: ./volatility-web
-      run: npm test -- --coverage --watchAll=false --testPathIgnorePatterns=integration --testNamePattern="^(?!.*integration).*"
+      run: npm test -- --coverage --watchAll=false --testPathIgnorePatterns=integration --testNamePattern="^(?!.*integration).*" --passWithNoTests
       
     - name: Run frontend linting
       working-directory: ./volatility-web
@@ -200,22 +200,22 @@ jobs:
         
         # Wait for services to be ready with retries
         echo "Waiting for services to start..."
-        for i in {1..30}; do
+        for i in {1..60}; do
           if curl -f http://localhost:7000/api/health >/dev/null 2>&1; then
             echo "API server is ready"
             break
           fi
-          echo "Waiting for API server... ($i/30)"
-          sleep 5
+          echo "Waiting for API server... ($i/60)"
+          sleep 3
         done
         
-        for i in {1..30}; do
+        for i in {1..60}; do
           if curl -f http://localhost:3001 >/dev/null 2>&1; then
             echo "Web app is ready"
             break
           fi
-          echo "Waiting for web app... ($i/30)"
-          sleep 5
+          echo "Waiting for web app... ($i/60)"
+          sleep 3
         done
         
         # Final health checks

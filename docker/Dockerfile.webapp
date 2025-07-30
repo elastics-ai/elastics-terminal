@@ -98,7 +98,7 @@ else\n\
 fi\n\
 \n\
 # Wait for WebSocket server to start\n\
-sleep 5\n\
+sleep 3\n\
 \n\
 # Start API server in background\n\
 echo "Starting API server on port 8000..."\n\
@@ -114,17 +114,17 @@ else\n\
 fi\n\
 \n\
 # Wait for API server to start\n\
-sleep 5\n\
+sleep 3\n\
 \n\
 # Verify API server is responding\n\
 echo "Checking API server health..."\n\
-for i in {1..10}; do\n\
+for i in {1..5}; do\n\
     if curl -f http://localhost:8000/api/health >/dev/null 2>&1; then\n\
         echo "API server is responding"\n\
         break\n\
     fi\n\
-    echo "Waiting for API server... ($i/10)"\n\
-    sleep 2\n\
+    echo "Waiting for API server... ($i/5)"\n\
+    sleep 1\n\
 done\n\
 \n\
 # Start Next.js production server using the standalone server\n\
@@ -141,7 +141,7 @@ else\n\
 fi\n\
 \n\
 # Wait a bit then verify all services\n\
-sleep 5\n\
+sleep 2\n\
 echo "All services started successfully"\n\
 \n\
 # Wait for all processes\n\
