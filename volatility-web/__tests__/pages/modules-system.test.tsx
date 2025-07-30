@@ -20,10 +20,7 @@ import { useRouter } from 'next/navigation'
 import ModulesPage from '@/app/modules/page'
 import { modulesAPI } from '@/lib/api'
 
-// Mock next/navigation
-jest.mock('next/navigation', () => ({
-  useRouter: jest.fn()
-}))
+// Use global router mock from jest.setup.js
 
 // Mock the API
 jest.mock('@/lib/api', () => ({
@@ -254,7 +251,6 @@ jest.mock('@/components/modules/ModuleDetail', () => ({
 
 describe('Modules System E2E Tests', () => {
   let queryClient: QueryClient
-  let mockRouter: any
 
   beforeEach(() => {
     queryClient = new QueryClient({
@@ -263,13 +259,6 @@ describe('Modules System E2E Tests', () => {
         mutations: { retry: false }
       }
     })
-    
-    mockRouter = {
-      push: jest.fn(),
-      replace: jest.fn(),
-      back: jest.fn()
-    }
-    ;(useRouter as jest.Mock).mockReturnValue(mockRouter)
     
     // Reset API mocks
     ;(modulesAPI.getModules as jest.Mock).mockClear()
@@ -760,8 +749,8 @@ describe('Modules System E2E Tests', () => {
       )
     })
 
-    it.skip('should disable pagination buttons appropriately', async () => {
-      // Skipping - pagination component not implemented yet
+    it('should disable pagination buttons appropriately', async () => {
+      // Testing pagination component behavior
       renderModulesPage()
 
       await waitFor(() => {

@@ -20,10 +20,7 @@ import { useRouter } from 'next/navigation'
 import ChatPage from '@/app/chat/page'
 import { chatAPI } from '@/lib/api'
 
-// Mock next/navigation
-jest.mock('next/navigation', () => ({
-  useRouter: jest.fn()
-}))
+// Use global router mock from jest.setup.js
 
 // Mock the API
 jest.mock('@/lib/api', () => ({

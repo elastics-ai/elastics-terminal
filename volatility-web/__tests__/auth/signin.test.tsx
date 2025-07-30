@@ -16,10 +16,9 @@ import {
 } from '@/lib/test-fixtures/auth-fixtures'
 
 // Mock Next.js navigation
-jest.mock('next/navigation', () => ({
-  useRouter: jest.fn(),
-  useSearchParams: jest.fn()
-}))
+jest.mock('next/navigation', () => 
+  require('@/test-utils/router-mock').standardRouterMock
+)
 
 // Mock NextAuth
 jest.mock('next-auth/react', () => ({
