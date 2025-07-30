@@ -64,7 +64,7 @@ describe('ChatInterface', () => {
   test('displays input field and submit button', () => {
     renderComponent()
     
-    expect(screen.getByPlaceholderText(/ask about your portfolio/i)).toBeInTheDocument()
+    expect(screen.getByPlaceholderText(/ask anything/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /send/i })).toBeInTheDocument()
   })
 
@@ -77,7 +77,7 @@ describe('ChatInterface', () => {
 
     renderComponent()
     
-    const input = screen.getByPlaceholderText(/ask about your portfolio/i)
+    const input = screen.getByPlaceholderText(/ask anything/i)
     const submitButton = screen.getByRole('button', { name: /send/i })
 
     await user.type(input, 'What is my P&L?')
@@ -96,7 +96,7 @@ describe('ChatInterface', () => {
 
     renderComponent()
     
-    const input = screen.getByPlaceholderText(/ask about your portfolio/i) as HTMLInputElement
+    const input = screen.getByPlaceholderText(/ask anything/i) as HTMLInputElement
     
     await user.type(input, 'Test message')
     expect(input.value).toBe('Test message')
@@ -117,7 +117,7 @@ describe('ChatInterface', () => {
 
     renderComponent()
     
-    const input = screen.getByPlaceholderText(/ask about your portfolio/i)
+    const input = screen.getByPlaceholderText(/ask anything/i)
     await user.type(input, 'Test message')
     await user.click(screen.getByRole('button', { name: /send/i }))
 
@@ -134,7 +134,7 @@ describe('ChatInterface', () => {
 
     renderComponent()
     
-    const input = screen.getByPlaceholderText(/ask about your portfolio/i)
+    const input = screen.getByPlaceholderText(/ask anything/i)
     await user.type(input, 'Test message')
     await user.click(screen.getByRole('button', { name: /send/i }))
 
@@ -205,7 +205,7 @@ describe('ChatInterface', () => {
 
     renderComponent()
     
-    const input = screen.getByPlaceholderText(/ask about your portfolio/i)
+    const input = screen.getByPlaceholderText(/ask anything/i)
     const button = screen.getByRole('button', { name: /send/i })
     
     await user.type(input, 'Test message')
