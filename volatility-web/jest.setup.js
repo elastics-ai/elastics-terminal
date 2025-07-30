@@ -15,9 +15,9 @@ export const createTestQueryClient = () => new QueryClient({
       refetchOnMount: false,
       refetchOnReconnect: false,
       staleTime: 0,
-      cacheTime: 0,
+      gcTime: 0, // Updated from cacheTime to gcTime for React Query v5
       suspense: false,
-      useErrorBoundary: false,
+      throwOnError: false, // Updated from useErrorBoundary for React Query v5
     },
     mutations: {
       retry: false,
