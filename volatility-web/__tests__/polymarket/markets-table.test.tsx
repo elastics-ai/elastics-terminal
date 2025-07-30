@@ -128,9 +128,8 @@ describe('MarketsTable', () => {
     expect(screen.getByText('CLOSED')).toBeInTheDocument()
   })
 
-  it.skip('renders error state when API call fails', async () => {
-    // This test is flaky due to React Query retry logic
-    // Skipping for now to continue CI fixes
+  it('renders error state when API call fails', async () => {
+    // Fixed React Query retry logic
     const errorMessage = 'Network error'
     mockPolymarketAPI.getMarkets.mockRejectedValue(new Error(errorMessage))
 
@@ -138,10 +137,16 @@ describe('MarketsTable', () => {
       <MarketsTable searchTerm="" onSelectMarket={mockOnSelectMarket} />
     )
 
+    // First wait for loading to appear, then wait for error
+    await waitFor(() => {
+      expect(screen.getByText('Loading...')).toBeInTheDocument()
+    })
+    
+    // Then wait for loading to finish and error to appear
     await waitFor(() => {
       expect(screen.getByText(/Error loading markets/)).toBeInTheDocument()
       expect(screen.getByText(/Network error/)).toBeInTheDocument()
-    })
+    }, { timeout: 5000 })
   })
 
   it('calls onSelectMarket when a market row is clicked', async () => {
@@ -225,9 +230,8 @@ describe('MarketsTable', () => {
     expect(mockPolymarketAPI.getMarkets).toHaveBeenCalledTimes(3)
   })
 
-  it.skip('applies correct styling classes for unified theme', async () => {
-    // This test is flaky due to React Query timeout issues  
-    // Skipping for now to continue CI fixes
+  it('applies correct styling classes for unified theme', async () => {
+    // Fixed React Query timeout issues
     mockPolymarketAPI.getMarkets.mockResolvedValue(mockMarketsResponse)
 
     renderWithQueryClient(
@@ -237,6 +241,6 @@ describe('MarketsTable', () => {
     await waitFor(() => {
       const tableContainer = screen.getByText('ACTIVE MARKETS').closest('div')
       expect(tableContainer).toHaveClass('border', 'border-border', 'rounded-lg')
-    })
+    }, { timeout: 3000 })
   })
 })
