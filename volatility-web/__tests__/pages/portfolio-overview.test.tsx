@@ -15,6 +15,7 @@ import React from 'react'
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import HomePage from '../../app/page'
+import { FloatingChatProvider } from '@/contexts/FloatingChatContext'
 import '@testing-library/jest-dom'
 
 // Mock chart libraries to avoid canvas rendering issues in tests
@@ -45,7 +46,9 @@ const renderWithQueryClient = (component: React.ReactElement) => {
   const queryClient = createTestQueryClient()
   return render(
     <QueryClientProvider client={queryClient}>
-      {component}
+      <FloatingChatProvider>
+        {component}
+      </FloatingChatProvider>
     </QueryClientProvider>
   )
 }
