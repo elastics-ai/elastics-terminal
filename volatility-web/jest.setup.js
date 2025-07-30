@@ -64,3 +64,19 @@ global.ResizeObserver = class ResizeObserver {
 
 // Mock Element.scrollIntoView
 Element.prototype.scrollIntoView = jest.fn()
+
+// Mock WebSocket hooks
+jest.mock('@/lib/websocket', () => ({
+  ...jest.requireActual('@/lib/websocket'),
+  useWebSocketConnection: jest.fn(() => false), // Mock as disconnected by default
+  useDashboardWebSocket: jest.fn(() => ({})),
+  usePortfolioAnalyticsWebSocket: jest.fn(() => null),
+  useNewsWebSocket: jest.fn(() => null),
+  useAIInsightsWebSocket: jest.fn(() => null),
+  wsClient: {
+    connect: jest.fn(),
+    disconnect: jest.fn(),
+    subscribe: jest.fn(() => jest.fn()), // Return unsubscribe function
+    isConnected: jest.fn(() => false)
+  }
+}))
