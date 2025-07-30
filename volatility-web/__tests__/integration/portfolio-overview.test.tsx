@@ -163,8 +163,8 @@ describe('Portfolio Overview Integration Tests', () => {
       await waitFor(() => {
         // Portfolio metrics
         expect(screen.getByText('$2,540,300')).toBeInTheDocument()
-        expect(screen.getByText('+$91,024')).toBeInTheDocument()
-        expect(screen.getByText('+5.9%')).toBeInTheDocument()
+        expect(screen.getAllByText(/\+\$91,024(\.\d+)?/)).toHaveLength(2) // Portfolio Value and P&L
+        expect(screen.getAllByText('+5.9%')).toHaveLength(2) // Portfolio and cumulative return
         expect(screen.getByText('+14.2%')).toBeInTheDocument()
         
         // Risk metrics
@@ -552,8 +552,8 @@ describe('Portfolio Overview Integration Tests', () => {
       await waitFor(() => {
         // Verify numeric formatting
         expect(screen.getByText('$2,540,300')).toBeInTheDocument() // Formatted with commas
-        expect(screen.getByText('+$91,024')).toBeInTheDocument() // Positive sign and formatting
-        expect(screen.getByText('+5.9%')).toBeInTheDocument() // Percentage with + sign
+        expect(screen.getAllByText(/\+\$91,024(\.\d+)?/)).toHaveLength(2) // Portfolio Value and P&L with positive sign and formatting
+        expect(screen.getAllByText('+5.9%')).toHaveLength(2) // Portfolio and cumulative return // Percentage with + sign
         expect(screen.getByText('-8.5%')).toBeInTheDocument() // Negative drawdown
       })
     })
@@ -577,7 +577,7 @@ describe('Portfolio Overview Integration Tests', () => {
 
       await waitFor(() => {
         expect(screen.getByText('$2,540,300')).toBeInTheDocument()
-        expect(screen.getByText('+$91,024')).toBeInTheDocument()
+        expect(screen.getAllByText(/\+\$91,024(\.\d+)?/)).toHaveLength(2) // Portfolio Value and P&L
       })
     })
 
