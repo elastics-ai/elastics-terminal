@@ -37,6 +37,7 @@ jest.mock('@/lib/api', () => ({
 jest.mock('@/components/bloomberg/views/chat/chat-interface', () => ({
   ChatInterface: ({ messages, onSendMessage, onSuggestionClick, setMessages }: any) => {
     const [input, setInput] = React.useState('')
+    const [isLoading, setIsLoading] = React.useState(false)
     
     return (
       <div data-testid="chat-interface">
@@ -47,6 +48,11 @@ jest.mock('@/components/bloomberg/views/chat/chat-interface', () => ({
               <div data-testid="message-timestamp">{msg.timestamp.toISOString()}</div>
             </div>
           ))}
+          {isLoading && (
+            <div data-testid="loading-indicator">
+              <span>AI is thinking...</span>
+            </div>
+          )}
         </div>
         
         {/* Multi-query interface based on design */}
@@ -66,18 +72,45 @@ jest.mock('@/components/bloomberg/views/chat/chat-interface', () => ({
             />
             <button 
               data-testid="submit-query"
-              onClick={() => {
+              onClick={async () => {
                 if (input.trim()) {
                   const content = input.trim()
                   onSendMessage(content)
                   setInput('')
-                  // Call the API mock like the real component
+                  setIsLoading(true)
+                  
+                  // Call the API mock like the real component and handle response
                   const { chatAPI } = require('@/lib/api')
-                  chatAPI.sendMessage({
-                    content,
-                    session_id: `session_${Date.now()}`,
-                    conversation_id: undefined,
-                  })
+                  try {
+                    const response = await chatAPI.sendMessage({
+                      content,
+                      session_id: `session_${Date.now()}`,
+                      conversation_id: undefined,
+                    })
+                    
+                    // Add the assistant response to messages
+                    if (response && response.response) {
+                      const assistantMessage = {
+                        id: Date.now().toString(),
+                        role: 'assistant' as const,
+                        content: response.response,
+                        timestamp: new Date(response.timestamp || new Date().toISOString())
+                      }
+                      setMessages(prev => [...prev, assistantMessage])
+                    }
+                  } catch (error) {
+                    console.error('Mock API error:', error)
+                    // Add error message to UI
+                    const errorMessage = {
+                      id: Date.now().toString(),
+                      role: 'system' as const,
+                      content: `Error: ${error.message}`,
+                      timestamp: new Date()
+                    }
+                    setMessages(prev => [...prev, errorMessage])
+                  } finally {
+                    setIsLoading(false)
+                  }
                 }
               }}
             >
@@ -96,16 +129,31 @@ jest.mock('@/components/bloomberg/views/chat/chat-interface', () => ({
           <h3>Suggested Questions</h3>
           <button 
             data-testid="suggestion-historical-data"
-            onClick={() => {
+            onClick={async () => {
               const suggestion = "Where should I source the data from? Binance, Hyperliquid or static data from the library?"
               onSuggestionClick?.(suggestion)
-              // Call the API mock like the real component
+              // Call the API mock like the real component and handle response
               const { chatAPI } = require('@/lib/api')
-              chatAPI.sendMessage({
-                content: suggestion,
-                session_id: `session_${Date.now()}`,
-                conversation_id: undefined,
-              })
+              try {
+                const response = await chatAPI.sendMessage({
+                  content: suggestion,
+                  session_id: `session_${Date.now()}`,
+                  conversation_id: undefined,
+                })
+                
+                // Add the assistant response to messages
+                if (response && response.response) {
+                  const assistantMessage = {
+                    id: Date.now().toString(),
+                    role: 'assistant' as const,
+                    content: response.response,
+                    timestamp: new Date(response.timestamp || new Date().toISOString())
+                  }
+                  setMessages(prev => [...prev, assistantMessage])
+                }
+              } catch (error) {
+                console.error('Mock API error:', error)
+              }
             }}
           >
             Where should I source the data from? Binance, Hyperliquid or static data from the library?
