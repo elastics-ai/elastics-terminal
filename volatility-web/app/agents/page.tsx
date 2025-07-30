@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useCallback } from 'react'
+import React, { useState } from 'react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -20,10 +20,7 @@ import {
   Upload,
   Download,
   Search,
-  Code,
-  Database,
-  TrendingUp,
-  AlertCircle
+  Code
 } from 'lucide-react'
 
 interface Agent {

@@ -30,8 +30,12 @@ jobs:
       run: |
         python3 -m pip install --upgrade pip
         pip3 install -r requirements.txt
+        # Install the package in development mode to fix import issues
+        pip3 install -e .
         
     - name: Run Python tests
+      env:
+        PYTHONPATH: ${{ github.workspace }}/src:${{ github.workspace }}
       run: |
         python3 -m pytest tests/ -v --cov=src --cov-report=xml --cov-report=term -m 'not e2e'
         
@@ -129,13 +133,28 @@ jobs:
       run: |
         python3 -m pip install --upgrade pip
         pip3 install -r requirements.txt
+        # Install the package in development mode to fix import issues
+        pip3 install -e .
+        
+    - name: Wait for mock server
+      run: |
+        echo "Waiting for mock server to be ready..."
+        for i in {1..30}; do
+          if curl -f http://localhost:1080/mockserver/status >/dev/null 2>&1; then
+            echo "Mock server is ready"
+            break
+          fi
+          echo "Waiting for mock server... ($i/30)"
+          sleep 2
+        done
         
     - name: Run integration tests
       env:
         ANTHROPIC_API_KEY: mock-test-key
         MOCK_SERVER_URL: http://localhost:1080
+        PYTHONPATH: ${{ github.workspace }}/src:${{ github.workspace }}
       run: |
-        python3 -m pytest tests/ -v -m e2e
+        python3 -m pytest tests/ -v -m e2e --tb=short
         
   docker-build:
     runs-on: ubuntu-latest
@@ -178,7 +197,30 @@ jobs:
       run: |
         cd docker
         docker compose up -d
-        sleep 10
+        
+        # Wait for services to be ready with retries
+        echo "Waiting for services to start..."
+        for i in {1..30}; do
+          if curl -f http://localhost:7000/api/health >/dev/null 2>&1; then
+            echo "API server is ready"
+            break
+          fi
+          echo "Waiting for API server... ($i/30)"
+          sleep 5
+        done
+        
+        for i in {1..30}; do
+          if curl -f http://localhost:3001 >/dev/null 2>&1; then
+            echo "Web app is ready"
+            break
+          fi
+          echo "Waiting for web app... ($i/30)"
+          sleep 5
+        done
+        
+        # Final health checks
         curl -f http://localhost:7000/api/health || exit 1
         curl -f http://localhost:3001 || exit 1
+        
+        echo "All services are running successfully"
         docker compose down

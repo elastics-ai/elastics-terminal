@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 
 // API endpoint for portfolio overview data
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Call the Python backend API
     const response = await fetch('http://localhost:8000/api/portfolio/overview', {

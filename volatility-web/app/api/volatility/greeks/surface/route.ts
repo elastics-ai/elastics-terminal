@@ -116,8 +116,8 @@ export async function GET(request: NextRequest) {
       strike_range: [spot * 0.8, spot * 1.2],
       expiry_range: [7/365, 365/365], // 7 days to 1 year
       volatility,
-      greek: greek as any,
-      option_type: optionType as any
+      greek: greek as GreeksSurfaceRequest['greek'],
+      option_type: optionType as GreeksSurfaceRequest['option_type']
     }
 
     // Call the POST endpoint with default parameters

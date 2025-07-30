@@ -11,16 +11,42 @@ interface ChatRequest {
   flow_id?: string
 }
 
+interface FlowNode {
+  id: string
+  type: string
+  data: Record<string, unknown>
+  position: { x: number; y: number }
+}
+
+interface FlowConnection {
+  id: string
+  source: string
+  target: string
+  sourceHandle?: string
+  targetHandle?: string
+}
+
+interface StrategyTranslation {
+  sql?: string
+  python?: string
+  description?: string
+}
+
+interface WebSocketEvent {
+  type: string
+  data: Record<string, unknown>
+}
+
 interface ChatResponse {
   response: string
   action: string
   flow_id?: string
   node_id?: string
   strategy_name?: string
-  nodes?: any[]
-  connections?: any[]
-  translation?: any
-  websocket_event?: any
+  nodes?: FlowNode[]
+  connections?: FlowConnection[]
+  translation?: StrategyTranslation
+  websocket_event?: WebSocketEvent
   error?: string
 }
 

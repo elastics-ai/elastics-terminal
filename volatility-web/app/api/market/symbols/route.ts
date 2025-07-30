@@ -10,7 +10,7 @@ interface MarketSymbol {
   change_24h?: number
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Try to fetch from Python backend first
     const pythonResponse = await fetch(`${process.env.PYTHON_API_URL}/api/market/symbols`)

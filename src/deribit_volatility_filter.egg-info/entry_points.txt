@@ -1,0 +1,2 @@
+[console_scripts]
+volatility-filter = volatility_filter.filter:main
