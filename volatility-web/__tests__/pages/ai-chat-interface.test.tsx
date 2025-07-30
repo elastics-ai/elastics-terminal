@@ -211,7 +211,6 @@ jest.mock('@/components/layout/app-layout', () => ({
 
 describe('AI Chat Interface Page (Design Page 2)', () => {
   let queryClient: QueryClient
-  let mockRouter: any
 
   beforeEach(() => {
     queryClient = new QueryClient({
@@ -221,12 +220,14 @@ describe('AI Chat Interface Page (Design Page 2)', () => {
       }
     })
     
-    mockRouter = {
-      push: jest.fn(),
-      replace: jest.fn(),
-      back: jest.fn()
+    // The global router mock from jest.setup.js is already configured
+    // Just reset any previous calls
+    const router = useRouter()
+    if (router.push?.mockClear) {
+      router.push.mockClear()
+      router.replace?.mockClear()
+      router.back?.mockClear()
     }
-    ;(useRouter as jest.Mock).mockReturnValue(mockRouter)
     
     // Reset API mocks
     ;(chatAPI.sendMessage as jest.Mock).mockClear()
