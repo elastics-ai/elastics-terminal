@@ -60,6 +60,61 @@ jest.mock('recharts', () => ({
   PolarRadiusAxis: () => null,
 }))
 
+// Mock Radix UI components to make tabs work in tests
+jest.mock('@/components/ui/tabs', () => {
+  const React = require('react')
+  const { useState } = React
+  return {
+    Tabs: ({ children, defaultValue }: any) => {
+      const [activeTab, setActiveTab] = useState(defaultValue)
+      return (
+        <div data-active-tab={activeTab}>
+          {React.Children.map(children, (child: any) => {
+            if (React.isValidElement(child)) {
+              return React.cloneElement(child, { activeTab, setActiveTab })
+            }
+            return child
+          })}
+        </div>
+      )
+    },
+    TabsList: ({ children, activeTab, setActiveTab }: any) => (
+      <div role="tablist">
+        {React.Children.map(children, (child: any) => {
+          if (React.isValidElement(child)) {
+            return React.cloneElement(child, { activeTab, setActiveTab })
+          }
+          return child
+        })}
+      </div>
+    ),
+    TabsTrigger: ({ children, value, activeTab, setActiveTab }: any) => (
+      <button
+        role="tab"
+        onClick={() => setActiveTab && setActiveTab(value)}
+        aria-selected={activeTab === value}
+      >
+        {children}
+      </button>
+    ),
+    TabsContent: ({ children, value, activeTab }: any) =>
+      activeTab === value ? <div role="tabpanel">{children}</div> : null,
+  }
+})
+
+// Mock other UI components
+jest.mock('@/components/ui/select', () => ({
+  Select: ({ children }: any) => <div>{children}</div>,
+  SelectContent: ({ children }: any) => <div>{children}</div>,
+  SelectItem: ({ children, value }: any) => <div data-value={value}>{children}</div>,
+  SelectTrigger: ({ children }: any) => <button role="combobox">{children}</button>,
+  SelectValue: ({ placeholder }: any) => <span>{placeholder || 'Select...'}</span>,
+}))
+
+jest.mock('@/components/ui/input', () => ({
+  Input: (props: any) => <input {...props} />,
+}))
+
 describe('EnhancedPortfolioPage', () => {
   let queryClient: QueryClient
 
@@ -79,159 +134,200 @@ describe('EnhancedPortfolioPage', () => {
     )
   }
 
-  describe('Portfolio Analytics Dashboard', () => {
-    it('should render all main sections', () => {
+  describe('Portfolio Dashboard', () => {
+    it('should render main header and sections', () => {
       renderComponent()
 
-      expect(screen.getByText('Portfolio Analytics')).toBeInTheDocument()
-      expect(screen.getByText('Performance')).toBeInTheDocument()
-      expect(screen.getByText('Risk Metrics')).toBeInTheDocument()
-      expect(screen.getByText('Asset Allocation')).toBeInTheDocument()
+      expect(screen.getByText('Portfolio')).toBeInTheDocument()
+      expect(screen.getByText('Graphs')).toBeInTheDocument()
+      expect(screen.getByText('Strategies')).toBeInTheDocument()
     })
 
     it('should display key metrics cards', () => {
       renderComponent()
 
-      expect(screen.getByText('Total Value')).toBeInTheDocument()
-      expect(screen.getByText('Today\'s P&L')).toBeInTheDocument()
-      expect(screen.getByText('Month P&L')).toBeInTheDocument()
-      expect(screen.getByText('YTD Return')).toBeInTheDocument()
+      expect(screen.getByText('Active Strategies')).toBeInTheDocument()
+      expect(screen.getByText('Total Returns')).toBeInTheDocument()
+      expect(screen.getByText('Cumulative Return')).toBeInTheDocument()
+      expect(screen.getByText('Annual Return')).toBeInTheDocument()
+      expect(screen.getByText('Max Drawdown')).toBeInTheDocument()
+      // Annual Volatility appears twice, use getAllByText
+      const volatilityElements = screen.getAllByText('Annual Volatility')
+      expect(volatilityElements.length).toBe(2)
+    })
+
+    it('should display alert badges', () => {
+      renderComponent()
+
+      expect(screen.getByText('Critical 3')).toBeInTheDocument()
+      expect(screen.getByText('Warning 2')).toBeInTheDocument()
+      expect(screen.getByText('Info 4')).toBeInTheDocument()
     })
   })
 
-  describe('Performance Section', () => {
-    it('should render portfolio value chart', () => {
-      renderComponent()
-
-      expect(screen.getByText('Portfolio Value Over Time')).toBeInTheDocument()
-      expect(screen.getByTestId('area-chart')).toBeInTheDocument()
-    })
-
-    it('should render daily P&L chart', () => {
-      renderComponent()
-
-      expect(screen.getByText('Daily P&L')).toBeInTheDocument()
-      expect(screen.getByTestId('bar-chart')).toBeInTheDocument()
-    })
-
+  describe('Charts Section', () => {
     it('should render cumulative returns chart', () => {
       renderComponent()
 
-      expect(screen.getByText('Cumulative Returns')).toBeInTheDocument()
-      expect(screen.getByTestId('line-chart')).toBeInTheDocument()
+      expect(screen.getByText(/Cumulative Returns/)).toBeInTheDocument()
+      const lineCharts = screen.getAllByTestId('line-chart')
+      expect(lineCharts.length).toBeGreaterThan(0)
+    })
+
+    it('should render daily trading volume chart', () => {
+      renderComponent()
+
+      expect(screen.getByText(/Daily Trading Volume/)).toBeInTheDocument()
+      const areaCharts = screen.getAllByTestId('area-chart')
+      expect(areaCharts.length).toBeGreaterThan(0)
+    })
+
+    it('should render drawdowns chart', () => {
+      renderComponent()
+
+      expect(screen.getByText('Drawdowns')).toBeInTheDocument()
+      // Should have multiple area charts
+      const areaCharts = screen.getAllByTestId('area-chart')
+      expect(areaCharts.length).toBeGreaterThan(1)
+    })
+
+    it('should render return distribution chart', () => {
+      renderComponent()
+
+      expect(screen.getByText('Strategy Return Distributions')).toBeInTheDocument()
+      expect(screen.getByTestId('bar-chart')).toBeInTheDocument()
+    })
+
+    it('should render sharpe ratio chart', () => {
+      renderComponent()
+
+      expect(screen.getByText('Rolling Sharpe Ratios (30-Day)')).toBeInTheDocument()
+      // Should have multiple line charts
+      const lineCharts = screen.getAllByTestId('line-chart')
+      expect(lineCharts.length).toBeGreaterThan(1)
+    })
+
+    it('should render volatility chart', () => {
+      renderComponent()
+
+      expect(screen.getByText('Rolling Annualized Volatility (30-Day)')).toBeInTheDocument()
+      // Should have multiple line charts
+      const lineCharts = screen.getAllByTestId('line-chart')
+      expect(lineCharts.length).toBeGreaterThan(2)
     })
 
     it('should allow timeframe selection', () => {
       renderComponent()
 
-      const timeframeButtons = screen.getAllByRole('button', { name: /1D|1W|1M|3M|YTD|ALL/i })
+      const timeframeButtons = screen.getAllByRole('button', { name: /1W|1M|YTD|1Y/i })
       expect(timeframeButtons.length).toBeGreaterThan(0)
     })
   })
 
-  describe('Risk Metrics Section', () => {
-    it('should display volatility analysis', () => {
+  describe('AI Queries Section', () => {
+    it('should display AI-powered queries', () => {
       renderComponent()
 
-      expect(screen.getByText('Volatility Analysis')).toBeInTheDocument()
-      expect(screen.getByText('30-Day Vol')).toBeInTheDocument()
-      expect(screen.getByText('Max Drawdown')).toBeInTheDocument()
+      expect(screen.getByText('AI-Powered Queries')).toBeInTheDocument()
+      expect(screen.getByText('Ask')).toBeInTheDocument()
+      expect(screen.getByPlaceholderText('Ask anything...')).toBeInTheDocument()
     })
 
-    it('should display Greeks radar chart', () => {
+    it('should display sample queries', () => {
       renderComponent()
 
-      expect(screen.getByText('Greeks Exposure')).toBeInTheDocument()
-      expect(screen.getByTestId('radar-chart')).toBeInTheDocument()
-    })
-
-    it('should display correlation heatmap placeholder', () => {
-      renderComponent()
-
-      expect(screen.getByText('Asset Correlation')).toBeInTheDocument()
-      // Heatmap is custom component, check for container
-      expect(screen.getByText(/Correlation heatmap/i)).toBeInTheDocument()
-    })
-
-    it('should display VaR metrics', () => {
-      renderComponent()
-
-      expect(screen.getByText('Value at Risk (95%)')).toBeInTheDocument()
-      expect(screen.getByText(/\$45,230/)).toBeInTheDocument()
+      expect(screen.getByText('Set the benchmark to top 20 altcoin basket')).toBeInTheDocument()
+      expect(screen.getByText('Which strategy contributed most to volatility in June?')).toBeInTheDocument()
+      expect(screen.getByText('Breakdown PnL contribution by exchange')).toBeInTheDocument()
+      expect(screen.getByText('What tags dominate profitable trades?')).toBeInTheDocument()
     })
   })
 
-  describe('Asset Allocation Section', () => {
-    it('should display allocation by asset pie chart', () => {
+  describe('Allocation Section', () => {
+    it('should display allocation controls', () => {
       renderComponent()
 
-      expect(screen.getByText('By Asset')).toBeInTheDocument()
-      const pieCharts = screen.getAllByTestId('pie-chart')
-      expect(pieCharts.length).toBeGreaterThan(0)
+      expect(screen.getByText('Allocation')).toBeInTheDocument()
+      expect(screen.getByText('Relative')).toBeInTheDocument()
+      expect(screen.getByText('Benchmark')).toBeInTheDocument()
+      expect(screen.getByText('Tags')).toBeInTheDocument()
     })
 
-    it('should display allocation by type', () => {
+    it('should display donut chart', () => {
       renderComponent()
 
-      expect(screen.getByText('By Type')).toBeInTheDocument()
-      expect(screen.getByText(/Spot|Options|Futures/)).toBeInTheDocument()
+      expect(screen.getByTestId('pie-chart')).toBeInTheDocument()
+      expect(screen.getByText('Total')).toBeInTheDocument()
+      expect(screen.getByText('100%')).toBeInTheDocument()
     })
 
-    it('should display allocation by exchange', () => {
+    it('should display outer ring legend', () => {
       renderComponent()
 
-      expect(screen.getByText('By Exchange')).toBeInTheDocument()
-      expect(screen.getByText(/Binance|Deribit/)).toBeInTheDocument()
+      expect(screen.getByText('Outer Ring')).toBeInTheDocument()
+      expect(screen.getByText('Binance')).toBeInTheDocument()
+      expect(screen.getByText('Deribit')).toBeInTheDocument()
+      expect(screen.getByText('PKX')).toBeInTheDocument()
+      expect(screen.getByText('BKK')).toBeInTheDocument()
+    })
+
+    it('should display inner ring legend', () => {
+      renderComponent()
+
+      expect(screen.getByText('Inner Ring')).toBeInTheDocument()
+      expect(screen.getByText('ETH')).toBeInTheDocument()
+      expect(screen.getByText('BTC')).toBeInTheDocument()
+      expect(screen.getByText('SOL')).toBeInTheDocument()
+      expect(screen.getByText('LINK')).toBeInTheDocument()
+      expect(screen.getByText('XRP')).toBeInTheDocument()
+      expect(screen.getByText('Others')).toBeInTheDocument()
     })
 
     it('should show allocation percentages', () => {
       renderComponent()
 
-      // Check for percentage values
-      const percentages = screen.getAllByText(/\d+(\.\d+)?%/)
-      expect(percentages.length).toBeGreaterThan(0)
+      // Check for percentage values in legends
+      expect(screen.getByText('40%')).toBeInTheDocument() // Binance
+      expect(screen.getByText('31%')).toBeInTheDocument() // ETH
+      expect(screen.getByText('17%')).toBeInTheDocument() // BTC
     })
   })
 
-  describe('Top Performers Section', () => {
-    it('should display top performing positions', () => {
+  describe('Benchmark and Settings', () => {
+    it('should display benchmark selection', () => {
       renderComponent()
 
-      expect(screen.getByText('Top Performers')).toBeInTheDocument()
-      expect(screen.getByText('BTC-PERPETUAL')).toBeInTheDocument()
-      expect(screen.getByText('ETH-29DEC23-2200-C')).toBeInTheDocument()
+      // The S&P 500 text might be in the SelectValue component
+      expect(screen.getByText('Benchmark')).toBeInTheDocument()
     })
 
-    it('should show P&L for each position', () => {
+    it('should display export button', () => {
       renderComponent()
 
-      expect(screen.getByText('+$45,230')).toBeInTheDocument()
-      expect(screen.getByText('+$23,450')).toBeInTheDocument()
+      expect(screen.getByText('Export')).toBeInTheDocument()
     })
 
-    it('should show percentage returns', () => {
+    it('should display tags section', () => {
       renderComponent()
 
-      expect(screen.getByText('+15.2%')).toBeInTheDocument()
-      expect(screen.getByText('+82.3%')).toBeInTheDocument()
+      expect(screen.getByText('All Tags')).toBeInTheDocument()
     })
   })
 
-  describe('Risk Analysis Section', () => {
-    it('should display position risk metrics', () => {
+  describe('Tab Navigation', () => {
+    it('should have graphs and strategies tabs', () => {
       renderComponent()
 
-      expect(screen.getByText('Risk Analysis')).toBeInTheDocument()
-      expect(screen.getByText('Sharpe Ratio')).toBeInTheDocument()
-      expect(screen.getByText('Sortino Ratio')).toBeInTheDocument()
+      expect(screen.getByRole('tab', { name: 'Graphs' })).toBeInTheDocument()
+      expect(screen.getByRole('tab', { name: 'Strategies' })).toBeInTheDocument()
     })
 
-    it('should display position sizing chart', () => {
+    it('should show strategies placeholder content', () => {
       renderComponent()
 
-      expect(screen.getByText('Position Sizing')).toBeInTheDocument()
-      const composedCharts = screen.getAllByTestId('composed-chart')
-      expect(composedCharts.length).toBeGreaterThan(0)
+      // Click on strategies tab
+      fireEvent.click(screen.getByRole('tab', { name: 'Strategies' }))
+      expect(screen.getByText('Strategies content coming soon...')).toBeInTheDocument()
     })
   })
 
@@ -243,48 +339,57 @@ describe('EnhancedPortfolioPage', () => {
       expect(exportButton).toBeInTheDocument()
 
       fireEvent.click(exportButton)
-      // Should show export options
+      // Export button should be clickable
     })
 
-    it('should refresh data on demand', () => {
+    it('should allow AI query input', () => {
       renderComponent()
 
-      const refreshButton = screen.getByLabelText(/refresh/i)
-      expect(refreshButton).toBeInTheDocument()
+      const askButton = screen.getByText('Ask')
+      expect(askButton).toBeInTheDocument()
 
-      fireEvent.click(refreshButton)
-      // Should trigger data refresh
+      fireEvent.click(askButton)
+      // Ask button should be clickable
     })
 
-    it('should navigate back to main portfolio', () => {
-      const mockPush = jest.fn()
-      jest.spyOn(require('next/navigation'), 'useRouter').mockReturnValue({
-        push: mockPush,
-      })
-
+    it('should display time selection buttons', () => {
       renderComponent()
 
-      const backButton = screen.getByText('Back to Portfolio')
-      fireEvent.click(backButton)
-
-      expect(mockPush).toHaveBeenCalledWith('/portfolio')
+      const timeButtons = screen.getAllByRole('button', { name: /1W|1M|YTD|1Y/i })
+      expect(timeButtons.length).toBeGreaterThan(0)
     })
   })
 
   describe('Chart Interactions', () => {
-    it('should handle chart hover tooltips', () => {
+    it('should render all chart types', () => {
       renderComponent()
 
-      // Charts should have tooltip components
-      expect(screen.getByTestId('area-chart')).toBeInTheDocument()
+      // Should have line charts for cumulative returns and ratios
+      const lineCharts = screen.getAllByTestId('line-chart')
+      expect(lineCharts.length).toBeGreaterThan(0)
+      
+      // Should have area charts for volume and drawdowns  
+      const areaCharts = screen.getAllByTestId('area-chart')
+      expect(areaCharts.length).toBeGreaterThan(0)
+      
+      // Should have bar chart for distributions
+      expect(screen.getByTestId('bar-chart')).toBeInTheDocument()
+      
+      // Should have pie chart for allocation
+      expect(screen.getByTestId('pie-chart')).toBeInTheDocument()
     })
 
-    it('should handle empty data states', () => {
+    it('should handle chart data rendering', () => {
       renderComponent()
 
       // Should still render charts even with mock data
-      const charts = screen.getAllByTestId(/chart/)
-      expect(charts.length).toBeGreaterThan(0)
+      const allCharts = [
+        ...screen.getAllByTestId('line-chart'),
+        ...screen.getAllByTestId('area-chart'),
+        screen.getByTestId('bar-chart'),
+        screen.getByTestId('pie-chart')
+      ]
+      expect(allCharts.length).toBeGreaterThan(5)
     })
   })
 
@@ -296,7 +401,7 @@ describe('EnhancedPortfolioPage', () => {
       renderComponent()
 
       // Should still show main components
-      expect(screen.getByText('Portfolio Analytics')).toBeInTheDocument()
+      expect(screen.getByText('Portfolio')).toBeInTheDocument()
     })
 
     it('should render in desktop view', () => {
@@ -306,7 +411,7 @@ describe('EnhancedPortfolioPage', () => {
       renderComponent()
 
       // Should show all components
-      expect(screen.getByText('Portfolio Analytics')).toBeInTheDocument()
+      expect(screen.getByText('Portfolio')).toBeInTheDocument()
       expect(screen.getAllByTestId(/chart/).length).toBeGreaterThan(0)
     })
   })
