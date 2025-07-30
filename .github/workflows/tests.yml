@@ -103,7 +103,7 @@ jobs:
         ANTHROPIC_API_KEY: mock-test-key
         MOCK_SERVER_URL: http://localhost:1080
       run: |
-        python3 -m pytest tests/test_e2e_chat.py -v -m e2e
+        python3 -m pytest tests/ -v -m e2e
         
   docker-build:
     runs-on: ubuntu-latest
@@ -111,6 +111,32 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
+    - name: Create .env file for CI
+      run: |
+        cd docker
+        cat > .env << EOF
+        # CI Configuration
+        ANTHROPIC_API_KEY=test-key
+        
+        # Glitchtip Configuration
+        POSTGRES_DB=glitchtip
+        POSTGRES_USER=glitchtip
+        POSTGRES_PASSWORD=ci-test-password
+        POSTGRES_HOST=postgres
+        POSTGRES_PORT=5432
+        
+        REDIS_HOST=redis
+        REDIS_PORT=6379
+        
+        DATABASE_URL=postgresql://glitchtip:ci-test-password@postgres:5432/glitchtip
+        REDIS_URL=redis://redis:6379/0
+        SECRET_KEY=ci-test-secret-key-not-for-production
+        GLITCHTIP_DOMAIN=http://localhost:8080
+        EMAIL_URL=smtp://localhost:25
+        DEFAULT_FROM_EMAIL=glitchtip@localhost
+        GLITCHTIP_DSN=http://test@localhost:8080/1
+        EOF
+        
     - name: Build Docker images
       run: |
         cd docker
