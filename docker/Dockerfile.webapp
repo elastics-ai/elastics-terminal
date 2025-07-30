@@ -89,8 +89,9 @@ trap shutdown SIGTERM SIGINT\n\
 \n\
 # Start WebSocket server in background\n\
 echo "Starting WebSocket server on port 8765..."\n\
-if python scripts/run_combined_filter.py &; then\n\
-    WEBSOCKET_PID=$!\n\
+python scripts/run_combined_filter.py &\n\
+WEBSOCKET_PID=$!\n\
+if [ -n "$WEBSOCKET_PID" ]; then\n\
     echo "WebSocket server started with PID $WEBSOCKET_PID"\n\
 else\n\
     echo "Failed to start WebSocket server, but continuing..."\n\
@@ -103,8 +104,9 @@ sleep 3\n\
 # Start API server in background\n\
 echo "Starting API server on port 8000..."\n\
 cd volatility-web || { echo "Failed to cd into volatility-web"; exit 1; }\n\
-if python api_server.py &; then\n\
-    API_PID=$!\n\
+python api_server.py &\n\
+API_PID=$!\n\
+if [ -n "$API_PID" ]; then\n\
     echo "API server started with PID $API_PID"\n\
     cd ..\n\
 else\n\
@@ -130,8 +132,9 @@ done\n\
 # Start Next.js production server using the standalone server\n\
 echo "Starting web app on port 3000..."\n\
 cd volatility-web || { echo "Failed to cd into volatility-web for Next.js"; exit 1; }\n\
-if HOSTNAME=0.0.0.0 PORT=3000 node server.js &; then\n\
-    NEXTJS_PID=$!\n\
+HOSTNAME=0.0.0.0 PORT=3000 node server.js &\n\
+NEXTJS_PID=$!\n\
+if [ -n "$NEXTJS_PID" ]; then\n\
     echo "Next.js server started with PID $NEXTJS_PID"\n\
     cd ..\n\
 else\n\
