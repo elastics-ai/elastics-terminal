@@ -3,11 +3,36 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import EnhancedPortfolioPage from '@/app/portfolio/enhanced/page'
 
-// Mock router
+// Mock Next.js navigation
 jest.mock('next/navigation', () => ({
   useRouter: () => ({
     push: jest.fn(),
+    replace: jest.fn(),
+    prefetch: jest.fn(),
+    back: jest.fn(),
+    forward: jest.fn(),
+    refresh: jest.fn(),
   }),
+  usePathname: () => '/portfolio/enhanced',
+  useSearchParams: () => ({
+    get: jest.fn().mockReturnValue(null),
+  }),
+}))
+
+// Mock NextAuth
+jest.mock('next-auth/react', () => ({
+  useSession: () => ({ data: null, status: 'unauthenticated' }),
+  signOut: jest.fn(),
+}))
+
+// Mock AppLayout to avoid FloatingChatProvider issues
+jest.mock('@/components/layout/app-layout', () => ({
+  AppLayout: ({ children }: { children: React.ReactNode }) => <div data-testid="app-layout">{children}</div>,
+}))
+
+// Mock FixedChatInput to avoid FloatingChatProvider dependency
+jest.mock('@/components/chat/FixedChatInput', () => ({
+  FixedChatInput: () => <div data-testid="fixed-chat">Chat Input</div>,
 }))
 
 // Mock recharts to avoid render issues in tests
