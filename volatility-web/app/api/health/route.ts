@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server'
  * Returns the health status of the application
  */
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Basic health check - could be extended to check database, redis, etc.
     const health = {
@@ -30,10 +30,10 @@ export async function GET(request: NextRequest) {
 }
 
 // Support HEAD requests for health checks
-export async function HEAD(request: NextRequest) {
+export async function HEAD() {
   try {
     return new NextResponse(null, { status: 200 })
-  } catch (error) {
+  } catch {
     return new NextResponse(null, { status: 503 })
   }
 }
