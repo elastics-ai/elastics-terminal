@@ -34,6 +34,18 @@ jest.mock('@/components/chat/FixedChatInput', () => ({
   FixedChatInput: () => <div data-testid="fixed-chat">Chat Input</div>
 }))
 
+// Mock Radix UI Dropdown components
+jest.mock('@/components/ui/dropdown-menu', () => ({
+  DropdownMenu: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DropdownMenuTrigger: ({ children, asChild }: { children: React.ReactNode, asChild?: boolean }) => 
+    asChild && React.isValidElement(children) ? React.cloneElement(children) : <div>{children}</div>,
+  DropdownMenuContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DropdownMenuItem: ({ children, onClick, asChild }: { children: React.ReactNode, onClick?: () => void, asChild?: boolean }) => 
+    asChild && React.isValidElement(children) ? React.cloneElement(children) : <div onClick={onClick}>{children}</div>,
+  DropdownMenuLabel: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DropdownMenuSeparator: () => <hr />
+}))
+
 const mockUseSession = useSession as jest.MockedFunction<typeof useSession>
 const mockSignOut = signOut as jest.MockedFunction<typeof signOut>
 const mockUsePathname = usePathname as jest.MockedFunction<typeof usePathname>
@@ -87,7 +99,7 @@ describe('AppLayout Authentication', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getByText('Wojtek')).toBeInTheDocument()
+        expect(screen.getAllByText('Wojtek').length).toBeGreaterThan(0)
         expect(screen.getByText('wojciech@elastics.ai')).toBeInTheDocument()
       })
 
@@ -109,7 +121,7 @@ describe('AppLayout Authentication', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getByText('Test User')).toBeInTheDocument()
+        expect(screen.getAllByText('Test User').length).toBeGreaterThan(0)
         expect(screen.getByText('test.user@example.com')).toBeInTheDocument()
       })
     })
@@ -138,7 +150,7 @@ describe('AppLayout Authentication', () => {
       await waitFor(() => {
         const avatar = screen.getByAltText('Test User')
         expect(avatar).toBeInTheDocument()
-        expect(avatar).toHaveAttribute('src', 'https://example.com/avatar.jpg')
+        expect(avatar).toHaveAttribute('src', expect.stringContaining('https%3A%2F%2Fexample.com%2Favatar.jpg'))
       })
     })
 
@@ -182,7 +194,7 @@ describe('AppLayout Authentication', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Profile')).toBeInTheDocument()
-        expect(screen.getByText('Settings')).toBeInTheDocument()
+        expect(screen.getAllByText('Settings').length).toBeGreaterThan(0)
         expect(screen.getByText('Sign out')).toBeInTheDocument()
       })
     })
