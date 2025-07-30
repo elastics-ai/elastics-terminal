@@ -227,6 +227,9 @@ export default function DashboardPage() {
         cvar_95: 12300,
         beta: 0.85,
         alpha: 0.024,
+        sharpe_ratio: 0.51,
+        sortino_ratio: 0.72,
+        calmar_ratio: 1.51,
         net_delta: 2.55,
         net_gamma: 0.003,
         net_vega: 19.5,
@@ -288,35 +291,33 @@ export default function DashboardPage() {
             </div>
           </div>
           
-          {/* Portfolio Metrics Cards */}
-          <div className="grid grid-cols-6 gap-4 mb-8">
+          {/* Portfolio Metrics Cards - Row 1 */}
+          <div className="grid grid-cols-7 gap-3 mb-4">
             <Card className="p-4">
               <div className="text-sm text-gray-500 mb-1">Portfolio Value</div>
-              <div className="text-2xl font-semibold text-gray-900">
+              <div className="border-t border-gray-100 my-2"></div>
+              <div className="text-xl font-semibold text-gray-900">
                 ${portfolio_analytics.portfolio_value?.toLocaleString() || '0'}
               </div>
-              <div className="text-sm text-green-600">
-                +${portfolio_analytics.cumulative_pnl?.toLocaleString() || '0'}
-              </div>
-              <div className="text-xs text-green-600">
-                +{portfolio_analytics.cumulative_return?.toFixed(1) || '0'}%
-              </div>
+              <div className="text-xs text-gray-500">Total Value</div>
             </Card>
             
             <Card className="p-4">
               <div className="text-sm text-gray-500 mb-1">Cumulative P&L</div>
-              <div className={`text-2xl font-semibold ${
+              <div className="border-t border-gray-100 my-2"></div>
+              <div className={`text-xl font-semibold ${
                 (portfolio_analytics.cumulative_pnl || 0) >= 0 ? 'text-green-600' : 'text-red-600'
               }`}>
                 {(portfolio_analytics.cumulative_pnl || 0) >= 0 ? '+' : ''}
                 ${portfolio_analytics.cumulative_pnl?.toLocaleString() || '0'}
               </div>
-              <div className="text-xs text-gray-500">P&L</div>
+              <div className="text-xs text-gray-500">Total P&L</div>
             </Card>
             
             <Card className="p-4">
               <div className="text-sm text-gray-500 mb-1">Cumulative Return</div>
-              <div className={`text-2xl font-semibold ${
+              <div className="border-t border-gray-100 my-2"></div>
+              <div className={`text-xl font-semibold ${
                 (portfolio_analytics.cumulative_return || 0) >= 0 ? 'text-green-600' : 'text-red-600'
               }`}>
                 {(portfolio_analytics.cumulative_return || 0) >= 0 ? '+' : ''}
@@ -327,7 +328,8 @@ export default function DashboardPage() {
             
             <Card className="p-4">
               <div className="text-sm text-gray-500 mb-1">Annual Return</div>
-              <div className={`text-2xl font-semibold ${
+              <div className="border-t border-gray-100 my-2"></div>
+              <div className={`text-xl font-semibold ${
                 (portfolio_analytics.annual_return || 0) >= 0 ? 'text-green-600' : 'text-red-600'
               }`}>
                 {(portfolio_analytics.annual_return || 0) >= 0 ? '+' : ''}
@@ -338,7 +340,8 @@ export default function DashboardPage() {
             
             <Card className="p-4">
               <div className="text-sm text-gray-500 mb-1">Max Drawdown</div>
-              <div className="text-2xl font-semibold text-red-600">
+              <div className="border-t border-gray-100 my-2"></div>
+              <div className="text-xl font-semibold text-red-600">
                 -{Math.abs(portfolio_analytics.max_drawdown || 0).toFixed(1)}%
               </div>
               <div className="text-xs text-gray-500">Peak to Trough</div>
@@ -346,53 +349,86 @@ export default function DashboardPage() {
             
             <Card className="p-4">
               <div className="text-sm text-gray-500 mb-1">Annual Volatility</div>
-              <div className="text-2xl font-semibold text-gray-900">
+              <div className="border-t border-gray-100 my-2"></div>
+              <div className="text-xl font-semibold text-gray-900">
                 {portfolio_analytics.annual_volatility?.toFixed(1) || '0'}%
               </div>
               <div className="text-xs text-gray-500">Annualized Vol</div>
             </Card>
-          </div>
-
-          {/* Risk Metrics */}
-          <div className="grid grid-cols-5 gap-4 mb-8">
+            
             <Card className="p-4">
               <div className="text-sm text-gray-500 mb-1">Net Delta</div>
-              <div className="text-2xl font-semibold text-gray-900">
+              <div className="border-t border-gray-100 my-2"></div>
+              <div className="text-xl font-semibold text-gray-900">
                 {portfolio_analytics.net_delta?.toFixed(2) || '0.00'}
               </div>
               <div className="text-xs text-gray-500">Delta Exposure</div>
             </Card>
-            
-            <Card className="p-4">
-              <div className="text-sm text-gray-500 mb-1">Net Vega</div>
-              <div className="text-2xl font-semibold text-gray-900">
-                {portfolio_analytics.net_vega?.toFixed(1) || '0.0'}
-              </div>
-              <div className="text-xs text-gray-500">Vega Exposure</div>
-            </Card>
-            
+          </div>
+
+          {/* Portfolio Metrics Cards - Row 2 */}
+          <div className="grid grid-cols-7 gap-3 mb-8">
             <Card className="p-4">
               <div className="text-sm text-gray-500 mb-1">VaR 95%</div>
-              <div className="text-2xl font-semibold text-red-600">
+              <div className="border-t border-gray-100 my-2"></div>
+              <div className="text-xl font-semibold text-red-600">
                 ${Math.abs(portfolio_analytics.var_95 || 0).toLocaleString()}
               </div>
               <div className="text-xs text-gray-500">Value at Risk</div>
             </Card>
             
             <Card className="p-4">
+              <div className="text-sm text-gray-500 mb-1">CVaR 95%</div>
+              <div className="border-t border-gray-100 my-2"></div>
+              <div className="text-xl font-semibold text-red-600">
+                ${Math.abs(portfolio_analytics.cvar_95 || 0).toLocaleString()}
+              </div>
+              <div className="text-xs text-gray-500">Tail Risk</div>
+            </Card>
+            
+            <Card className="p-4">
+              <div className="text-sm text-gray-500 mb-1">Alpha</div>
+              <div className="border-t border-gray-100 my-2"></div>
+              <div className="text-xl font-semibold text-gray-900">
+                {portfolio_analytics.alpha?.toFixed(3) || '0.000'}
+              </div>
+              <div className="text-xs text-gray-500">Excess Return</div>
+            </Card>
+            
+            <Card className="p-4">
               <div className="text-sm text-gray-500 mb-1">Beta</div>
-              <div className="text-2xl font-semibold text-gray-900">
+              <div className="border-t border-gray-100 my-2"></div>
+              <div className="text-xl font-semibold text-gray-900">
                 {portfolio_analytics.beta?.toFixed(2) || '0.00'}
               </div>
               <div className="text-xs text-gray-500">Market Beta</div>
             </Card>
             
             <Card className="p-4">
-              <div className="text-sm text-gray-500 mb-1">Alpha</div>
-              <div className="text-2xl font-semibold text-gray-900">
-                {portfolio_analytics.alpha?.toFixed(3) || '0.000'}
+              <div className="text-sm text-gray-500 mb-1">Sharpe Ratio</div>
+              <div className="border-t border-gray-100 my-2"></div>
+              <div className="text-xl font-semibold text-gray-900">
+                {portfolio_analytics.sharpe_ratio?.toFixed(2) || '0.00'}
               </div>
-              <div className="text-xs text-gray-500">Market Alpha</div>
+              <div className="text-xs text-gray-500">Risk-Adjusted</div>
+            </Card>
+            
+            <Card className="p-4">
+              <div className="text-sm text-gray-500 mb-1">Sortino Ratio</div>
+              <div className="border-t border-gray-100 my-2"></div>
+              <div className="text-xl font-semibold text-gray-900">
+                {portfolio_analytics.sortino_ratio?.toFixed(2) || '0.00'}
+              </div>
+              <div className="text-xs text-gray-500">Downside Risk</div>
+            </Card>
+            
+            <Card className="p-4">
+              <div className="text-sm text-gray-500 mb-1">Calmar Ratio</div>
+              <div className="border-t border-gray-100 my-2"></div>
+              <div className="text-xl font-semibold text-gray-900">
+                {portfolio_analytics.calmar_ratio?.toFixed(2) || '0.00'}
+              </div>
+              <div className="text-xs text-gray-500">Return/Drawdown</div>
             </Card>
           </div>
 

@@ -125,6 +125,9 @@ class PortfolioAnalytics(BaseModel):
     cvar_95: float = Field(0, description="95% Conditional VaR")
     beta: float = Field(0, description="Portfolio beta")
     alpha: float = Field(0, description="Portfolio alpha")
+    sharpe_ratio: float = Field(0, description="Sharpe ratio")
+    sortino_ratio: float = Field(0, description="Sortino ratio")
+    calmar_ratio: float = Field(0, description="Calmar ratio")
     
     # Greeks aggregation
     net_delta: float = Field(0, description="Net delta exposure")
