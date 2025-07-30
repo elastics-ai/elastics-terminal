@@ -14,7 +14,6 @@ const customJestConfig = {
     '^react-markdown$': '<rootDir>/__mocks__/react-markdown.js',
     '^next-auth$': '<rootDir>/__mocks__/next-auth.js',
     '^next-auth/react$': '<rootDir>/__mocks__/next-auth-react.js',
-    '^next-auth/providers/(.*)$': '<rootDir>/__mocks__/next-auth-providers.js',
   },
   testPathIgnorePatterns: ['/node_modules/', '/.next/', '/e2e/', '/tests/e2e/'],
   transformIgnorePatterns: [

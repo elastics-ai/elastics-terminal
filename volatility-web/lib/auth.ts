@@ -89,7 +89,12 @@ export const config = {
       // Allows relative callback URLs
       if (url.startsWith("/")) return `${baseUrl}${url}`
       // Allows callback URLs on the same origin
-      else if (new URL(url).origin === baseUrl) return url
+      try {
+        if (new URL(url).origin === baseUrl) return url
+      } catch (error) {
+        // Handle invalid URLs by returning baseUrl
+        return baseUrl
+      }
       return baseUrl
     }
   },
