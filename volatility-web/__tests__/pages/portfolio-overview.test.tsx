@@ -14,6 +14,7 @@
 import React from 'react'
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { createTestQueryClient } from '../../jest.setup'
 import HomePage from '@/app/page'
 import { FloatingChatProvider } from '@/contexts/FloatingChatContext'
 import '@testing-library/jest-dom'
@@ -22,13 +23,10 @@ import '@testing-library/jest-dom'
 
 // Mock the API calls
 const mockFetch = jest.fn()
-global.fetch = mockFetch
 
-const createTestQueryClient = () => new QueryClient({
-  defaultOptions: {
-    queries: { retry: false },
-    mutations: { retry: false },
-  },
+beforeEach(() => {
+  mockFetch.mockReset()
+  global.fetch = mockFetch
 })
 
 const renderWithQueryClient = (component: React.ReactElement) => {
