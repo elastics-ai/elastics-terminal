@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { 
   Send, 
@@ -446,7 +445,7 @@ export function StrategyBuilderChatInterface({
       </div>
       
       {/* Messages */}
-      <ScrollArea className="flex-1 p-4">
+      <div className="flex-1 p-4 overflow-y-auto">
         <div className="space-y-4">
           {messages.map(renderMessage)}
           {isLoading && (
@@ -466,7 +465,7 @@ export function StrategyBuilderChatInterface({
           )}
           <div ref={messagesEndRef} />
         </div>
-      </ScrollArea>
+      </div>
       
       {/* Command suggestions */}
       {showSuggestions && (

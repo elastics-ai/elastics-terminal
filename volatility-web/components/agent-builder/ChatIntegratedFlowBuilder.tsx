@@ -3,6 +3,7 @@
 import React, { useCallback, useState, useEffect, useRef } from 'react'
 import {
   ReactFlow,
+  ReactFlowProvider,
   MiniMap,
   Controls,
   Background,
@@ -157,7 +158,7 @@ const nodeTypes: NodeTypes = {
   strategyNode: StrategyNodeComponent
 }
 
-export function ChatIntegratedFlowBuilder({ 
+function ChatIntegratedFlowBuilderInner({ 
   flowId, 
   sessionId, 
   onFlowChange, 
@@ -591,5 +592,13 @@ export function ChatIntegratedFlowBuilder({
         <Background variant="dots" gap={16} size={1} />
       </ReactFlow>
     </div>
+  )
+}
+
+export function ChatIntegratedFlowBuilder(props: ChatIntegratedFlowBuilderProps) {
+  return (
+    <ReactFlowProvider>
+      <ChatIntegratedFlowBuilderInner {...props} />
+    </ReactFlowProvider>
   )
 }
