@@ -15,11 +15,17 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import '@testing-library/jest-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { createTestQueryClient } from '../../jest.setup'
 import ChatPage from '@/app/chat/page'
 
-// Mock fetch for API calls
+// Mock fetch for API calls - use the same setup but allow overrides
 const mockFetch = jest.fn()
-global.fetch = mockFetch
+
+// Preserve global fetch mock but allow test-specific overrides
+beforeEach(() => {
+  mockFetch.mockReset()
+  global.fetch = mockFetch
+})
 
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
@@ -186,12 +192,7 @@ describe('AI Chat Interface Integration Tests', () => {
   let queryClient: QueryClient
 
   beforeEach(() => {
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: { retry: false },
-        mutations: { retry: false }
-      }
-    })
+    queryClient = createTestQueryClient()
     
     // Reset fetch mock
     mockFetch.mockClear()

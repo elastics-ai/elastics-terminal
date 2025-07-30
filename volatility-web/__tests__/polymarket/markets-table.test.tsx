@@ -4,6 +4,7 @@
 
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { createTestQueryClient } from '../../jest.setup'
 import { MarketsTable } from '@/components/bloomberg/views/polymarket/markets-table'
 import { polymarketAPI } from '@/lib/api'
 
@@ -53,33 +54,19 @@ const mockMarketsResponse = {
   is_mock: false
 }
 
-function createTestQueryClient(retryConfig = false) {
-  return new QueryClient({
-    defaultOptions: {
+function renderWithQueryClient(component: React.ReactElement, customOptions = {}) {
+  const queryClient = createTestQueryClient()
+  
+  // Apply any custom options on top of the base config
+  if (Object.keys(customOptions).length > 0) {
+    queryClient.setDefaultOptions({
       queries: {
-        retry: retryConfig,
-        retryDelay: 0, // No delay between retries in tests
-        refetchInterval: false,
-        refetchOnWindowFocus: false,
-        refetchOnMount: false,
-        refetchOnReconnect: false,
-        staleTime: 0,
-        cacheTime: 0,
-        // Ensure errors are thrown immediately
-        suspense: false,
-        useErrorBoundary: false,
-      },
-    },
-    logger: {
-      log: console.log,
-      warn: console.warn,
-      error: () => {}, // Suppress React Query error logs in tests
-    },
-  })
-}
-
-function renderWithQueryClient(component: React.ReactElement, retryConfig = false) {
-  const queryClient = createTestQueryClient(retryConfig)
+        ...queryClient.getDefaultOptions().queries,
+        ...customOptions
+      }
+    })
+  }
+  
   return render(
     <QueryClientProvider client={queryClient}>
       {component}
@@ -135,31 +122,8 @@ describe('MarketsTable', () => {
     const errorMessage = 'Network error'
     mockPolymarketAPI.getMarkets.mockRejectedValue(new Error(errorMessage))
 
-    // Create a query client with no retries to force immediate error state
-    const errorQueryClient = new QueryClient({
-      defaultOptions: {
-        queries: {
-          retry: false, // No retries at all 
-          retryDelay: 0,
-          refetchInterval: false,
-          refetchOnWindowFocus: false,
-          refetchOnMount: false,
-          refetchOnReconnect: false,
-          staleTime: 0,
-          cacheTime: 0,
-        },
-      },
-      logger: {
-        log: console.log,
-        warn: console.warn,
-        error: () => {},
-      },
-    })
-
-    render(
-      <QueryClientProvider client={errorQueryClient}>
-        <MarketsTable searchTerm="" onSelectMarket={mockOnSelectMarket} />
-      </QueryClientProvider>
+    renderWithQueryClient(
+      <MarketsTable searchTerm="" onSelectMarket={mockOnSelectMarket} />
     )
 
     // Wait for error to appear - should be quick with no retries
@@ -240,35 +204,13 @@ describe('MarketsTable', () => {
       .mockRejectedValueOnce(new Error('Network error'))
       .mockResolvedValue(mockMarketsResponse)
 
-    // Create a custom QueryClient that forces retries even in test environment
-    const retryQueryClient = new QueryClient({
-      defaultOptions: {
-        queries: {
-          retry: 2, // Enable 2 retries specifically for this test
-          retryDelay: 0, // No delay for faster test execution
-          refetchInterval: false,
-          refetchOnWindowFocus: false,
-          refetchOnMount: false,
-          refetchOnReconnect: false,
-          staleTime: 0,
-          cacheTime: 0,
-        },
-      },
-      logger: {
-        log: console.log,
-        warn: console.warn,
-        error: () => {},
-      },
-    })
-
     // Temporarily override NODE_ENV for this component to enable retries
     const originalEnv = process.env.NODE_ENV
     process.env.NODE_ENV = 'development'
 
-    render(
-      <QueryClientProvider client={retryQueryClient}>
-        <MarketsTable searchTerm="" onSelectMarket={mockOnSelectMarket} />
-      </QueryClientProvider>
+    renderWithQueryClient(
+      <MarketsTable searchTerm="" onSelectMarket={mockOnSelectMarket} />,
+      { retry: 2, retryDelay: 0 } // Enable retries for this specific test
     )
 
     await waitFor(() => {

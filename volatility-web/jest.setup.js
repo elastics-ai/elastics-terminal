@@ -1,6 +1,55 @@
 // Learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom'
 
+// Set up React Query for tests - must be imported before components
+import { QueryClient } from '@tanstack/react-query'
+
+// Create a global test query client with consistent configuration
+export const createTestQueryClient = () => new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false, // Disable retries in all tests
+      retryDelay: 0,
+      refetchInterval: false,
+      refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      refetchOnReconnect: false,
+      staleTime: 0,
+      cacheTime: 0,
+      suspense: false,
+      useErrorBoundary: false,
+    },
+    mutations: {
+      retry: false,
+      retryDelay: 0,
+    },
+  },
+  logger: {
+    log: console.log,
+    warn: console.warn,
+    error: () => {}, // Suppress React Query error logs in tests
+  },
+})
+
+// Override console.error to suppress act() warnings in test environment
+const originalError = console.error
+beforeAll(() => {
+  console.error = (...args) => {
+    if (
+      typeof args[0] === 'string' &&
+      args[0].includes('Warning: An update to') &&
+      args[0].includes('was not wrapped in act')
+    ) {
+      return
+    }
+    originalError.call(console, ...args)
+  }
+})
+
+afterAll(() => {
+  console.error = originalError
+})
+
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
   useRouter() {
