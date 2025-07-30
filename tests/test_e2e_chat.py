@@ -36,7 +36,7 @@ def temp_db():
 
     # Initialize database with schema
     db_manager = DatabaseManager(db_path)
-    db_manager.create_tables()
+    db_manager.init_database()
 
     # Insert test data
     conn = sqlite3.connect(db_path)
