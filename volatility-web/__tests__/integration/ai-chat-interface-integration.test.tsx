@@ -53,6 +53,9 @@ jest.mock('@/components/bloomberg/views/chat/chat-interface', () => ({
       
       // Simulate AI processing with fetch response
       try {
+        // Add delay to ensure loading state is visible during testing
+        await new Promise(resolve => setTimeout(resolve, 100))
+        
         const response = await fetch('http://localhost:8000/api/chat/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
