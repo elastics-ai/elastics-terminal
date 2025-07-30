@@ -15,10 +15,7 @@ import {
   mockLocalDevEnvVars
 } from '@/lib/test-fixtures/auth-fixtures'
 
-// Mock Next.js navigation
-jest.mock('next/navigation', () => 
-  require('@/test-utils/router-mock').standardRouterMock
-)
+// Use global router mock from jest.setup.js
 
 // Mock NextAuth
 jest.mock('next-auth/react', () => ({
@@ -26,9 +23,6 @@ jest.mock('next-auth/react', () => ({
   getSession: jest.fn()
 }))
 
-const mockPush = jest.fn()
-const mockUseRouter = useRouter as jest.MockedFunction<typeof useRouter>
-const mockUseSearchParams = useSearchParams as jest.MockedFunction<typeof useSearchParams>
 const mockSignIn = signIn as jest.MockedFunction<typeof signIn>
 const mockGetSession = getSession as jest.MockedFunction<typeof getSession>
 
@@ -39,18 +33,19 @@ describe('SignInPage', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     
-    mockUseRouter.mockReturnValue({
-      push: mockPush,
-      replace: jest.fn(),
-      prefetch: jest.fn(),
-      back: jest.fn(),
-      forward: jest.fn(),
-      refresh: jest.fn()
-    } as any)
+    // The router mock is already configured globally in jest.setup.js
+    const router = useRouter()
+    if (router.push?.mockClear) {
+      router.push.mockClear()
+      router.replace?.mockClear()
+      router.back?.mockClear()
+    }
 
-    mockUseSearchParams.mockReturnValue({
-      get: jest.fn().mockReturnValue(null)
-    } as any)
+    // SearchParams is also mocked globally
+    const searchParams = useSearchParams()
+    if (searchParams?.get?.mockClear) {
+      searchParams.get.mockClear()
+    }
 
     mockGetSession.mockResolvedValue(null)
   })
@@ -115,7 +110,8 @@ describe('SignInPage', () => {
           callbackUrl: '/',
           redirect: false
         })
-        expect(mockPush).toHaveBeenCalledWith('http://localhost:3000/dashboard')
+        const router = useRouter()
+        expect(router.push).toHaveBeenCalledWith('http://localhost:3000/dashboard')
       })
     })
 
@@ -194,13 +190,9 @@ describe('SignInPage', () => {
 
   describe('Error Handling', () => {
     beforeEach(() => {
-      mockUseSearchParams.mockReturnValue({
-        get: jest.fn((param) => {
-          if (param === 'error') return 'AccessDenied'
-          if (param === 'callbackUrl') return '/dashboard'
-          return null
-        })
-      } as any)
+      // Mock search params for error handling tests
+      const mockSearchParams = new URLSearchParams('error=AccessDenied&callbackUrl=/dashboard')
+      jest.mocked(useSearchParams).mockReturnValue(mockSearchParams as any)
     })
 
     it('displays error message from URL params', async () => {
@@ -221,9 +213,9 @@ describe('SignInPage', () => {
       ]
 
       for (const testCase of errorTestCases) {
-        mockUseSearchParams.mockReturnValue({
-          get: jest.fn((param) => param === 'error' ? testCase.error : null)
-        } as any)
+        // Mock search params for this specific error test
+        const mockSearchParams = new URLSearchParams(`error=${testCase.error}`)
+        jest.mocked(useSearchParams).mockReturnValue(mockSearchParams as any)
 
         const { unmount } = render(<SignInPage />)
 
@@ -239,14 +231,15 @@ describe('SignInPage', () => {
   describe('Session Redirect', () => {
     it('redirects to callback URL if user is already signed in', async () => {
       mockGetSession.mockResolvedValue(mockLocalDevSession)
-      mockUseSearchParams.mockReturnValue({
-        get: jest.fn((param) => param === 'callbackUrl' ? '/dashboard' : null)
-      } as any)
+      // Mock search params with callback URL
+      const mockSearchParams = new URLSearchParams('callbackUrl=/dashboard')
+      jest.mocked(useSearchParams).mockReturnValue(mockSearchParams as any)
 
       render(<SignInPage />)
 
       await waitFor(() => {
-        expect(mockPush).toHaveBeenCalledWith('/dashboard')
+        const router = useRouter()
+        expect(router.push).toHaveBeenCalledWith('/dashboard')
       })
     })
 
@@ -256,7 +249,8 @@ describe('SignInPage', () => {
       render(<SignInPage />)
 
       await waitFor(() => {
-        expect(mockPush).toHaveBeenCalledWith('/')
+        const router = useRouter()
+        expect(router.push).toHaveBeenCalledWith('/')
       })
     })
   })
@@ -314,9 +308,9 @@ describe('SignInPage', () => {
     })
 
     it('has proper ARIA attributes for error messages', async () => {
-      mockUseSearchParams.mockReturnValue({
-        get: jest.fn((param) => param === 'error' ? 'AccessDenied' : null)
-      } as any)
+      // Mock search params with error
+      const mockSearchParams = new URLSearchParams('error=AccessDenied')
+      jest.mocked(useSearchParams).mockReturnValue(mockSearchParams as any)
 
       render(<SignInPage />)
 

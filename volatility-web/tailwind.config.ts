@@ -42,6 +42,36 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Chart colors from globals.css
+        chart: {
+          primary: "hsl(var(--chart-primary))",
+          secondary: "hsl(var(--chart-secondary))",
+          tertiary: "hsl(var(--chart-tertiary))",
+          quaternary: "hsl(var(--chart-quaternary))",
+          "portfolio-1": "hsl(var(--chart-portfolio-1))",
+          "portfolio-2": "hsl(var(--chart-portfolio-2))",
+          "portfolio-3": "hsl(var(--chart-portfolio-3))",
+          "risk-low": "hsl(var(--chart-risk-low))",
+          "risk-medium": "hsl(var(--chart-risk-medium))",
+          "risk-high": "hsl(var(--chart-risk-high))",
+          "surface-1": "hsl(var(--chart-surface-1))",
+          "surface-2": "hsl(var(--chart-surface-2))",
+          "surface-3": "hsl(var(--chart-surface-3))",
+          crypto: "hsl(var(--chart-crypto))",
+          options: "hsl(var(--chart-options))",
+          volume: "hsl(var(--chart-volume))",
+        },
+        // Status colors for consistency
+        status: {
+          critical: "hsl(var(--critical))",
+          "critical-soft": "hsl(var(--critical-soft))",
+          warning: "hsl(var(--warning))",
+          "warning-soft": "hsl(var(--warning-soft))",
+          info: "hsl(var(--info))",
+          "info-soft": "hsl(var(--info-soft))",
+          success: "hsl(var(--success))",
+          "success-soft": "hsl(var(--success-soft))",
+        },
         // Bloomberg terminal colors
         bloomberg: {
           amber: "#FF8800",

@@ -42,7 +42,7 @@ jobs:
         flags: python
         name: python-coverage
 
-  frontend-tests:
+  frontend-unit-tests:
     runs-on: ubuntu-latest
     
     steps:
@@ -59,24 +59,56 @@ jobs:
       working-directory: ./volatility-web
       run: npm ci
       
-    - name: Run frontend tests
+    - name: Run frontend unit tests
       working-directory: ./volatility-web
-      run: npm test -- --coverage --watchAll=false
+      run: npm test -- --coverage --watchAll=false --testPathIgnorePatterns=integration --testNamePattern="^(?!.*integration).*"
       
     - name: Run frontend linting
       working-directory: ./volatility-web
       run: npm run lint
       
-    - name: Upload frontend coverage
+    - name: Upload frontend unit test coverage
       uses: codecov/codecov-action@v3
       with:
         directory: ./volatility-web/coverage
-        flags: frontend
-        name: frontend-coverage
+        flags: frontend-unit
+        name: frontend-unit-coverage
+
+  frontend-integration-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: volatility-web/package-lock.json
+        
+    - name: Install dependencies
+      working-directory: ./volatility-web
+      run: npm ci
+      
+    - name: Run frontend integration tests
+      working-directory: ./volatility-web
+      run: npm test -- --coverage --watchAll=false --testPathPatterns=integration --verbose
+      env:
+        NODE_ENV: test
+        NEXTAUTH_URL: http://localhost:3000
+        NEXTAUTH_SECRET: test-secret
+      
+    - name: Upload frontend integration test coverage
+      uses: codecov/codecov-action@v3
+      with:
+        directory: ./volatility-web/coverage
+        flags: frontend-integration
+        name: frontend-integration-coverage
 
   integration-tests:
     runs-on: ubuntu-latest
-    needs: [python-tests, frontend-tests]
+    needs: [python-tests, frontend-unit-tests, frontend-integration-tests]
     
     services:
       # Mock Anthropic API for integration tests

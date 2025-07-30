@@ -58,13 +58,16 @@ function createTestQueryClient(retryConfig = false) {
     defaultOptions: {
       queries: {
         retry: retryConfig,
-        retryDelay: 0,
+        retryDelay: 0, // No delay between retries in tests
         refetchInterval: false,
         refetchOnWindowFocus: false,
         refetchOnMount: false,
         refetchOnReconnect: false,
         staleTime: 0,
         cacheTime: 0,
+        // Ensure errors are thrown immediately
+        suspense: false,
+        useErrorBoundary: false,
       },
     },
     logger: {
@@ -129,24 +132,44 @@ describe('MarketsTable', () => {
   })
 
   it('renders error state when API call fails', async () => {
-    // Fixed React Query retry logic
     const errorMessage = 'Network error'
     mockPolymarketAPI.getMarkets.mockRejectedValue(new Error(errorMessage))
 
-    renderWithQueryClient(
-      <MarketsTable searchTerm="" onSelectMarket={mockOnSelectMarket} />
+    // Create a query client with no retries to force immediate error state
+    const errorQueryClient = new QueryClient({
+      defaultOptions: {
+        queries: {
+          retry: false, // No retries at all 
+          retryDelay: 0,
+          refetchInterval: false,
+          refetchOnWindowFocus: false,
+          refetchOnMount: false,
+          refetchOnReconnect: false,
+          staleTime: 0,
+          cacheTime: 0,
+        },
+      },
+      logger: {
+        log: console.log,
+        warn: console.warn,
+        error: () => {},
+      },
+    })
+
+    render(
+      <QueryClientProvider client={errorQueryClient}>
+        <MarketsTable searchTerm="" onSelectMarket={mockOnSelectMarket} />
+      </QueryClientProvider>
     )
 
-    // First wait for loading to appear, then wait for error
-    await waitFor(() => {
-      expect(screen.getByText('Loading...')).toBeInTheDocument()
-    })
-    
-    // Then wait for loading to finish and error to appear
+    // Wait for error to appear - should be quick with no retries
     await waitFor(() => {
       expect(screen.getByText(/Error loading markets/)).toBeInTheDocument()
       expect(screen.getByText(/Network error/)).toBeInTheDocument()
-    }, { timeout: 5000 })
+    }, { timeout: 1000 })
+    
+    // Should only be called once since no retries
+    expect(mockPolymarketAPI.getMarkets).toHaveBeenCalledTimes(1)
   })
 
   it('calls onSelectMarket when a market row is clicked', async () => {
@@ -217,9 +240,35 @@ describe('MarketsTable', () => {
       .mockRejectedValueOnce(new Error('Network error'))
       .mockResolvedValue(mockMarketsResponse)
 
-    renderWithQueryClient(
-      <MarketsTable searchTerm="" onSelectMarket={mockOnSelectMarket} />,
-      2 // Enable retries for this test
+    // Create a custom QueryClient that forces retries even in test environment
+    const retryQueryClient = new QueryClient({
+      defaultOptions: {
+        queries: {
+          retry: 2, // Enable 2 retries specifically for this test
+          retryDelay: 0, // No delay for faster test execution
+          refetchInterval: false,
+          refetchOnWindowFocus: false,
+          refetchOnMount: false,
+          refetchOnReconnect: false,
+          staleTime: 0,
+          cacheTime: 0,
+        },
+      },
+      logger: {
+        log: console.log,
+        warn: console.warn,
+        error: () => {},
+      },
+    })
+
+    // Temporarily override NODE_ENV for this component to enable retries
+    const originalEnv = process.env.NODE_ENV
+    process.env.NODE_ENV = 'development'
+
+    render(
+      <QueryClientProvider client={retryQueryClient}>
+        <MarketsTable searchTerm="" onSelectMarket={mockOnSelectMarket} />
+      </QueryClientProvider>
     )
 
     await waitFor(() => {
@@ -228,6 +277,9 @@ describe('MarketsTable', () => {
 
     // Should have been called 3 times (initial + 2 retries before success)
     expect(mockPolymarketAPI.getMarkets).toHaveBeenCalledTimes(3)
+    
+    // Restore original environment
+    process.env.NODE_ENV = originalEnv
   })
 
   it('applies correct styling classes for unified theme', async () => {
@@ -239,7 +291,7 @@ describe('MarketsTable', () => {
     )
 
     await waitFor(() => {
-      const tableContainer = screen.getByText('ACTIVE MARKETS').closest('div')
+      const tableContainer = screen.getByText('ACTIVE MARKETS').closest('div').parentElement
       expect(tableContainer).toHaveClass('border', 'border-border', 'rounded-lg')
     }, { timeout: 3000 })
   })

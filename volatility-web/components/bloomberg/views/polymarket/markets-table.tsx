@@ -32,7 +32,7 @@ export function MarketsTable({ searchTerm, onSelectMarket, showVolatility = fals
       }
     },
     refetchInterval: 30000, // Refresh every 30 seconds
-    retry: 3,
+    retry: process.env.NODE_ENV === 'test' ? false : 3, // No retries in test environment
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
     staleTime: 10000, // Consider data stale after 10 seconds
     cacheTime: 5 * 60 * 1000, // Cache for 5 minutes

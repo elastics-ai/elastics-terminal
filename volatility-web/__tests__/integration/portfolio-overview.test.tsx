@@ -13,21 +13,10 @@
 import React from 'react'
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import HomePage from '../../app/page'
+import HomePage from '@/app/page'
 import '@testing-library/jest-dom'
 
-// Mock chart libraries
-jest.mock('recharts', () => ({
-  ResponsiveContainer: ({ children }: any) => <div data-testid="chart-container">{children}</div>,
-  LineChart: ({ children }: any) => <div data-testid="line-chart">{children}</div>,
-  PieChart: ({ children }: any) => <div data-testid="pie-chart">{children}</div>,
-  Line: () => <div data-testid="line" />,
-  Pie: () => <div data-testid="pie" />,
-  Cell: () => <div data-testid="cell" />,
-  XAxis: () => <div data-testid="x-axis" />,
-  YAxis: () => <div data-testid="y-axis" />,
-  CartesianGrid: () => <div data-testid="cartesian-grid" />,
-}))
+// Recharts mocks are now handled globally in jest.setup.js
 
 // Mock next-auth
 jest.mock('next-auth/react', () => ({

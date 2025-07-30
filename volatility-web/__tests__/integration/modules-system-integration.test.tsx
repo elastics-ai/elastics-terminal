@@ -41,56 +41,7 @@ jest.mock('next/navigation', () => ({
   })
 }))
 
-// Mock Three.js
-jest.mock('three', () => ({
-  Scene: jest.fn(() => ({ background: null, add: jest.fn() })),
-  PerspectiveCamera: jest.fn(() => ({
-    position: { set: jest.fn() },
-    lookAt: jest.fn(),
-    aspect: 1,
-    updateProjectionMatrix: jest.fn()
-  })),
-  WebGLRenderer: jest.fn(() => ({
-    setSize: jest.fn(),
-    setPixelRatio: jest.fn(),
-    domElement: document.createElement('canvas'),
-    render: jest.fn(),
-    dispose: jest.fn()
-  })),
-  Color: jest.fn(),
-  AmbientLight: jest.fn(),
-  DirectionalLight: jest.fn(() => ({ position: { set: jest.fn() } })),
-  PlaneGeometry: jest.fn(() => ({
-    attributes: {
-      position: {
-        count: 100,
-        setXYZ: jest.fn(),
-        getX: jest.fn(() => 0),
-        getY: jest.fn(() => 0),
-        setZ: jest.fn()
-      }
-    },
-    setAttribute: jest.fn(),
-    computeVertexNormals: jest.fn()
-  })),
-  MeshPhongMaterial: jest.fn(),
-  Mesh: jest.fn(),
-  GridHelper: jest.fn(() => ({ position: { y: 0 } })),
-  Float32BufferAttribute: jest.fn(),
-  DoubleSide: 'DoubleSide'
-}))
-
-// Mock OrbitControls
-jest.mock('three/examples/jsm/controls/OrbitControls', () => ({
-  OrbitControls: jest.fn(() => ({
-    enableDamping: true,
-    dampingFactor: 0.05,
-    enableZoom: true,
-    enablePan: true,
-    update: jest.fn(),
-    dispose: jest.fn()
-  }))
-}))
+// Three.js mocks are now handled globally in jest.setup.js
 
 // Mock AppLayout
 jest.mock('@/components/layout/app-layout', () => ({

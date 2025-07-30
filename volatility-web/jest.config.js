@@ -9,6 +9,11 @@ const createJestConfig = nextJest({
 const customJestConfig = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testEnvironment: 'jest-environment-jsdom',
+  testMatch: [
+    '<rootDir>/__tests__/**/*.{js,jsx,ts,tsx}',
+    '<rootDir>/components/**/__tests__/**/*.{js,jsx,ts,tsx}',
+    '<rootDir>/**/*.test.{js,jsx,ts,tsx}'
+  ],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
     '^react-markdown$': '<rootDir>/__mocks__/react-markdown.js',

@@ -66,20 +66,25 @@
     --chart-tertiary: 262 83% 58%;
     --chart-quaternary: 38 92% 50%;
     
-    /* Portfolio chart gradients - blue to green spectrum */
-    --chart-portfolio-1: 217 91% 60%;
-    --chart-portfolio-2: 168 76% 42%;
-    --chart-portfolio-3: 158 64% 52%;
+    /* Portfolio chart gradients - blue to green spectrum matching design */
+    --chart-portfolio-1: 217 91% 60%; /* Blue from design */
+    --chart-portfolio-2: 180 65% 45%; /* Teal intermediate */
+    --chart-portfolio-3: 158 64% 52%; /* Green from design */
     
     /* Risk heatmap colors - green to red spectrum */
     --chart-risk-low: 158 64% 52%;
     --chart-risk-medium: 38 92% 50%;
     --chart-risk-high: 0 84% 60%;
     
-    /* 3D surface colors - blue/teal spectrum */
-    --chart-surface-1: 168 76% 42%;
-    --chart-surface-2: 196 76% 42%;
-    --chart-surface-3: 217 91% 60%;
+    /* 3D surface colors - blue/teal spectrum matching design wireframes */
+    --chart-surface-1: 180 65% 45%; /* Teal base */
+    --chart-surface-2: 196 76% 50%; /* Blue-teal intermediate */
+    --chart-surface-3: 217 91% 60%; /* Blue highlight */
+    
+    /* Additional chart colors for consistency */
+    --chart-crypto: 262 83% 58%; /* Purple for crypto */
+    --chart-options: 38 92% 50%; /* Orange for options */
+    --chart-volume: 220 13% 70%; /* Gray for volume */
   }
 
   .dark {
@@ -252,5 +257,91 @@
     background-color: hsl(var(--accent));
     color: hsl(var(--accent-foreground));
     @apply px-4 py-2 rounded font-medium hover:opacity-90 transition-opacity;
+  }
+  
+  /* Enhanced button variants with better hover states */
+  .btn-ghost {
+    @apply bg-transparent text-foreground hover:bg-secondary transition-colors px-4 py-2 rounded font-medium;
+  }
+  
+  .btn-outline {
+    @apply bg-transparent border border-border text-foreground hover:bg-secondary hover:border-accent transition-colors px-4 py-2 rounded font-medium;
+  }
+  
+  /* Card hover effects matching design */
+  .card-hover {
+    @apply transition-all duration-200 hover:shadow-md hover:border-accent/20;
+  }
+  
+  /* Navigation item active state enhancement */
+  .nav-item {
+    @apply flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200;
+  }
+  
+  .nav-item-active {
+    @apply bg-[hsl(var(--sidebar-active))] text-white shadow-sm;
+  }
+  
+  .nav-item-inactive {
+    @apply text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-white;
+  }
+  
+  /* Table row hover effects */
+  .table-row {
+    @apply transition-colors hover:bg-secondary/50;
+  }
+  
+  /* Input focus states */
+  .input-focus {
+    @apply focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all;
+  }
+  
+  /* Chart legend styling */
+  .chart-legend {
+    @apply flex items-center gap-2 text-sm text-muted-foreground;
+  }
+  
+  .chart-legend-item {
+    @apply flex items-center gap-1.5;
+  }
+  
+  /* Status dot variants */
+  .status-dot {
+    @apply w-2 h-2 rounded-full;
+  }
+  
+  .status-dot-online {
+    @apply bg-green-500;
+  }
+  
+  .status-dot-offline {
+    @apply bg-gray-400;
+  }
+  
+  .status-dot-warning {
+    background-color: hsl(var(--warning));
+  }
+  
+  .status-dot-error {
+    background-color: hsl(var(--critical));
+  }
+  
+  /* Form styling consistency */
+  .form-label {
+    @apply text-sm font-medium text-foreground mb-1.5;
+  }
+  
+  .form-helper {
+    @apply text-xs text-muted-foreground mt-1;
+  }
+  
+  /* Loading states */
+  .loading-pulse {
+    @apply animate-pulse bg-secondary/50;
+  }
+  
+  /* Tooltip styling */
+  .tooltip {
+    @apply bg-popover text-popover-foreground border border-border rounded-md px-2 py-1 text-xs shadow-md;
   }
 }

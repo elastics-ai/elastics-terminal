@@ -21,7 +21,7 @@ import {
 // Mock WebSocket
 const WS_URL = 'ws://localhost:8765'
 
-describe.skip('WebSocket Client', () => {
+describe('WebSocket Client', () => {
   let server: WS
 
   beforeEach(async () => {

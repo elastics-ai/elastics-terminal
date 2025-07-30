@@ -84,29 +84,30 @@ export function PerformanceChart() {
       <div className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis 
               dataKey="date" 
-              stroke="#666"
+              stroke="hsl(var(--muted-foreground))"
               tick={{ fontSize: 12 }}
             />
             <YAxis 
-              stroke="#666"
+              stroke="hsl(var(--muted-foreground))"
               tick={{ fontSize: 12 }}
               domain={['dataMin - 5', 'dataMax + 5']}
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: '#fff',
-                border: '1px solid #e5e5e5',
+                backgroundColor: 'hsl(var(--popover))',
+                border: '1px solid hsl(var(--border))',
                 borderRadius: '6px',
+                color: 'hsl(var(--popover-foreground))',
               }}
             />
-            <ReferenceLine y={100} stroke="#666" strokeDasharray="3 3" />
+            <ReferenceLine y={100} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
             <Line
               type="monotone"
               dataKey="portfolio"
-              stroke="hsl(237, 84%, 65%)"
+              stroke="hsl(var(--chart-primary))"
               strokeWidth={2}
               dot={false}
               name="Portfolio"
@@ -114,7 +115,7 @@ export function PerformanceChart() {
             <Line
               type="monotone"
               dataKey="benchmark"
-              stroke="#666"
+              stroke="hsl(var(--chart-volume))"
               strokeWidth={1}
               strokeDasharray="5 5"
               dot={false}
@@ -126,11 +127,11 @@ export function PerformanceChart() {
 
       <div className="flex items-center gap-6 mt-4">
         <div className="flex items-center gap-2">
-          <div className="w-3 h-0.5 bg-primary"></div>
+          <div className="w-3 h-0.5" style={{ backgroundColor: 'hsl(var(--chart-primary))' }}></div>
           <span className="text-sm text-muted-foreground">Portfolio</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-0.5 bg-gray-400 border-dashed"></div>
+          <div className="w-3 h-0.5" style={{ backgroundColor: 'hsl(var(--chart-volume))' }}></div>
           <span className="text-sm text-muted-foreground">Benchmark</span>
         </div>
       </div>
