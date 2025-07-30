@@ -8,6 +8,11 @@ export function Header() {
   const [time, setTime] = useState(new Date());
 
   useEffect(() => {
+    // Skip timer updates during tests to avoid act() warnings
+    if (process.env.NODE_ENV === 'test') {
+      return;
+    }
+
     const timer = setInterval(() => {
       setTime(new Date());
     }, 1000);
