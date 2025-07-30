@@ -18,7 +18,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import ChatPage from '@/app/chat/page'
 
 // Mock fetch for API calls
-global.fetch = jest.fn()
+const mockFetch = jest.fn()
+global.fetch = mockFetch
 
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
@@ -66,7 +67,7 @@ jest.mock('@/components/bloomberg/views/chat/chat-interface', () => ({
           const data = await response.json()
           // Simulate AI response message by directly updating messages
           const assistantMessage = {
-            id: (Date.now() + 1).toString(),
+            id: `form-${Date.now()}-${Math.random()}`,
             role: 'assistant' as const,
             content: data.response,
             timestamp: new Date()
@@ -117,7 +118,37 @@ jest.mock('@/components/bloomberg/views/chat/chat-interface', () => ({
           <h3>Suggested Follow-ups</h3>
           <button 
             data-testid="suggestion-1"
-            onClick={() => onSuggestionClick?.("Show me the specific timestamps of these leveraging outliers")}
+            onClick={async () => {
+              const content = "Show me the specific timestamps of these leveraging outliers"
+              onSuggestionClick?.(content)
+              onSendMessage(content)
+              
+              // Trigger the same API call as form submission
+              setIsLoading(true)
+              try {
+                await new Promise(resolve => setTimeout(resolve, 100))
+                const response = await fetch('http://localhost:8000/api/chat/send', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ message: content })
+                })
+                
+                if (response.ok) {
+                  const data = await response.json()
+                  const assistantMessage = {
+                    id: `suggestion-${Date.now()}-${Math.random()}`,
+                    role: 'assistant' as const,
+                    content: data.response,
+                    timestamp: new Date()
+                  }
+                  setMessages((prev: any) => [...prev, assistantMessage])
+                }
+                setIsLoading(false)
+              } catch (error) {
+                console.error('Chat API error:', error)
+                setIsLoading(false)
+              }
+            }}
           >
             Show me the specific timestamps of these leveraging outliers
           </button>
@@ -163,7 +194,7 @@ describe('AI Chat Interface Integration Tests', () => {
     })
     
     // Reset fetch mock
-    ;(fetch as jest.Mock).mockClear()
+    mockFetch.mockClear()
   })
 
   const renderChatPage = () => {
@@ -179,7 +210,7 @@ describe('AI Chat Interface Integration Tests', () => {
       const user = userEvent.setup()
       
       // Mock API responses for multi-query workflow
-      ;(fetch as jest.Mock)
+      mockFetch
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({
@@ -264,8 +295,8 @@ describe('AI Chat Interface Integration Tests', () => {
       }, { timeout: 5000 })
 
       // Verify API calls were made correctly
-      expect(fetch).toHaveBeenCalledTimes(2)
-      expect(fetch).toHaveBeenNthCalledWith(1, 'http://localhost:8000/api/chat/send', expect.objectContaining({
+      expect(mockFetch).toHaveBeenCalledTimes(2)
+      expect(mockFetch).toHaveBeenNthCalledWith(1, 'http://localhost:8000/api/chat/send', expect.objectContaining({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: expect.stringContaining('historical ETH performance')
@@ -276,7 +307,7 @@ describe('AI Chat Interface Integration Tests', () => {
       const user = userEvent.setup()
       
       // Mock contextual responses
-      ;(fetch as jest.Mock)
+      mockFetch
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({
@@ -319,7 +350,7 @@ describe('AI Chat Interface Integration Tests', () => {
       })
 
       // Verify context was passed
-      expect(fetch).toHaveBeenNthCalledWith(2, 'http://localhost:8000/api/chat/send', expect.objectContaining({
+      expect(mockFetch).toHaveBeenNthCalledWith(2, 'http://localhost:8000/api/chat/send', expect.objectContaining({
         body: expect.stringContaining('"conversation_id":1')
       }))
     })
@@ -329,7 +360,7 @@ describe('AI Chat Interface Integration Tests', () => {
     it('should integrate real-time market data in AI responses', async () => {
       const user = userEvent.setup()
       
-      ;(fetch as jest.Mock).mockResolvedValueOnce({
+      mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           response: `Based on real-time ETH data (current price: $2,645.32):
@@ -372,7 +403,7 @@ describe('AI Chat Interface Integration Tests', () => {
     it('should handle data source selection and integration', async () => {
       const user = userEvent.setup()
       
-      ;(fetch as jest.Mock).mockResolvedValueOnce({
+      mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           response: `I recommend using **Hyperliquid** for your analysis:
@@ -410,7 +441,7 @@ describe('AI Chat Interface Integration Tests', () => {
       const user = userEvent.setup()
       
       // Mock API error
-      ;(fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'))
+      mockFetch.mockRejectedValueOnce(new Error('Network error'))
 
       renderChatPage()
 
@@ -429,7 +460,7 @@ describe('AI Chat Interface Integration Tests', () => {
       const user = userEvent.setup()
       
       // First call fails, second succeeds
-      ;(fetch as jest.Mock)
+      mockFetch
         .mockRejectedValueOnce(new Error('Service temporarily unavailable'))
         .mockResolvedValueOnce({
           ok: true,
@@ -472,7 +503,7 @@ describe('AI Chat Interface Integration Tests', () => {
       const sendButton = screen.getByTestId('send-button')
       await user.click(sendButton)
 
-      expect(fetch).not.toHaveBeenCalled()
+      expect(mockFetch).not.toHaveBeenCalled()
 
       // Very long query should be handled appropriately
       const chatInput = screen.getByTestId('chat-input')
@@ -481,7 +512,7 @@ describe('AI Chat Interface Integration Tests', () => {
       await user.click(sendButton)
 
       // Should still process but with appropriate handling
-      expect(fetch).toHaveBeenCalled()
+      expect(mockFetch).toHaveBeenCalled()
     })
   })
 
@@ -489,7 +520,7 @@ describe('AI Chat Interface Integration Tests', () => {
     it('should generate and display contextual suggestions', async () => {
       const user = userEvent.setup()
       
-      ;(fetch as jest.Mock).mockResolvedValueOnce({
+      mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           response: 'ETH analysis complete. Here are the key patterns...',
@@ -522,7 +553,7 @@ describe('AI Chat Interface Integration Tests', () => {
       const user = userEvent.setup()
       
       // Mock responses for suggestion workflow
-      ;(fetch as jest.Mock)
+      mockFetch
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({
@@ -576,7 +607,7 @@ describe('AI Chat Interface Integration Tests', () => {
         expect(screen.getByText(/Sharpe Ratio: 1\.89/)).toBeInTheDocument()
       })
 
-      expect(fetch).toHaveBeenCalledTimes(2)
+      expect(mockFetch).toHaveBeenCalledTimes(2)
     })
   })
 
@@ -597,7 +628,7 @@ describe('AI Chat Interface Integration Tests', () => {
     it('should update analysis results based on query responses', async () => {
       const user = userEvent.setup()
       
-      ;(fetch as jest.Mock).mockResolvedValueOnce({
+      mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           response: 'Updated analysis shows new patterns in ETH data...',
@@ -632,7 +663,7 @@ describe('AI Chat Interface Integration Tests', () => {
       const user = userEvent.setup()
       
       // Mock rapid query responses
-      ;(fetch as jest.Mock)
+      mockFetch
         .mockResolvedValue({
           ok: true,
           json: async () => ({
@@ -663,7 +694,7 @@ describe('AI Chat Interface Integration Tests', () => {
 
       // All queries should be processed
       await waitFor(() => {
-        expect(fetch).toHaveBeenCalledTimes(3)
+        expect(mockFetch).toHaveBeenCalledTimes(3)
       }, { timeout: 5000 })
     })
 
@@ -671,7 +702,7 @@ describe('AI Chat Interface Integration Tests', () => {
       const user = userEvent.setup()
       
       // Mock slow response
-      ;(fetch as jest.Mock).mockImplementation(() => 
+      mockFetch.mockImplementation(() => 
         new Promise(resolve => 
           setTimeout(() => resolve({
             ok: true,
