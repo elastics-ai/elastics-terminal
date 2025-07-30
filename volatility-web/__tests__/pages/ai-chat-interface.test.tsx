@@ -68,8 +68,16 @@ jest.mock('@/components/bloomberg/views/chat/chat-interface', () => ({
               data-testid="submit-query"
               onClick={() => {
                 if (input.trim()) {
-                  onSendMessage(input)
+                  const content = input.trim()
+                  onSendMessage(content)
                   setInput('')
+                  // Call the API mock like the real component
+                  const { chatAPI } = require('@/lib/api')
+                  chatAPI.sendMessage({
+                    content,
+                    session_id: `session_${Date.now()}`,
+                    conversation_id: undefined,
+                  })
                 }
               }}
             >
@@ -88,7 +96,17 @@ jest.mock('@/components/bloomberg/views/chat/chat-interface', () => ({
           <h3>Suggested Questions</h3>
           <button 
             data-testid="suggestion-historical-data"
-            onClick={() => onSuggestionClick?.("Where should I source the data from? Binance, Hyperliquid or static data from the library?")}
+            onClick={() => {
+              const suggestion = "Where should I source the data from? Binance, Hyperliquid or static data from the library?"
+              onSuggestionClick?.(suggestion)
+              // Call the API mock like the real component
+              const { chatAPI } = require('@/lib/api')
+              chatAPI.sendMessage({
+                content: suggestion,
+                session_id: `session_${Date.now()}`,
+                conversation_id: undefined,
+              })
+            }}
           >
             Where should I source the data from? Binance, Hyperliquid or static data from the library?
           </button>
