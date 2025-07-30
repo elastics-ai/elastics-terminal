@@ -26,8 +26,7 @@ class TestDatabaseIntegration:
         
         yield db
         
-        # Cleanup
-        db.close()
+        # Cleanup - DatabaseManager doesn't need explicit close() since it uses context managers
         os.unlink(temp_file.name)
     
     def test_database_initialization(self, temp_db):
