@@ -3,6 +3,7 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import MarketOverviewPage from '@/app/market-overview/page'
 import { marketAPI, dataLibraryAPI } from '@/lib/api'
+import { FloatingChatProvider } from '@/contexts/FloatingChatContext'
 
 // Mock the API
 jest.mock('@/lib/api', () => ({
@@ -15,6 +16,34 @@ jest.mock('@/lib/api', () => ({
   dataLibraryAPI: {
     getMarketStats: jest.fn(),
   },
+}))
+
+// Mock NextAuth
+jest.mock('next-auth/react', () => ({
+  useSession: () => ({
+    data: {
+      user: {
+        name: 'Test User',
+        email: 'test@example.com',
+      },
+    },
+    status: 'authenticated',
+  }),
+  signOut: jest.fn(),
+}))
+
+// Mock Next.js navigation
+jest.mock('next/navigation', () => ({
+  usePathname: () => '/market-overview',
+}))
+
+// Mock AppLayout dependencies
+jest.mock('@/components/layout/header', () => ({
+  Header: () => <div data-testid="header">Header</div>,
+}))
+
+jest.mock('@/components/chat/FixedChatInput', () => ({
+  FixedChatInput: () => <div data-testid="fixed-chat">Fixed Chat</div>,
 }))
 
 // Mock recharts
@@ -48,7 +77,9 @@ describe('MarketOverviewPage', () => {
   const renderComponent = () => {
     return render(
       <QueryClientProvider client={queryClient}>
-        <MarketOverviewPage />
+        <FloatingChatProvider>
+          <MarketOverviewPage />
+        </FloatingChatProvider>
       </QueryClientProvider>
     )
   }
@@ -81,9 +112,18 @@ describe('MarketOverviewPage', () => {
 
       renderComponent()
 
+      // First, wait for the main page content to render
       await waitFor(() => {
-        expect(screen.getByText('S&P 500')).toBeInTheDocument()
-        expect(screen.getByText('Bitcoin')).toBeInTheDocument()
+        expect(screen.getByText('Market Overview')).toBeInTheDocument()
+      })
+
+      // The component uses hard-coded data, so check for specific symbols and names
+      await waitFor(() => {
+        // Check for index symbols (these are displayed as text)
+        expect(screen.getByText('SPX')).toBeInTheDocument()
+        expect(screen.getByText('BTC')).toBeInTheDocument()
+        
+        // Check for formatted prices (these are displayed via formatCurrency)
         expect(screen.getByText('$4,783.25')).toBeInTheDocument()
         expect(screen.getByText('$52,345.67')).toBeInTheDocument()
       })
@@ -93,6 +133,10 @@ describe('MarketOverviewPage', () => {
       mockMarketAPI.getSnapshot.mockResolvedValue(mockMarketSnapshot)
 
       renderComponent()
+
+      await waitFor(() => {
+        expect(screen.getByText('Market Overview')).toBeInTheDocument()
+      })
 
       await waitFor(() => {
         const spxChange = screen.getByText('+0.49%')
@@ -110,6 +154,10 @@ describe('MarketOverviewPage', () => {
       renderComponent()
 
       await waitFor(() => {
+        expect(screen.getByText('Market Overview')).toBeInTheDocument()
+      })
+
+      await waitFor(() => {
         expect(screen.getByText('Vol: 2.3B')).toBeInTheDocument()
         expect(screen.getByText('Vol: 24.5B')).toBeInTheDocument()
       })
@@ -121,6 +169,10 @@ describe('MarketOverviewPage', () => {
       mockMarketAPI.getSnapshot.mockResolvedValue(mockMarketSnapshot)
 
       renderComponent()
+
+      await waitFor(() => {
+        expect(screen.getByText('Market Overview')).toBeInTheDocument()
+      })
 
       await waitFor(() => {
         expect(screen.getByText('Market Performance')).toBeInTheDocument()
