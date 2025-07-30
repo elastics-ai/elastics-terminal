@@ -10,6 +10,7 @@ import pytest
 import asyncio
 import tempfile
 import os
+import re
 from unittest.mock import Mock, AsyncMock, patch
 from datetime import datetime
 
@@ -448,6 +449,14 @@ class TestStrategyBuilderIntegration:
             
             db_manager = DatabaseManager(temp_db.name)
             db_manager.init_database()
+            
+            # Apply strategy builder migrations
+            from src.volatility_filter.migrations.apply_migrations import apply_migration
+            import os
+            migrations_dir = os.path.join(os.path.dirname(__file__), '..', 'src', 'volatility_filter', 'migrations')
+            strategy_migration = os.path.join(migrations_dir, 'add_strategy_builder_tables.sql')
+            if os.path.exists(strategy_migration):
+                apply_migration(temp_db.name, strategy_migration)
             
             handler = StrategyBuilderChatHandler(temp_db.name)
             
