@@ -1,0 +1,3 @@
+# Local development requirements (includes private dependencies)
+-r requirements.txt
+-e ./elastics-options  # Elastics options pricing library

@@ -9,7 +9,17 @@ from pydantic import BaseModel
 
 from ..services.ssvi_service import SSVIService
 from ..services.greeks_service import GreeksService
-from options.bookkeeper import Bookkeeper
+
+# Conditional import for options module (private repo)
+try:
+    from options.bookkeeper import Bookkeeper
+    OPTIONS_AVAILABLE = True
+except ImportError:
+    OPTIONS_AVAILABLE = False
+    # Mock for CI testing when elastics-options is not available
+    class Bookkeeper:
+        def __init__(self, *args, **kwargs):
+            raise NotImplementedError("Options module not available - elastics-options is a private repository")
 
 
 class TargetGreeks(BaseModel):

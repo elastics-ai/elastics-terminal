@@ -15,8 +15,16 @@ import logging
 from datetime import datetime
 from dataclasses import dataclass
 
-# Import from elastics-options
-from options.ssvi import SSVI
+# Import from elastics-options (private repo)
+try:
+    from options.ssvi import SSVI
+    OPTIONS_AVAILABLE = True
+except ImportError:
+    OPTIONS_AVAILABLE = False
+    # Mock for CI testing
+    class SSVI:
+        def __init__(self, *args, **kwargs):
+            raise NotImplementedError("Options module not available - elastics-options is a private repository")
 from ..database import DatabaseManager
 from ..models.volatility import SSVIParameters, SurfaceFitResult, VolatilitySurfacePoint
 
