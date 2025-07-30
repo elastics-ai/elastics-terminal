@@ -147,3 +147,84 @@ global.fetch = jest.fn(() =>
 // Mock environment variables
 process.env.NEXTAUTH_URL = 'http://localhost:3000'
 process.env.NEXTAUTH_SECRET = 'test-secret'
+
+// Mock Three.js globally for all tests that need 3D rendering
+jest.mock('three', () => ({
+  Scene: jest.fn(() => ({
+    background: null,
+    add: jest.fn()
+  })),
+  PerspectiveCamera: jest.fn(() => ({
+    position: { set: jest.fn() },
+    lookAt: jest.fn(),
+    aspect: 1,
+    updateProjectionMatrix: jest.fn()
+  })),
+  WebGLRenderer: jest.fn(() => ({
+    setSize: jest.fn(),
+    setPixelRatio: jest.fn(),
+    domElement: document.createElement('canvas'),
+    render: jest.fn(),
+    dispose: jest.fn()
+  })),
+  Color: jest.fn(),
+  AmbientLight: jest.fn(),
+  DirectionalLight: jest.fn(() => ({
+    position: { set: jest.fn() }
+  })),
+  PlaneGeometry: jest.fn(() => ({
+    attributes: {
+      position: {
+        count: 100,
+        setXYZ: jest.fn(),
+        getX: jest.fn(() => 0),
+        getY: jest.fn(() => 0),
+        setZ: jest.fn()
+      }
+    },
+    setAttribute: jest.fn(),
+    computeVertexNormals: jest.fn()
+  })),
+  MeshPhongMaterial: jest.fn(),
+  Mesh: jest.fn(),
+  GridHelper: jest.fn(() => ({
+    position: { y: 0 }
+  })),
+  Float32BufferAttribute: jest.fn(),
+  DoubleSide: 'DoubleSide'
+}))
+
+// Mock OrbitControls globally
+jest.mock('three/examples/jsm/controls/OrbitControls', () => ({
+  OrbitControls: jest.fn(() => ({
+    enableDamping: true,
+    dampingFactor: 0.05,
+    enableZoom: true,
+    enablePan: true,
+    update: jest.fn(),
+    dispose: jest.fn()
+  }))
+}))
+
+// Mock Recharts globally for all chart components
+jest.mock('recharts', () => {
+  const React = require('react')
+  return {
+    ResponsiveContainer: ({ children }) => React.createElement('div', { 'data-testid': 'chart-container' }, children),
+    LineChart: ({ children }) => React.createElement('div', { 'data-testid': 'line-chart' }, children),
+    PieChart: ({ children }) => React.createElement('div', { 'data-testid': 'pie-chart' }, children),
+    AreaChart: ({ children }) => React.createElement('div', { 'data-testid': 'area-chart' }, children),
+    BarChart: ({ children }) => React.createElement('div', { 'data-testid': 'bar-chart' }, children),
+    Line: () => React.createElement('div', { 'data-testid': 'line' }),
+    Area: () => React.createElement('div', { 'data-testid': 'area' }),
+    Pie: () => React.createElement('div', { 'data-testid': 'pie' }),
+    Bar: () => React.createElement('div', { 'data-testid': 'bar' }),
+    Cell: () => React.createElement('div', { 'data-testid': 'cell' }),
+    XAxis: () => React.createElement('div', { 'data-testid': 'x-axis' }),
+    YAxis: () => React.createElement('div', { 'data-testid': 'y-axis' }),
+    CartesianGrid: () => React.createElement('div', { 'data-testid': 'cartesian-grid' }),
+    Tooltip: () => React.createElement('div', { 'data-testid': 'tooltip' }),
+    Legend: () => React.createElement('div', { 'data-testid': 'legend' }),
+    ReferenceLine: () => React.createElement('div', { 'data-testid': 'reference-line' })
+  }
+})
