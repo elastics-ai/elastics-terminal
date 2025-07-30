@@ -50,6 +50,7 @@ jest.mock('@/components/bloomberg/views/chat/chat-interface', () => ({
     const [isLoading, setIsLoading] = React.useState(false)
     const [conversationId, setConversationId] = React.useState(1)
     const [errorMessage, setErrorMessage] = React.useState('')
+    const messageCounter = React.useRef(0)
     
     const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault()
@@ -80,8 +81,9 @@ jest.mock('@/components/bloomberg/views/chat/chat-interface', () => ({
         if (response.ok) {
           const data = await response.json()
           // Simulate AI response message by directly updating messages
+          messageCounter.current += 1
           const assistantMessage = {
-            id: `form-${Date.now()}-${Math.random()}`,
+            id: `form-${messageCounter.current}-${Date.now()}`,
             role: 'assistant' as const,
             content: data.response,
             timestamp: new Date()
@@ -163,7 +165,7 @@ jest.mock('@/components/bloomberg/views/chat/chat-interface', () => ({
                 if (response.ok) {
                   const data = await response.json()
                   const assistantMessage = {
-                    id: `suggestion-${Date.now()}-${Math.random()}`,
+                    id: `suggestion-${++messageCounter.current}-${Date.now()}`,
                     role: 'assistant' as const,
                     content: data.response,
                     timestamp: new Date()
@@ -206,7 +208,7 @@ jest.mock('@/components/bloomberg/views/chat/chat-interface', () => ({
                 if (response.ok) {
                   const data = await response.json()
                   const assistantMessage = {
-                    id: `suggestion-${Date.now()}-${Math.random()}`,
+                    id: `suggestion-${++messageCounter.current}-${Date.now()}`,
                     role: 'assistant' as const,
                     content: data.response,
                     timestamp: new Date()

@@ -31,14 +31,26 @@ export const createTestQueryClient = () => new QueryClient({
   },
 })
 
-// Override console.error to suppress act() warnings in test environment
+// Override console.error to suppress warnings in test environment
 const originalError = console.error
 beforeAll(() => {
   console.error = (...args) => {
     if (
-      typeof args[0] === 'string' &&
-      args[0].includes('Warning: An update to') &&
-      args[0].includes('was not wrapped in act')
+      typeof args[0] === 'string' && (
+        // Suppress act() warnings
+        (args[0].includes('Warning: An update to') && args[0].includes('was not wrapped in act')) ||
+        // Suppress React key warnings in tests
+        args[0].includes('Encountered two children with the same key') ||
+        // Suppress other React development warnings in test environment
+        args[0].includes('Keys should be unique so that components maintain their identity') ||
+        // Suppress chat API errors that are intentionally triggered in tests
+        args[0].includes('Chat API error:') ||
+        // Suppress other API errors that are intentionally triggered in tests
+        args[0].includes('Polymarket API error:') ||
+        args[0].includes('Query error:') ||
+        args[0].includes('Error fetching dashboard data:') ||
+        args[0].includes('Mock API error:')
+      )
     ) {
       return
     }
