@@ -63,7 +63,7 @@ describe('MarketSearchBar', () => {
   it('applies correct styling classes for unified theme', () => {
     render(<MarketSearchBar value="" onChange={mockOnChange} />)
 
-    const container = screen.getByText('SEARCH:').closest('div')
+    const container = screen.getByText('SEARCH:').closest('div')?.parentElement
     expect(container).toHaveClass('border', 'border-border', 'rounded-lg')
 
     const searchInput = screen.getByPlaceholderText('Search by market question, category, or tags...')

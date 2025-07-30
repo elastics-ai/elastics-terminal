@@ -88,7 +88,8 @@ describe('MarketDetailsModal', () => {
   it('calls onClose when background overlay is clicked', () => {
     render(<MarketDetailsModal market={mockMarket} onClose={mockOnClose} />)
 
-    const overlay = screen.getByText('MARKET DETAILS').closest('div')?.parentElement
+    // Get the overlay div (fixed inset-0 bg-black/80)
+    const overlay = document.querySelector('.fixed.inset-0.bg-black\\/80')
     fireEvent.click(overlay!)
 
     expect(mockOnClose).toHaveBeenCalledTimes(1)
@@ -113,7 +114,7 @@ describe('MarketDetailsModal', () => {
   it('applies correct styling classes for unified theme', () => {
     render(<MarketDetailsModal market={mockMarket} onClose={mockOnClose} />)
 
-    const modalContent = screen.getByText('MARKET DETAILS').closest('div')
+    const modalContent = screen.getByText('MARKET DETAILS').closest('div')?.parentElement
     expect(modalContent).toHaveClass('bg-background', 'border', 'border-border', 'rounded-lg')
 
     // Check YES percentage styling
@@ -142,7 +143,8 @@ describe('MarketDetailsModal', () => {
     render(<MarketDetailsModal market={incompleteMarket} onClose={mockOnClose} />)
 
     expect(screen.getByText('Test question')).toBeInTheDocument()
-    expect(screen.getByText('50.0%')).toBeInTheDocument()
+    // There are two 50.0% elements (YES and NO), so getAllByText should be used
+    expect(screen.getAllByText('50.0%')).toHaveLength(2)
     expect(screen.queryByText('TAGS')).not.toBeInTheDocument()
     expect(screen.queryByText('DESCRIPTION')).not.toBeInTheDocument()
   })
