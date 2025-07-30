@@ -529,7 +529,17 @@ Type `/help <command>` for specific command details.
     async def _update_node_property(self, flow_id: str, node_id: str, property_name: str, 
                                   description: str, translation_result: Dict[str, Any]) -> None:
         """Update node property."""
-        pass
+        with self.db_manager.get_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Check if property exists, update or insert
+            cursor.execute("""
+                INSERT OR REPLACE INTO node_properties 
+                (flow_id, node_id, property_name, natural_description, generated_code, code_type)
+                VALUES (?, ?, ?, ?, ?, 'python')
+            """, (flow_id, node_id, property_name, description, translation_result.get('python_code', '')))
+            
+            conn.commit()
     
     async def _translate_property_description(self, node_id: str, property_name: str, 
                                             description: str) -> Dict[str, Any]:
