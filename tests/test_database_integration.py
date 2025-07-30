@@ -88,7 +88,7 @@ class TestDatabaseIntegration:
         retrieved_metrics = temp_db.get_portfolio_metrics_history(limit=1)
         assert len(retrieved_metrics) == 1
         
-        retrieved = retrieved_metrics[0]
+        retrieved = retrieved_metrics.iloc[0]
         assert retrieved["portfolio_value"] == 125000.50
         assert retrieved["daily_pnl"] == 2500.25
         assert retrieved["annual_return"] == 15.2
@@ -104,7 +104,7 @@ class TestDatabaseIntegration:
             limit=10
         )
         assert len(range_metrics) == 1
-        assert range_metrics[0]["timestamp"] == timestamp
+        assert range_metrics.iloc[0]["timestamp"] == timestamp
     
     def test_portfolio_snapshots_crud(self, temp_db):
         """Test portfolio snapshots CRUD operations"""
