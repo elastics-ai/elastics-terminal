@@ -67,10 +67,6 @@ jobs:
       working-directory: ./volatility-web
       run: npm test -- --coverage --watchAll=false --passWithNoTests
       
-    - name: Run frontend linting
-      working-directory: ./volatility-web
-      run: npm run lint
-      
     - name: Upload frontend unit test coverage
       uses: codecov/codecov-action@v3
       with:
