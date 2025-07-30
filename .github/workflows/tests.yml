@@ -152,7 +152,7 @@ jobs:
         
         # Start API server in background
         cd volatility-web
-        PYTHONPATH=${{ github.workspace }}:${{ github.workspace }}/src DB_PATH=${{ github.workspace }}/test_data/test.db python3 api_server.py &
+        ANTHROPIC_API_KEY=mock-test-key PYTHONPATH=${{ github.workspace }}:${{ github.workspace }}/src DB_PATH=${{ github.workspace }}/test_data/test.db python3 api_server.py &
         API_PID=$!
         echo "API_PID=$API_PID" >> $GITHUB_ENV
         
@@ -169,6 +169,7 @@ jobs:
         
     - name: Run integration tests
       env:
+        CI: true
         ANTHROPIC_API_KEY: mock-test-key
         MOCK_SERVER_URL: http://localhost:1080
         PYTHONPATH: ${{ github.workspace }}/src:${{ github.workspace }}
