@@ -50,7 +50,7 @@ describe('VolatilitySurface3D', () => {
   it('should show controls for the surface', () => {
     render(<VolatilitySurface3D data={mockSurfaceData} />)
     
-    expect(screen.getByText('Show Data')).toBeInTheDocument()
+    expect(screen.getByText('Show Data Points')).toBeInTheDocument()
     expect(screen.getByText('Moneyness Scale')).toBeInTheDocument()
     expect(screen.getByText('Time Scale')).toBeInTheDocument()
   })
@@ -91,7 +91,7 @@ describe('VolatilitySurface3D', () => {
     render(<VolatilitySurface3D data={mockSurfaceData} />)
     
     expect(screen.getByText(/Strike Range:/)).toBeInTheDocument()
-    expect(screen.getByText(/0.8 - 1.2/)).toBeInTheDocument()
+    expect(screen.getByText(/0\.80 - 1\.20/)).toBeInTheDocument()
     expect(screen.getByText(/Expiry Range:/)).toBeInTheDocument()
     expect(screen.getByText(/7 - 90 days/)).toBeInTheDocument()
   })

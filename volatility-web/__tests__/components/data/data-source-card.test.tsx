@@ -1,5 +1,6 @@
 import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { DataSourceCard } from '@/components/data/data-source-card'
 import { TrendingUp } from 'lucide-react'
 
@@ -19,9 +20,11 @@ describe('DataSourceCard', () => {
 
   const mockOnConfigure = jest.fn()
   const mockOnSync = jest.fn()
+  let user: ReturnType<typeof userEvent.setup>
 
   beforeEach(() => {
     jest.clearAllMocks()
+    user = userEvent.setup()
   })
 
   it('renders data source information correctly', () => {
@@ -120,7 +123,7 @@ describe('DataSourceCard', () => {
     )
 
     const moreButton = screen.getByRole('button')
-    fireEvent.click(moreButton)
+    await user.click(moreButton)
 
     await waitFor(() => {
       expect(screen.getByText('Sync Now')).toBeInTheDocument()
@@ -138,11 +141,11 @@ describe('DataSourceCard', () => {
     )
 
     const moreButton = screen.getByRole('button')
-    fireEvent.click(moreButton)
+    await user.click(moreButton)
 
     await waitFor(() => {
       const syncButton = screen.getByText('Sync Now')
-      fireEvent.click(syncButton)
+      return user.click(syncButton)
     })
 
     expect(mockOnSync).toHaveBeenCalledTimes(1)
@@ -158,11 +161,11 @@ describe('DataSourceCard', () => {
     )
 
     const moreButton = screen.getByRole('button')
-    fireEvent.click(moreButton)
+    await user.click(moreButton)
 
     await waitFor(() => {
       const configureButton = screen.getByText('Configure')
-      fireEvent.click(configureButton)
+      return user.click(configureButton)
     })
 
     expect(mockOnConfigure).toHaveBeenCalledTimes(1)
