@@ -84,7 +84,11 @@ describe('ChatInterface', () => {
     await user.click(submitButton)
 
     expect(mockOnSendMessage).toHaveBeenCalledWith('What is my P&L?')
-    expect(mockChatAPI.sendMessage).toHaveBeenCalledWith('What is my P&L?')
+    expect(mockChatAPI.sendMessage).toHaveBeenCalledWith({
+      content: 'What is my P&L?',
+      session_id: expect.any(String),
+      conversation_id: undefined,
+    })
   })
 
   test('clears input after sending message', async () => {
@@ -185,13 +189,14 @@ describe('ChatInterface', () => {
     const user = userEvent.setup()
     renderComponent()
     
-    await user.click(screen.getByText('Clear history'))
+    await user.click(screen.getByText('Clear'))
     
-    expect(mockSetMessages).toHaveBeenCalledWith(expect.any(Function))
-    const setMessagesCall = mockSetMessages.mock.calls[0][0]
-    const newMessages = setMessagesCall([])
-    expect(newMessages).toHaveLength(1)
-    expect(newMessages[0].content).toBe('Chat history cleared. How can I help you analyze your portfolio?')
+    expect(mockSetMessages).toHaveBeenCalledWith([{
+      id: '1',
+      role: 'system',
+      content: 'Chat history cleared. How can I help you analyze your portfolio?',
+      timestamp: expect.any(Date)
+    }])
   })
 
   test('disables input and button while message is being sent', async () => {
@@ -216,8 +221,14 @@ describe('ChatInterface', () => {
     
     await waitFor(() => {
       expect(input).not.toBeDisabled()
-      expect(button).not.toBeDisabled()
     })
+    
+    // Button is still disabled because input is empty after form submission
+    expect(button).toBeDisabled()
+    
+    // Type some text to enable the button
+    await user.type(input, 'New message')
+    expect(button).not.toBeDisabled()
   })
 
   test('prevents empty message submission', async () => {
