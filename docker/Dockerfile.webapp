@@ -102,11 +102,14 @@ sleep 5\n\
 \n\
 # Start API server in background\n\
 echo "Starting API server on port 8000..."\n\
-if (cd volatility-web && python api_server.py) &; then\n\
+cd volatility-web || { echo "Failed to cd into volatility-web"; exit 1; }\n\
+if python api_server.py &; then\n\
     API_PID=$!\n\
     echo "API server started with PID $API_PID"\n\
+    cd ..\n\
 else\n\
     echo "Failed to start API server"\n\
+    cat api_server.log 2>/dev/null || echo "No API server log available"\n\
     exit 1\n\
 fi\n\
 \n\
@@ -126,11 +129,14 @@ done\n\
 \n\
 # Start Next.js production server using the standalone server\n\
 echo "Starting web app on port 3000..."\n\
-if (cd volatility-web && HOSTNAME=0.0.0.0 PORT=3000 node server.js) &; then\n\
+cd volatility-web || { echo "Failed to cd into volatility-web for Next.js"; exit 1; }\n\
+if HOSTNAME=0.0.0.0 PORT=3000 node server.js &; then\n\
     NEXTJS_PID=$!\n\
     echo "Next.js server started with PID $NEXTJS_PID"\n\
+    cd ..\n\
 else\n\
     echo "Failed to start Next.js server"\n\
+    ls -la || echo "Directory listing failed"\n\
     exit 1\n\
 fi\n\
 \n\
