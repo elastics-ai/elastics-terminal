@@ -60,10 +60,10 @@ export function SidebarNav() {
               key={item.name}
               href={item.href}
               className={cn(
-                'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all',
                 isActive
-                  ? 'bg-[hsl(var(--sidebar-active))] text-white'
-                  : 'text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-white'
+                  ? 'bg-black text-white shadow-md'
+                  : 'text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-hover))]'
               )}
             >
               <item.icon className="h-4 w-4 flex-shrink-0" />
@@ -83,10 +83,10 @@ export function SidebarNav() {
               key={item.name}
               href={item.href}
               className={cn(
-                'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all',
                 isActive
-                  ? 'bg-[hsl(var(--sidebar-active))] text-white'
-                  : 'text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-white'
+                  ? 'bg-black text-white shadow-md'
+                  : 'text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-hover))]'
               )}
             >
               <item.icon className="h-4 w-4 flex-shrink-0" />

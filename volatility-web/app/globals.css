@@ -4,12 +4,12 @@
 
 @layer base {
   :root {
-    /* Main background - very light gray from design (#F8F9FA equivalent) */
-    --background: 210 20% 98%;
+    /* Main background - RGB(242, 242, 242) */
+    --background: 0 0% 95%;
     --foreground: 220 17% 11%;
     
-    /* Cards and surfaces - pure white from design */
-    --card: 0 0% 100%;
+    /* Cards and surfaces - RGB(234, 234, 234) */
+    --card: 0 0% 92%;
     --card-foreground: 220 17% 11%;
     --popover: 0 0% 100%;
     --popover-foreground: 220 17% 11%;
@@ -43,11 +43,11 @@
     --ring: 158 64% 52%;
     --radius: 0.5rem;
 
-    /* Dark sidebar from design - matching exact dark theme */
-    --sidebar-bg: 0 0% 7%;
-    --sidebar-text: 0 0% 90%;
-    --sidebar-hover: 0 0% 12%;
-    --sidebar-active: 158 64% 52%;
+    /* Light sidebar - RGB(234, 234, 234) */
+    --sidebar-bg: 0 0% 92%;
+    --sidebar-text: 0 0% 0%;
+    --sidebar-hover: 0 0% 85%;
+    --sidebar-active: 0 0% 0%;
     --sidebar-border: 0 0% 15%;
     
     /* Status indicators - matching design colors exactly */

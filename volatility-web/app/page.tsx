@@ -5,7 +5,7 @@ import { AppLayout } from '@/components/layout/app-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, BarChart, Bar } from 'recharts'
 import { Bell, TrendingUp, AlertTriangle, Info, CheckCircle, X, Wifi, WifiOff } from 'lucide-react'
 import { 
   wsClient, 
@@ -295,7 +295,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-7 gap-3 mb-4">
             <Card className="p-4">
               <div className="text-sm text-gray-500 mb-1">Portfolio Value</div>
-              <div className="border-t border-gray-100 my-2"></div>
+              <div className="border-t border-gray-600 my-2"></div>
               <div className="text-xl font-semibold text-gray-900">
                 ${portfolio_analytics.portfolio_value?.toLocaleString() || '0'}
               </div>
@@ -304,7 +304,7 @@ export default function DashboardPage() {
             
             <Card className="p-4">
               <div className="text-sm text-gray-500 mb-1">Cumulative P&L</div>
-              <div className="border-t border-gray-100 my-2"></div>
+              <div className="border-t border-gray-600 my-2"></div>
               <div className={`text-xl font-semibold ${
                 (portfolio_analytics.cumulative_pnl || 0) >= 0 ? 'text-green-600' : 'text-red-600'
               }`}>
@@ -316,7 +316,7 @@ export default function DashboardPage() {
             
             <Card className="p-4">
               <div className="text-sm text-gray-500 mb-1">Cumulative Return</div>
-              <div className="border-t border-gray-100 my-2"></div>
+              <div className="border-t border-gray-600 my-2"></div>
               <div className={`text-xl font-semibold ${
                 (portfolio_analytics.cumulative_return || 0) >= 0 ? 'text-green-600' : 'text-red-600'
               }`}>
@@ -328,7 +328,7 @@ export default function DashboardPage() {
             
             <Card className="p-4">
               <div className="text-sm text-gray-500 mb-1">Annual Return</div>
-              <div className="border-t border-gray-100 my-2"></div>
+              <div className="border-t border-gray-600 my-2"></div>
               <div className={`text-xl font-semibold ${
                 (portfolio_analytics.annual_return || 0) >= 0 ? 'text-green-600' : 'text-red-600'
               }`}>
@@ -340,7 +340,7 @@ export default function DashboardPage() {
             
             <Card className="p-4">
               <div className="text-sm text-gray-500 mb-1">Max Drawdown</div>
-              <div className="border-t border-gray-100 my-2"></div>
+              <div className="border-t border-gray-600 my-2"></div>
               <div className="text-xl font-semibold text-red-600">
                 -{Math.abs(portfolio_analytics.max_drawdown || 0).toFixed(1)}%
               </div>
@@ -349,7 +349,7 @@ export default function DashboardPage() {
             
             <Card className="p-4">
               <div className="text-sm text-gray-500 mb-1">Annual Volatility</div>
-              <div className="border-t border-gray-100 my-2"></div>
+              <div className="border-t border-gray-600 my-2"></div>
               <div className="text-xl font-semibold text-gray-900">
                 {portfolio_analytics.annual_volatility?.toFixed(1) || '0'}%
               </div>
@@ -358,7 +358,7 @@ export default function DashboardPage() {
             
             <Card className="p-4">
               <div className="text-sm text-gray-500 mb-1">Net Delta</div>
-              <div className="border-t border-gray-100 my-2"></div>
+              <div className="border-t border-gray-600 my-2"></div>
               <div className="text-xl font-semibold text-gray-900">
                 {portfolio_analytics.net_delta?.toFixed(2) || '0.00'}
               </div>
@@ -370,7 +370,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-7 gap-3 mb-8">
             <Card className="p-4">
               <div className="text-sm text-gray-500 mb-1">VaR 95%</div>
-              <div className="border-t border-gray-100 my-2"></div>
+              <div className="border-t border-gray-600 my-2"></div>
               <div className="text-xl font-semibold text-red-600">
                 ${Math.abs(portfolio_analytics.var_95 || 0).toLocaleString()}
               </div>
@@ -379,7 +379,7 @@ export default function DashboardPage() {
             
             <Card className="p-4">
               <div className="text-sm text-gray-500 mb-1">CVaR 95%</div>
-              <div className="border-t border-gray-100 my-2"></div>
+              <div className="border-t border-gray-600 my-2"></div>
               <div className="text-xl font-semibold text-red-600">
                 ${Math.abs(portfolio_analytics.cvar_95 || 0).toLocaleString()}
               </div>
@@ -388,7 +388,7 @@ export default function DashboardPage() {
             
             <Card className="p-4">
               <div className="text-sm text-gray-500 mb-1">Alpha</div>
-              <div className="border-t border-gray-100 my-2"></div>
+              <div className="border-t border-gray-600 my-2"></div>
               <div className="text-xl font-semibold text-gray-900">
                 {portfolio_analytics.alpha?.toFixed(3) || '0.000'}
               </div>
@@ -397,7 +397,7 @@ export default function DashboardPage() {
             
             <Card className="p-4">
               <div className="text-sm text-gray-500 mb-1">Beta</div>
-              <div className="border-t border-gray-100 my-2"></div>
+              <div className="border-t border-gray-600 my-2"></div>
               <div className="text-xl font-semibold text-gray-900">
                 {portfolio_analytics.beta?.toFixed(2) || '0.00'}
               </div>
@@ -406,7 +406,7 @@ export default function DashboardPage() {
             
             <Card className="p-4">
               <div className="text-sm text-gray-500 mb-1">Sharpe Ratio</div>
-              <div className="border-t border-gray-100 my-2"></div>
+              <div className="border-t border-gray-600 my-2"></div>
               <div className="text-xl font-semibold text-gray-900">
                 {portfolio_analytics.sharpe_ratio?.toFixed(2) || '0.00'}
               </div>
@@ -415,7 +415,7 @@ export default function DashboardPage() {
             
             <Card className="p-4">
               <div className="text-sm text-gray-500 mb-1">Sortino Ratio</div>
-              <div className="border-t border-gray-100 my-2"></div>
+              <div className="border-t border-gray-600 my-2"></div>
               <div className="text-xl font-semibold text-gray-900">
                 {portfolio_analytics.sortino_ratio?.toFixed(2) || '0.00'}
               </div>
@@ -424,7 +424,7 @@ export default function DashboardPage() {
             
             <Card className="p-4">
               <div className="text-sm text-gray-500 mb-1">Calmar Ratio</div>
-              <div className="border-t border-gray-100 my-2"></div>
+              <div className="border-t border-gray-600 my-2"></div>
               <div className="text-xl font-semibold text-gray-900">
                 {portfolio_analytics.calmar_ratio?.toFixed(2) || '0.00'}
               </div>
@@ -435,7 +435,7 @@ export default function DashboardPage() {
           {/* AI Insights Section */}
           {ai_insights && ai_insights.length > 0 && (
             <Card className="mb-8 p-6">
-              <CardHeader className="pb-4">
+              <CardHeader className="px-6 pt-6 pb-4">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg font-normal flex items-center gap-2">
                     <TrendingUp className="h-5 w-5" />
@@ -446,7 +446,7 @@ export default function DashboardPage() {
                   </Badge>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-6 pb-6">
                 <div className="space-y-4">
                   {ai_insights.slice(0, 4).map((insight) => (
                     <div 
@@ -507,12 +507,12 @@ export default function DashboardPage() {
         </div>
 
         {/* Charts and Analytics Grid */}
-        <div className="grid grid-cols-12 gap-6">
-          {/* Performance Breakdown Chart */}
-          <Card className="col-span-8 p-6">
-            <CardHeader className="pb-4">
+        <div className="grid grid-cols-12 gap-0">
+          {/* Combined Performance and Alpha/Beta Chart */}
+          <Card className="col-span-6 rounded-none border border-gray-300">
+            <CardHeader className="px-6 pt-6 pb-4">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-normal">Performance Breakdown</CardTitle>
+                <CardTitle className="text-lg font-normal">Performance & Alpha/Beta</CardTitle>
                 <div className="flex gap-2 text-sm">
                   <span className="px-2 py-1 bg-black text-white rounded text-xs">1Y</span>
                   <span className="px-2 py-1 text-gray-500">YTD</span>
@@ -520,184 +520,262 @@ export default function DashboardPage() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={performanceData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="date" stroke="#6b7280" fontSize={12} />
-                    <YAxis stroke="#6b7280" fontSize={12} />
-                    <Line 
-                      type="monotone" 
-                      dataKey="cumulative" 
-                      stroke="#3b82f6" 
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="benchmark" 
-                      stroke="#6b7280" 
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="mt-4">
-                <div className="text-sm text-gray-500 mb-2">Cumulative Returns</div>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                    <span className="text-sm">Portfolio</span>
+            <CardContent className="px-6 pb-6">
+              <div className="space-y-6">
+                {/* Performance Chart */}
+                <div>
+                  <div className="text-sm text-gray-500 mb-2">Performance Breakdown</div>
+                  <div className="h-48">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={performanceData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                        <XAxis dataKey="date" stroke="#6b7280" fontSize={12} />
+                        <YAxis stroke="#6b7280" fontSize={12} />
+                        <Line 
+                          type="monotone" 
+                          dataKey="cumulative" 
+                          stroke="#3b82f6" 
+                          strokeWidth={2}
+                          dot={false}
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="benchmark" 
+                          stroke="#6b7280" 
+                          strokeWidth={2}
+                          dot={false}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
-                    <span className="text-sm">Benchmark</span>
+                  <div className="flex items-center gap-4 mt-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                      <span className="text-sm">Portfolio</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                      <span className="text-sm">Benchmark</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Divider */}
+                <div className="border-t border-gray-200"></div>
+                
+                {/* Alpha/Beta Chart */}
+                <div>
+                  <div className="text-sm text-gray-500 mb-2">Alpha/Beta</div>
+                  <div className="h-48">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={alphaData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                        <XAxis dataKey="date" stroke="#6b7280" fontSize={12} />
+                        <YAxis stroke="#6b7280" fontSize={12} />
+                        <Line 
+                          type="monotone" 
+                          dataKey="alpha" 
+                          stroke="#3b82f6" 
+                          strokeWidth={2}
+                          dot={false}
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="beta" 
+                          stroke="#6b7280" 
+                          strokeWidth={2}
+                          dot={false}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="flex items-center gap-4 mt-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                      <span className="text-sm">Alpha</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                      <span className="text-sm">Beta</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Portfolio Exposure */}
-          <Card className="col-span-4 p-6">
-            <CardHeader className="pb-4">
+          {/* Portfolio Exposure and Instrument Types */}
+          <Card className="col-span-3 rounded-none border-y border-r border-gray-300">
+            <CardHeader className="px-6 pt-6 pb-4">
               <CardTitle className="text-lg font-normal">Portfolio Exposure</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="h-64 flex items-center justify-center">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={exposureData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
-                      paddingAngle={2}
-                      dataKey="value"
-                    >
-                      {exposureData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="mt-4 space-y-2">
-                {exposureData.map((item, index) => (
-                  <div key={index} className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <div 
-                        className="w-3 h-3 rounded-full" 
-                        style={{ backgroundColor: item.color }}
-                      ></div>
-                      <span>{item.name}</span>
-                    </div>
-                    <span className="font-medium">{item.value}%</span>
+            <CardContent className="px-6 pb-6">
+              <div className="space-y-6">
+                {/* Portfolio Exposure Pie Chart */}
+                <div>
+                  <div className="h-52 flex items-center justify-center">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={exposureData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={0}
+                          outerRadius={80}
+                          paddingAngle={0}
+                          dataKey="value"
+                        >
+                          {exposureData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Alpha/Beta Chart */}
-          <Card className="col-span-8 p-6">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg font-normal">Alpha/Beta</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-48">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={alphaData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="date" stroke="#6b7280" fontSize={12} />
-                    <YAxis stroke="#6b7280" fontSize={12} />
-                    <Line 
-                      type="monotone" 
-                      dataKey="alpha" 
-                      stroke="#3b82f6" 
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="beta" 
-                      stroke="#6b7280" 
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="mt-4">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                    <span className="text-sm">Alpha</span>
+                  <div className="mt-4 space-y-2">
+                    {exposureData.map((item, index) => (
+                      <div key={index} className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-3 h-3 rounded-full" 
+                            style={{ backgroundColor: item.color }}
+                          ></div>
+                          <span>{item.name}</span>
+                        </div>
+                        <span className="font-medium">{item.value}%</span>
+                      </div>
+                    ))}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
-                    <span className="text-sm">Beta</span>
+                </div>
+                
+                {/* Divider */}
+                <div className="border-t border-gray-200"></div>
+                
+                {/* Instrument Types Bar Chart */}
+                <div>
+                  <div className="text-sm text-gray-500 mb-2">Instrument Types</div>
+                  <div className="h-32">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={[
+                        { type: 'Options', value: 45 },
+                        { type: 'Futures', value: 35 },
+                        { type: 'Spot', value: 20 }
+                      ]}>
+                        <XAxis dataKey="type" stroke="#6b7280" fontSize={12} />
+                        <YAxis stroke="#6b7280" fontSize={12} />
+                        <Bar dataKey="value" fill="#3b82f6" />
+                      </BarChart>
+                    </ResponsiveContainer>
                   </div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* News Feed */}
-          <Card className="col-span-4 p-6">
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-normal flex items-center gap-2">
-                  <Bell className="h-5 w-5" />
-                  News Feed
-                </CardTitle>
-                <button className="text-sm text-blue-600 hover:underline">See All</button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {news_feed && news_feed.length > 0 ? (
-                  news_feed.slice(0, 4).map((item, index) => (
-                    <div key={item.id || index} className="border-b border-gray-100 pb-3 last:border-b-0">
-                      <div className="flex items-start gap-3">
-                        <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
-                          item.is_critical ? 'bg-red-500' : 'bg-blue-500'
-                        }`}></div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <div className="text-xs text-gray-500">{item.source}</div>
-                            {item.is_critical && (
-                              <Badge variant="destructive" className="text-xs">Critical</Badge>
-                            )}
-                          </div>
-                          <div className="text-sm font-medium text-gray-900 mb-1">{item.title}</div>
-                          <div className="text-xs text-gray-600 mb-2 line-clamp-2">{item.summary}</div>
-                          <div className="flex items-center gap-2">
-                            <div className="text-xs text-gray-400">
-                              {new Date(item.timestamp).toLocaleTimeString()}
+          {/* Notifications and News Feed */}
+          <div className="col-span-3 space-y-0">
+            {/* Notifications */}
+            <Card className="rounded-none border-t border-r border-gray-300">
+              <CardHeader className="px-6 pt-6 pb-4">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg font-normal flex items-center gap-2">
+                    <Bell className="h-5 w-5" />
+                    Notifications
+                  </CardTitle>
+                  <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                    3 New
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="px-6 pb-6">
+                <div className="space-y-3">
+                  <div className="p-3 rounded-lg border border-blue-200 bg-blue-50">
+                    <div className="flex items-start gap-3">
+                      <div className="w-2 h-2 rounded-full bg-blue-500 mt-2"></div>
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-gray-900">Strategy Performance Alert</div>
+                        <div className="text-xs text-gray-600 mt-1">Your Alpha Strategy exceeded 15% returns this month</div>
+                        <div className="text-xs text-gray-400 mt-1">2 minutes ago</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-lg border border-gray-200">
+                    <div className="flex items-start gap-3">
+                      <div className="w-2 h-2 rounded-full bg-gray-400 mt-2"></div>
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-gray-900">Market Update</div>
+                        <div className="text-xs text-gray-600 mt-1">BTC volatility increased by 12% in the last hour</div>
+                        <div className="text-xs text-gray-400 mt-1">1 hour ago</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-lg border border-gray-200">
+                    <div className="flex items-start gap-3">
+                      <div className="w-2 h-2 rounded-full bg-gray-400 mt-2"></div>
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-gray-900">Risk Alert</div>
+                        <div className="text-xs text-gray-600 mt-1">Portfolio delta exposure approaching threshold</div>
+                        <div className="text-xs text-gray-400 mt-1">3 hours ago</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* News Feed */}
+            <Card className="rounded-none border-b border-r border-gray-300" style={{minHeight: '500px'}}>
+              <CardHeader className="px-6 pt-6 pb-4">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg font-normal flex items-center gap-2">
+                    <Bell className="h-5 w-5" />
+                    News Feed
+                  </CardTitle>
+                  <button className="text-sm text-blue-600 hover:underline">See All</button>
+                </div>
+              </CardHeader>
+              <CardContent className="px-6 pb-6">
+                <div className="space-y-4">
+                  {news_feed && news_feed.length > 0 ? (
+                    news_feed.slice(0, 4).map((item, index) => (
+                      <div key={item.id || index} className="border-b border-gray-100 pb-3 last:border-b-0">
+                        <div className="flex items-start gap-3">
+                          <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
+                            item.is_critical ? 'bg-red-500' : 'bg-blue-500'
+                          }`}></div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <div className="text-xs text-gray-500">{item.source}</div>
+                              {item.is_critical && (
+                                <Badge variant="destructive" className="text-xs">Critical</Badge>
+                              )}
                             </div>
-                            {item.relevance_score && (
+                            <div className="text-sm font-medium text-gray-900 mb-1">{item.title}</div>
+                            <div className="text-xs text-gray-600 mb-2 line-clamp-2">{item.summary}</div>
+                            <div className="flex items-center gap-2">
                               <div className="text-xs text-gray-400">
-                                Relevance: {(item.relevance_score * 100).toFixed(0)}%
+                                {new Date(item.timestamp).toLocaleTimeString()}
                               </div>
-                            )}
+                              {item.relevance_score && (
+                                <div className="text-xs text-gray-400">
+                                  Relevance: {(item.relevance_score * 100).toFixed(0)}%
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
+                    ))
+                  ) : (
+                    <div className="text-center text-gray-500 py-8">
+                      <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p>No news items available</p>
                     </div>
-                  ))
-                ) : (
-                  <div className="text-center text-gray-500 py-8">
-                    <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p>No news items available</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </AppLayout>
