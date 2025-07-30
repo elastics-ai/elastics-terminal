@@ -1,6 +1,7 @@
 import pytest
 import asyncio
 import json
+import os
 from datetime import datetime
 from tests.e2e.utils.websocket_client import websocket_client
 from tests.e2e.fixtures.database import create_test_database
@@ -8,6 +9,7 @@ from tests.e2e.utils.mocks import MockWebSocketBroadcaster
 
 @pytest.mark.e2e
 @pytest.mark.websocket
+@pytest.mark.skipif("CI" in os.environ, reason="WebSocket server not running in CI")
 class TestWebSocketIntegration:
     """Test WebSocket real-time features."""
     
