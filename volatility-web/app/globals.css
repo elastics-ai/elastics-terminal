@@ -14,9 +14,13 @@
     --popover: 0 0% 100%;
     --popover-foreground: 220 17% 11%;
     
-    /* Primary purple-blue from design */
-    --primary: 262 83% 58%;
+    /* Primary black buttons from design */
+    --primary: 0 0% 0%;
     --primary-foreground: 0 0% 100%;
+    
+    /* Secondary purple-blue accent */
+    --primary-accent: 262 83% 58%;
+    --primary-accent-foreground: 0 0% 100%;
     
     /* Secondary grays */
     --secondary: 220 14% 96%;
@@ -24,9 +28,10 @@
     --muted: 220 14% 96%;
     --muted-foreground: 220 9% 46%;
     
-    /* Accent purple */
+    /* Accent purple for secondary elements */
     --accent: 262 83% 58%;
     --accent-foreground: 0 0% 100%;
+    --accent-hover: 262 83% 50%;
     
     /* Status colors from design */
     --destructive: 0 84% 60%;
@@ -44,17 +49,36 @@
     --sidebar-hover: 220 26% 22%;
     --sidebar-active: 262 83% 58%;
     
-    /* Status indicators */
+    /* Status indicators - refined from design */
     --critical: 0 84% 60%;
-    --warning: 38 92% 50%;
+    --critical-soft: 0 84% 95%;
+    --warning: 25 95% 53%;
+    --warning-soft: 48 100% 96%;
     --info: 217 91% 60%;
+    --info-soft: 214 100% 97%;
     --success: 142 76% 36%;
+    --success-soft: 142 76% 95%;
     
-    /* Chart colors from design */
+    /* Chart colors from design - gradient combinations */
     --chart-primary: 262 83% 58%;
     --chart-secondary: 217 91% 60%;
     --chart-tertiary: 285 85% 35%;
     --chart-quaternary: 168 76% 42%;
+    
+    /* Portfolio chart gradients */
+    --chart-portfolio-1: 262 83% 58%;
+    --chart-portfolio-2: 217 91% 60%;
+    --chart-portfolio-3: 168 76% 42%;
+    
+    /* Risk heatmap colors */
+    --chart-risk-low: 142 76% 36%;
+    --chart-risk-medium: 48 100% 67%;
+    --chart-risk-high: 0 84% 60%;
+    
+    /* 3D surface colors */
+    --chart-surface-1: 168 76% 42%;
+    --chart-surface-2: 217 91% 60%;
+    --chart-surface-3: 285 85% 35%;
   }
 
   .dark {
@@ -98,15 +122,35 @@
   }
   
   .status-critical {
-    @apply bg-red-500 text-white;
+    @apply bg-red-600 text-white;
   }
   
   .status-warning {
-    @apply bg-amber-500 text-white;
+    @apply bg-orange-500 text-white;
   }
   
   .status-info {
-    @apply bg-blue-500 text-white;
+    @apply bg-blue-600 text-white;
+  }
+  
+  .status-critical-soft {
+    background-color: hsl(var(--critical-soft));
+    color: hsl(var(--critical));
+  }
+  
+  .status-warning-soft {
+    background-color: hsl(var(--warning-soft));
+    color: hsl(var(--warning));
+  }
+  
+  .status-info-soft {
+    background-color: hsl(var(--info-soft));
+    color: hsl(var(--info));
+  }
+  
+  .status-success-soft {
+    background-color: hsl(var(--success-soft));
+    color: hsl(var(--success));
   }
   
   .metric-card {
@@ -131,5 +175,70 @@
   
   .metric-change-negative {
     @apply text-red-600;
+  }
+  
+  /* Chart and visualization styling */
+  .chart-gradient-portfolio {
+    background: linear-gradient(135deg, 
+      hsl(var(--chart-portfolio-1)) 0%, 
+      hsl(var(--chart-portfolio-2)) 50%, 
+      hsl(var(--chart-portfolio-3)) 100%);
+  }
+  
+  .chart-gradient-risk {
+    background: linear-gradient(to right,
+      hsl(var(--chart-risk-low)) 0%,
+      hsl(var(--chart-risk-medium)) 50%,
+      hsl(var(--chart-risk-high)) 100%);
+  }
+  
+  .chart-surface-gradient {
+    background: linear-gradient(45deg,
+      hsl(var(--chart-surface-1)) 0%,
+      hsl(var(--chart-surface-2)) 50%,
+      hsl(var(--chart-surface-3)) 100%);
+  }
+  
+  /* Table styling from design */
+  .table-striped tbody tr:nth-child(even) {
+    @apply bg-gray-50;
+  }
+  
+  .table-striped tbody tr:nth-child(odd) {
+    @apply bg-white;
+  }
+  
+  /* Tag/Badge variants from design */
+  .tag-soft {
+    @apply inline-flex items-center px-2 py-1 rounded-full text-xs font-medium;
+  }
+  
+  .tag-blue {
+    @apply bg-blue-100 text-blue-800;
+  }
+  
+  .tag-purple {
+    @apply bg-purple-100 text-purple-800;
+  }
+  
+  .tag-green {
+    @apply bg-green-100 text-green-800;
+  }
+  
+  .tag-orange {
+    @apply bg-orange-100 text-orange-800;
+  }
+  
+  /* Button variants */
+  .btn-primary {
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    @apply px-4 py-2 rounded font-medium hover:opacity-90 transition-opacity;
+  }
+  
+  .btn-secondary {
+    background-color: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+    @apply px-4 py-2 rounded font-medium hover:opacity-90 transition-opacity;
   }
 }
