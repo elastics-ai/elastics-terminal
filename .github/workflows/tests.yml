@@ -65,7 +65,7 @@ jobs:
       
     - name: Run frontend unit tests
       working-directory: ./volatility-web
-      run: npm test -- --coverage --watchAll=false --testPathIgnorePatterns=integration --testNamePattern="^(?!.*integration).*" --passWithNoTests
+      run: npm test -- --coverage --watchAll=false --passWithNoTests
       
     - name: Run frontend linting
       working-directory: ./volatility-web
