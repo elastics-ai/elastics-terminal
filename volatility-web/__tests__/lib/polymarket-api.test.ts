@@ -33,7 +33,7 @@ describe('Polymarket API', () => {
       const result = await polymarketAPI.getMarkets()
 
       expect(result).toEqual(mockResponse)
-      expect(mockPolymarketAPI.getMarkets).toHaveBeenCalledWith(undefined)
+      expect(mockPolymarketAPI.getMarkets).toHaveBeenCalledWith()
     })
 
     it('calls API with search parameter when search term provided', async () => {
