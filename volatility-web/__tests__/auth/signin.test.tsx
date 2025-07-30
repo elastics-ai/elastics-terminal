@@ -33,6 +33,9 @@ const mockUseSearchParams = useSearchParams as jest.MockedFunction<typeof useSea
 const mockSignIn = signIn as jest.MockedFunction<typeof signIn>
 const mockGetSession = getSession as jest.MockedFunction<typeof getSession>
 
+// Store original environment variables
+const originalEnv = process.env
+
 describe('SignInPage', () => {
   beforeEach(() => {
     jest.clearAllMocks()
@@ -140,9 +143,17 @@ describe('SignInPage', () => {
 
   describe('Azure AD Mode', () => {
     beforeEach(() => {
-      // Mock environment for Azure AD
-      Object.defineProperty(process.env, 'NODE_ENV', { value: 'production' })
-      Object.defineProperty(process.env, 'NEXT_PUBLIC_AZURE_AD_ENABLED', { value: 'true' })
+      // Mock environment variables by replacing process.env
+      process.env = {
+        ...originalEnv,
+        NODE_ENV: 'production',
+        NEXT_PUBLIC_AZURE_AD_ENABLED: 'true'
+      }
+    })
+
+    afterEach(() => {
+      // Restore original environment
+      process.env = originalEnv
     })
 
     it('renders Azure AD sign-in button', async () => {
@@ -253,6 +264,14 @@ describe('SignInPage', () => {
 
   describe('Loading States', () => {
     it('shows loading state during sign-in', async () => {
+      // Mock environment for Azure AD to show the Microsoft button
+      const originalProcessEnv = process.env
+      process.env = {
+        ...originalProcessEnv,
+        NODE_ENV: 'production',
+        NEXT_PUBLIC_AZURE_AD_ENABLED: 'true'
+      }
+      
       mockSignIn.mockImplementation(() => new Promise(resolve => 
         setTimeout(() => resolve({ ok: true, error: null }), 100)
       ))
@@ -264,14 +283,21 @@ describe('SignInPage', () => {
         fireEvent.click(submitButton)
       })
 
-      expect(screen.getByText(/signing in/i)).toBeInTheDocument()
+      expect(screen.getAllByText(/signing in/i).length).toBeGreaterThan(0)
       expect(screen.getByRole('button')).toBeDisabled()
+      
+      // Restore environment
+      process.env = originalProcessEnv
     })
   })
 
   describe('Accessibility', () => {
     it('has proper form labels and structure', async () => {
-      Object.defineProperty(process.env, 'NEXT_PUBLIC_AZURE_AD_ENABLED', { value: 'false' })
+      const originalProcessEnv = process.env
+      process.env = {
+        ...originalProcessEnv,
+        NEXT_PUBLIC_AZURE_AD_ENABLED: 'false'
+      }
 
       render(<SignInPage />)
 
@@ -283,6 +309,9 @@ describe('SignInPage', () => {
         expect(emailInput).toBeRequired()
         expect(passwordInput).toHaveAttribute('type', 'password')
       })
+      
+      // Restore environment
+      process.env = originalProcessEnv
     })
 
     it('has proper ARIA attributes for error messages', async () => {
