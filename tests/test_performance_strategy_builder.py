@@ -25,7 +25,7 @@ class TestStrategyBuilderPerformance:
     """Performance tests for strategy builder system."""
     
     @pytest.fixture
-    async def performance_setup(self):
+    def performance_setup(self):
         """Set up system for performance testing."""
         with tempfile.NamedTemporaryFile(delete=False, suffix='.db') as temp_db:
             temp_db.close()
@@ -67,7 +67,7 @@ class TestStrategyBuilderPerformance:
     @pytest.mark.asyncio
     async def test_chat_command_processing_speed(self, performance_setup):
         """Test speed of chat command processing."""
-        setup = await performance_setup
+        setup = performance_setup
         chat_handler = setup['chat_handler']
         
         commands = [
@@ -105,7 +105,7 @@ class TestStrategyBuilderPerformance:
     @pytest.mark.asyncio
     async def test_concurrent_user_handling(self, performance_setup):
         """Test system performance with multiple concurrent users."""
-        setup = await performance_setup
+        setup = performance_setup
         chat_handler = setup['chat_handler']
         
         async def simulate_user_session(user_id: int):
@@ -177,7 +177,7 @@ class TestStrategyBuilderPerformance:
     @pytest.mark.asyncio
     async def test_websocket_event_broadcasting_performance(self, performance_setup):
         """Test WebSocket event broadcasting performance."""
-        setup = await performance_setup
+        setup = performance_setup
         strategy_service = setup['strategy_service']
         websocket_server = setup['websocket_server']
         
@@ -216,7 +216,7 @@ class TestStrategyBuilderPerformance:
     @pytest.mark.asyncio
     async def test_large_strategy_flow_handling(self, performance_setup):
         """Test performance with large, complex strategy flows."""
-        setup = await performance_setup
+        setup = performance_setup
         chat_handler = setup['chat_handler']
         db_manager = setup['db_manager']
         
@@ -272,7 +272,7 @@ class TestStrategyBuilderPerformance:
     @pytest.mark.asyncio
     async def test_ai_translation_performance(self, performance_setup):
         """Test AI translation performance with various request types."""
-        setup = await performance_setup
+        setup = performance_setup
         chat_handler = setup['chat_handler']
         
         # Mock different response times for AI
@@ -314,7 +314,7 @@ class TestStrategyBuilderPerformance:
     @pytest.mark.asyncio
     async def test_database_performance_under_load(self, performance_setup):
         """Test database performance under high load."""
-        setup = await performance_setup
+        setup = performance_setup
         chat_handler = setup['chat_handler']
         db_manager = setup['db_manager']
         
@@ -367,7 +367,7 @@ class TestStrategyBuilderPerformance:
     @pytest.mark.asyncio
     async def test_memory_usage_with_large_flows(self, performance_setup):
         """Test memory usage doesn't grow excessively with large flows."""
-        setup = await performance_setup
+        setup = performance_setup
         chat_handler = setup['chat_handler']
         
         import psutil
@@ -404,7 +404,7 @@ class TestStrategyBuilderPerformance:
     @pytest.mark.asyncio
     async def test_error_handling_performance(self, performance_setup):
         """Test that error handling doesn't significantly impact performance."""
-        setup = await performance_setup
+        setup = performance_setup
         chat_handler = setup['chat_handler']
         
         # Mix of valid and invalid commands
@@ -447,7 +447,7 @@ class TestRealTimePerformance:
     """Performance tests specifically for real-time features."""
     
     @pytest.fixture
-    async def realtime_setup(self):
+    def realtime_setup(self):
         """Set up for real-time performance testing."""
         with tempfile.NamedTemporaryFile(delete=False, suffix='.db') as temp_db:
             temp_db.close()
@@ -472,7 +472,7 @@ class TestRealTimePerformance:
     @pytest.mark.asyncio
     async def test_websocket_event_latency(self, realtime_setup):
         """Test WebSocket event latency under load."""
-        setup = await realtime_setup
+        setup = realtime_setup
         strategy_service = setup['strategy_service']
         
         # Measure event processing latency
@@ -507,7 +507,7 @@ class TestRealTimePerformance:
     @pytest.mark.asyncio
     async def test_session_state_performance(self, realtime_setup):
         """Test session state management performance."""
-        setup = await realtime_setup
+        setup = realtime_setup
         strategy_service = setup['strategy_service']
         
         # Create many active sessions
