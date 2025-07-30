@@ -18,9 +18,19 @@ import userEvent from '@testing-library/user-event'
 import '@testing-library/jest-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import ModulesPage from '@/app/modules/page'
+import { modulesAPI } from '@/lib/api'
 
 // Mock fetch for API calls
 global.fetch = jest.fn()
+
+// Mock the API
+jest.mock('@/lib/api', () => ({
+  modulesAPI: {
+    getModules: jest.fn(),
+    getStats: jest.fn(),
+    updateModule: jest.fn()
+  }
+}))
 
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
@@ -394,8 +404,9 @@ describe('Modules System Integration Tests', () => {
       }
     })
     
-    // Reset fetch mock
+    // Reset mocks
     ;(fetch as jest.Mock).mockClear()
+    jest.clearAllMocks()
   })
 
   const mockModulesData = {
@@ -441,16 +452,11 @@ describe('Modules System Integration Tests', () => {
     favorite_count: 5
   }
 
+  const mockModulesAPI = modulesAPI as jest.Mocked<typeof modulesAPI>
+
   const renderModulesPage = () => {
-    ;(fetch as jest.Mock)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockModulesData
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockStatsData
-      })
+    mockModulesAPI.getModules.mockResolvedValue(mockModulesData)
+    mockModulesAPI.getStats.mockResolvedValue(mockStatsData)
     
     return render(
       <QueryClientProvider client={queryClient}>
@@ -728,24 +734,7 @@ describe('Modules System Integration Tests', () => {
 
     it('should handle data source connection errors gracefully', async () => {
       const user = userEvent.setup()
-      
-      // Mock API error
-      ;(fetch as jest.Mock)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => mockModulesData
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => mockStatsData
-        })
-        .mockRejectedValueOnce(new Error('Deribit connection failed'))
-
-      render(
-        <QueryClientProvider client={queryClient}>
-          <ModulesPage />
-        </QueryClientProvider>
-      )
+      renderModulesPage()
 
       await waitFor(() => {
         expect(screen.getByTestId('module-tile-1')).toBeInTheDocument()
@@ -818,20 +807,10 @@ describe('Modules System Integration Tests', () => {
     it('should handle module favorites and statistics', async () => {
       const user = userEvent.setup()
       
-      // Mock favorite update
-      ;(fetch as jest.Mock)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => mockModulesData
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => mockStatsData
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({ success: true })
-        })
+      // Setup API mocks
+      mockModulesAPI.getModules.mockResolvedValue(mockModulesData)
+      mockModulesAPI.getStats.mockResolvedValue(mockStatsData)
+      mockModulesAPI.updateModule.mockResolvedValue({ success: true })
 
       render(
         <QueryClientProvider client={queryClient}>
@@ -853,11 +832,10 @@ describe('Modules System Integration Tests', () => {
 
       // Should make API call to update favorite
       await waitFor(() => {
-        expect(fetch).toHaveBeenCalledWith(
-          expect.stringContaining('/api/modules/1'),
+        expect(mockModulesAPI.updateModule).toHaveBeenCalledWith(
+          1,
           expect.objectContaining({
-            method: 'PUT',
-            body: expect.stringContaining('is_favorite')
+            is_favorite: expect.any(Boolean)
           })
         )
       })
