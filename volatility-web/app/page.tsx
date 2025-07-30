@@ -5,7 +5,7 @@ import { AppLayout } from '@/components/layout/app-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, BarChart, Bar } from 'recharts'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, BarChart, Bar, Tooltip } from 'recharts'
 import { Bell, TrendingUp, AlertTriangle, Info, CheckCircle, X, Wifi, WifiOff } from 'lucide-react'
 import { 
   wsClient, 
@@ -180,26 +180,60 @@ export default function DashboardPage() {
 
   const { portfolio_analytics, performance_history, news_feed, ai_insights, asset_allocation } = dashboardData
 
-  // Transform asset allocation for pie chart
-  const exposureData = Object.entries(asset_allocation).map(([name, value], index) => ({
-    name,
-    value: Math.round(value),
-    color: ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#6b7280', '#ef4444'][index % 6]
+  // Transform asset allocation for pie chart with blue shades (darker for larger slices)
+  const exposureData = Object.entries(asset_allocation)
+    .sort((a, b) => b[1] - a[1]) // Sort by value descending
+    .map(([name, value], index) => ({
+      name,
+      value: Math.round(value),
+      // Darker blues for larger slices
+      color: ['#1e3a8a', '#2563eb', '#3b82f6', '#60a5fa', '#93bbfd'][index] || '#dbeafe'
+    }))
+
+  // Generate Gaussian processes for performance data
+  const generateGaussianProcess = (length: number, mu: number, sigma: number, initialValue: number) => {
+    const values = [initialValue]
+    for (let i = 1; i < length; i++) {
+      const randomNormal = Math.sqrt(-2 * Math.log(Math.random())) * Math.cos(2 * Math.PI * Math.random())
+      const drift = mu / 252 // Daily drift
+      const diffusion = sigma / Math.sqrt(252) * randomNormal
+      values.push(values[i - 1] * (1 + drift + diffusion))
+    }
+    return values
+  }
+
+  // Generate portfolio and benchmark performance
+  const portfolioValues = generateGaussianProcess(30, 0.12, 0.15, 100) // 12% annual return, 15% vol
+  const benchmarkValues = generateGaussianProcess(30, 0.08, 0.12, 100) // 8% annual return, 12% vol
+
+  // Transform performance history for chart with 24h changes
+  const performanceData = performance_history.slice(-30).map((point, index) => ({
+    date: new Date(point.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    portfolio: portfolioValues[index],
+    benchmark: benchmarkValues[index],
+    portfolioChange: index > 0 ? ((portfolioValues[index] - portfolioValues[index - 1]) / portfolioValues[index - 1] * 100) : 0,
+    benchmarkChange: index > 0 ? ((benchmarkValues[index] - benchmarkValues[index - 1]) / benchmarkValues[index - 1] * 100) : 0
   }))
 
-  // Transform performance history for chart
-  const performanceData = performance_history.slice(-30).map(point => ({
-    date: new Date(point.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    cumulative: point.cumulative_return,
-    daily: point.daily_return,
-    portfolio_value: point.portfolio_value
-  }))
+  // Generate stationary random processes for alpha/beta
+  const generateStationaryProcess = (length: number, mean: number, variance: number) => {
+    const values = []
+    for (let i = 0; i < length; i++) {
+      const randomNormal = Math.sqrt(-2 * Math.log(Math.random())) * Math.cos(2 * Math.PI * Math.random())
+      values.push(mean + Math.sqrt(variance) * randomNormal)
+    }
+    return values
+  }
 
-  // Transform performance history for alpha/beta chart
-  const alphaData = performance_history.slice(-30).map(point => ({
+  const alphaValues = generateStationaryProcess(30, 0.15, 0.01) // mean 0.15, variance 0.01
+  const betaValues = generateStationaryProcess(30, 0.7, 0.05) // mean 0.7, variance 0.05
+
+  const alphaData = performance_history.slice(-30).map((point, index) => ({
     date: new Date(point.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    alpha: portfolio_analytics.alpha,
-    beta: portfolio_analytics.beta
+    alpha: alphaValues[index],
+    beta: betaValues[index],
+    alphaChange: index > 0 ? ((alphaValues[index] - alphaValues[index - 1]) / alphaValues[index - 1] * 100) : 0,
+    betaChange: index > 0 ? ((betaValues[index] - betaValues[index - 1]) / betaValues[index - 1] * 100) : 0
   }))
 
   function getMockDashboardData(): DashboardData {
@@ -531,9 +565,44 @@ export default function DashboardPage() {
                         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                         <XAxis dataKey="date" stroke="#6b7280" fontSize={12} />
                         <YAxis stroke="#6b7280" fontSize={12} />
+                        <Tooltip
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              return (
+                                <div className="bg-white p-3 border border-gray-200 rounded shadow-md">
+                                  <p className="text-sm font-medium text-gray-900 mb-2">{payload[0].payload.date}</p>
+                                  <div className="space-y-1">
+                                    <div className="flex items-center justify-between gap-4">
+                                      <span className="text-sm text-gray-600">Portfolio:</span>
+                                      <span className="text-sm font-medium">{payload[0].value?.toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-4">
+                                      <span className="text-sm text-gray-600">24h Change:</span>
+                                      <span className={`text-sm font-medium ${payload[0].payload.portfolioChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        {payload[0].payload.portfolioChange >= 0 ? '+' : ''}{payload[0].payload.portfolioChange?.toFixed(2)}%
+                                      </span>
+                                    </div>
+                                    <div className="border-t border-gray-100 my-1"></div>
+                                    <div className="flex items-center justify-between gap-4">
+                                      <span className="text-sm text-gray-600">Benchmark:</span>
+                                      <span className="text-sm font-medium">{payload[1]?.value?.toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-4">
+                                      <span className="text-sm text-gray-600">24h Change:</span>
+                                      <span className={`text-sm font-medium ${payload[0].payload.benchmarkChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        {payload[0].payload.benchmarkChange >= 0 ? '+' : ''}{payload[0].payload.benchmarkChange?.toFixed(2)}%
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              )
+                            }
+                            return null
+                          }}
+                        />
                         <Line 
                           type="monotone" 
-                          dataKey="cumulative" 
+                          dataKey="portfolio" 
                           stroke="#3b82f6" 
                           strokeWidth={2}
                           dot={false}
@@ -572,6 +641,41 @@ export default function DashboardPage() {
                         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                         <XAxis dataKey="date" stroke="#6b7280" fontSize={12} />
                         <YAxis stroke="#6b7280" fontSize={12} />
+                        <Tooltip
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              return (
+                                <div className="bg-white p-3 border border-gray-200 rounded shadow-md">
+                                  <p className="text-sm font-medium text-gray-900 mb-2">{payload[0].payload.date}</p>
+                                  <div className="space-y-1">
+                                    <div className="flex items-center justify-between gap-4">
+                                      <span className="text-sm text-gray-600">Alpha:</span>
+                                      <span className="text-sm font-medium">{payload[0].value?.toFixed(3)}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-4">
+                                      <span className="text-sm text-gray-600">24h Change:</span>
+                                      <span className={`text-sm font-medium ${payload[0].payload.alphaChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        {payload[0].payload.alphaChange >= 0 ? '+' : ''}{payload[0].payload.alphaChange?.toFixed(2)}%
+                                      </span>
+                                    </div>
+                                    <div className="border-t border-gray-100 my-1"></div>
+                                    <div className="flex items-center justify-between gap-4">
+                                      <span className="text-sm text-gray-600">Beta:</span>
+                                      <span className="text-sm font-medium">{payload[1]?.value?.toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-4">
+                                      <span className="text-sm text-gray-600">24h Change:</span>
+                                      <span className={`text-sm font-medium ${payload[0].payload.betaChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        {payload[0].payload.betaChange >= 0 ? '+' : ''}{payload[0].payload.betaChange?.toFixed(2)}%
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              )
+                            }
+                            return null
+                          }}
+                        />
                         <Line 
                           type="monotone" 
                           dataKey="alpha" 
@@ -654,18 +758,40 @@ export default function DashboardPage() {
                 {/* Instrument Types Bar Chart */}
                 <div>
                   <div className="text-sm text-gray-500 mb-2">Instrument Types</div>
-                  <div className="h-32">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={[
-                        { type: 'Options', value: 45 },
-                        { type: 'Futures', value: 35 },
-                        { type: 'Spot', value: 20 }
-                      ]}>
-                        <XAxis dataKey="type" stroke="#6b7280" fontSize={12} />
-                        <YAxis stroke="#6b7280" fontSize={12} />
-                        <Bar dataKey="value" fill="#3b82f6" />
-                      </BarChart>
-                    </ResponsiveContainer>
+                  <div className="h-20">
+                    <div className="flex h-12 rounded overflow-hidden border border-gray-300">
+                      <div 
+                        className="flex items-center justify-center text-sm font-medium text-white"
+                        style={{ 
+                          width: '45%', 
+                          backgroundColor: 'rgb(97, 133, 133)' 
+                        }}
+                      >
+                        Options 45%
+                      </div>
+                      <div 
+                        className="flex items-center justify-center text-sm font-medium text-white"
+                        style={{ 
+                          width: '35%', 
+                          backgroundColor: 'rgb(127, 163, 163)' 
+                        }}
+                      >
+                        Futures 35%
+                      </div>
+                      <div 
+                        className="flex items-center justify-center text-sm font-medium text-gray-700"
+                        style={{ 
+                          width: '20%', 
+                          backgroundColor: 'rgb(157, 193, 193)' 
+                        }}
+                      >
+                        Spot 20%
+                      </div>
+                    </div>
+                    <div className="flex justify-between mt-1">
+                      <span className="text-xs text-gray-500">0%</span>
+                      <span className="text-xs text-gray-500">100%</span>
+                    </div>
                   </div>
                 </div>
               </div>
