@@ -24,7 +24,7 @@ class TestChatVisualFlowIntegration:
     """Integration tests for chat and visual flow synchronization."""
     
     @pytest.fixture
-    async def setup_services(self):
+    def setup_services(self):
         """Set up all services needed for integration testing."""
         with tempfile.NamedTemporaryFile(delete=False, suffix='.db') as temp_db:
             temp_db.close()
@@ -32,6 +32,14 @@ class TestChatVisualFlowIntegration:
             # Initialize database
             db_manager = DatabaseManager(temp_db.name)
             db_manager.init_database()
+            
+            # Apply strategy builder migrations
+            from src.volatility_filter.migrations.apply_migrations import apply_migration
+            import os
+            migrations_dir = os.path.join(os.path.dirname(__file__), '..', 'src', 'volatility_filter', 'migrations')
+            strategy_migration = os.path.join(migrations_dir, 'add_strategy_builder_tables.sql')
+            if os.path.exists(strategy_migration):
+                apply_migration(temp_db.name, strategy_migration)
             
             # Mock WebSocket server
             websocket_server = Mock(spec=WebSocketBroadcastServer)
@@ -60,7 +68,7 @@ class TestChatVisualFlowIntegration:
     @pytest.mark.asyncio
     async def test_chat_strategy_creation_triggers_websocket_events(self, setup_services):
         """Test that creating a strategy via chat triggers proper WebSocket events."""
-        services = await setup_services
+        services = setup_services
         chat_handler = services['chat_handler']
         strategy_service = services['strategy_service']
         websocket_server = services['websocket_server']
@@ -99,7 +107,7 @@ class TestChatVisualFlowIntegration:
     @pytest.mark.asyncio
     async def test_chat_node_addition_synchronizes_with_visual_flow(self, setup_services):
         """Test that adding nodes via chat properly synchronizes with visual flow."""
-        services = await setup_services
+        services = setup_services
         chat_handler = services['chat_handler']
         strategy_service = services['strategy_service']
         websocket_server = services['websocket_server']
@@ -147,7 +155,7 @@ class TestChatVisualFlowIntegration:
     @pytest.mark.asyncio
     async def test_node_connection_chat_to_visual_sync(self, setup_services):
         """Test that connecting nodes via chat synchronizes with visual representation."""
-        services = await setup_services
+        services = setup_services
         chat_handler = services['chat_handler']
         strategy_service = services['strategy_service']
         websocket_server = services['websocket_server']
@@ -199,7 +207,7 @@ class TestChatVisualFlowIntegration:
     @pytest.mark.asyncio
     async def test_code_generation_events_sync_properly(self, setup_services):
         """Test that code generation events properly sync between chat and visual."""
-        services = await setup_services
+        services = setup_services
         chat_handler = services['chat_handler']
         strategy_service = services['strategy_service']
         websocket_server = services['websocket_server']
@@ -251,7 +259,7 @@ def advanced_rsi(data, period=14, smoothing=2):
     @pytest.mark.asyncio
     async def test_error_handling_propagates_correctly(self, setup_services):
         """Test that errors in chat commands propagate correctly to visual interface."""
-        services = await setup_services
+        services = setup_services
         chat_handler = services['chat_handler']
         strategy_service = services['strategy_service']
         websocket_server = services['websocket_server']
@@ -287,7 +295,7 @@ def advanced_rsi(data, period=14, smoothing=2):
     @pytest.mark.asyncio
     async def test_database_state_consistency(self, setup_services):
         """Test that database state remains consistent between chat operations."""
-        services = await setup_services
+        services = setup_services
         chat_handler = services['chat_handler']
         db_manager = services['db_manager']
         
@@ -351,7 +359,7 @@ def advanced_rsi(data, period=14, smoothing=2):
     @pytest.mark.asyncio
     async def test_concurrent_chat_operations(self, setup_services):
         """Test that concurrent chat operations don't cause race conditions."""
-        services = await setup_services
+        services = setup_services
         chat_handler = services['chat_handler']
         
         # Mock Claude response
@@ -382,7 +390,7 @@ def advanced_rsi(data, period=14, smoothing=2):
     @pytest.mark.asyncio
     async def test_natural_language_to_visual_sync(self, setup_services):
         """Test that natural language strategy descriptions sync with visual flow."""
-        services = await setup_services
+        services = setup_services
         chat_handler = services['chat_handler']
         strategy_service = services['strategy_service']
         websocket_server = services['websocket_server']
@@ -415,7 +423,7 @@ def advanced_rsi(data, period=14, smoothing=2):
     @pytest.mark.asyncio
     async def test_websocket_event_ordering(self, setup_services):
         """Test that WebSocket events are sent in correct order."""
-        services = await setup_services
+        services = setup_services
         chat_handler = services['chat_handler']
         strategy_service = services['strategy_service']
         websocket_server = services['websocket_server']
