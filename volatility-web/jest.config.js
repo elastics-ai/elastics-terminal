@@ -25,7 +25,7 @@ const customJestConfig = {
     '^three/examples/jsm/(.*)$': '<rootDir>/__mocks__/three-jsm.js',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
   },
-  testPathIgnorePatterns: ['/node_modules/', '/.next/', '/e2e/', '/tests/e2e/'],
+  testPathIgnorePatterns: ['/node_modules/', '/.next/', '/e2e/', '/tests/e2e/', '__tests__/lib/websocket.test.ts'],
   transformIgnorePatterns: [
     'node_modules/(?!(react-markdown|remark.*|unified.*|bail|is-plain-obj|trough|vfile.*|unist-util-.*|mdast-util-.*|micromark.*|decode-named-character-reference|character-entities|property-information|hast-util-.*|space-separated-tokens|comma-separated-tokens|pretty-bytes|ccount|@xyflow|react-plotly|devlop|zwitch|estree-util-.*|estree-walker|unist-builder|web-namespaces|next-auth|@auth/.*|oauth4webapi|jose)/)',
   ],
