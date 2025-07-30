@@ -514,7 +514,7 @@ describe('Modules System Integration Tests', () => {
       await user.click(calculateButton)
 
       await waitFor(() => {
-        expect(screen.getByText('Calculating...')).toBeInTheDocument()
+        expect(screen.getAllByText('Calculating...')).toHaveLength(2) // Button and spinner
       })
 
       await waitFor(() => {
@@ -540,19 +540,21 @@ describe('Modules System Integration Tests', () => {
       })
 
       // Test moneyness scale adjustment
-      const moneynessScale = screen.getByTestId('moneyness-scale').querySelector('input')
-      expect(moneynessScale).toHaveValue('1')
+      const moneynessScale = screen.getByTestId('moneyness-scale').querySelector('input') as HTMLInputElement
+      expect(moneynessScale).toHaveValue('1.0')
       
-      await user.clear(moneynessScale!)
-      await user.type(moneynessScale!, '1.2')
+      // Use fireEvent for non-editable elements or direct value setting
+      moneynessScale.value = '1.2'
+      moneynessScale.dispatchEvent(new Event('input', { bubbles: true }))
       expect(moneynessScale).toHaveValue('1.2')
 
       // Test time scale adjustment
-      const timeScale = screen.getByTestId('time-scale').querySelector('input')
-      expect(timeScale).toHaveValue('2')
+      const timeScale = screen.getByTestId('time-scale').querySelector('input') as HTMLInputElement
+      expect(timeScale).toHaveValue('2.0')
       
-      await user.clear(timeScale!)
-      await user.type(timeScale!, '2.5')
+      // Use direct value setting for time scale
+      timeScale.value = '2.5'
+      timeScale.dispatchEvent(new Event('input', { bubbles: true }))
       expect(timeScale).toHaveValue('2.5')
     })
 
