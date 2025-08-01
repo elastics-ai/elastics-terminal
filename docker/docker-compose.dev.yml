@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  volatility-webapp:
+    environment:
+      - NODE_ENV=development
+    command: |
+      bash -c "
+        echo 'Starting development mode with hot reload...' &&
+        cd /app && python scripts/run_combined_filter.py > /tmp/ws.log 2>&1 &
+        cd /app/volatility-web && python api_server.py > /tmp/api.log 2>&1 &
+        sleep 5 &&
+        cd /app/volatility-web && 
+        echo 'Starting Next.js in development mode...' &&
+        npm run dev
+      "

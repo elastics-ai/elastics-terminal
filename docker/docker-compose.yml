@@ -12,6 +12,9 @@ services:
       - "7000:8000"  # FastAPI backend
       - "8765:8765"  # WebSocket server
     volumes:
+      - ../volatility-web:/app/volatility-web  # Mount source for live changes
+      - ../src:/app/src
+      - ../scripts:/app/scripts
       - ../volatility_filter.db:/data/volatility_filter.db
       - /tmp:/tmp  # For gnuplot output
     environment:
@@ -42,6 +45,11 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2048M
 
   glitchtip-web:
     image: glitchtip/glitchtip:latest
