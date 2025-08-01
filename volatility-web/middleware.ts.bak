@@ -1,4 +1,3 @@
-import { auth } from "@/lib/auth"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
@@ -7,7 +6,13 @@ import type { NextRequest } from "next/server"
  * Provides enterprise-grade authentication with Azure Active Directory
  */
 
-export default auth((req) => {
+export default function middleware(req: NextRequest) {
+  // Temporarily bypass authentication for development
+  // TODO: Re-enable authentication by uncommenting the auth wrapper
+  return NextResponse.next()
+  
+  /* Original auth-based middleware - uncomment when auth is needed:
+  
   const { pathname } = req.nextUrl
 
   // Allow access to auth pages, API routes, and static assets
@@ -55,7 +60,8 @@ export default auth((req) => {
   }
 
   return NextResponse.next()
-})
+  */
+}
 
 export const config = {
   matcher: [

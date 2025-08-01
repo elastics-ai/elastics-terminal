@@ -2,6 +2,9 @@ version: '3.8'
 
 services:
   volatility-webapp:
+    extends:
+      file: docker-compose.yml
+      service: volatility-webapp
     environment:
       - NODE_ENV=development
     command: |
@@ -11,6 +14,8 @@ services:
         cd /app/volatility-web && python api_server.py > /tmp/api.log 2>&1 &
         sleep 5 &&
         cd /app/volatility-web && 
+        echo 'Installing dependencies...' &&
+        npm install --legacy-peer-deps &&
         echo 'Starting Next.js in development mode...' &&
         npm run dev
       "

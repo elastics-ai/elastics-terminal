@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elastics Chat Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-8">
+        <h1 class="text-3xl font-bold mb-8">Elastics Terminal - Chat Demo Preview</h1>
+        
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">Persistent AI Chat Features:</h2>
+            <ul class="list-disc list-inside space-y-2">
+                <li>Interactive chat at the bottom of every page</li>
+                <li>Responds to queries about prediction markets</li>
+                <li>Shows Elastics' modular architecture</li>
+                <li>Action buttons navigate to relevant sections</li>
+                <li>Conversation persists across all pages</li>
+            </ul>
+        </div>
+
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <h3 class="font-semibold mb-2">To see the chat demo:</h3>
+            <ol class="list-decimal list-inside space-y-2">
+                <li>Fix the Next.js CSS compilation issue</li>
+                <li>Or run locally with: <code class="bg-gray-200 px-2 py-1 rounded">cd volatility-web && npm run dev</code></li>
+                <li>The chat will appear at the bottom of the page</li>
+            </ol>
+        </div>
+
+        <div class="mt-8 p-4 bg-gray-800 text-white rounded-lg">
+            <p class="text-sm">Files created:</p>
+            <ul class="mt-2 space-y-1 font-mono text-sm">
+                <li>✓ components/chat/DemoChat.tsx</li>
+                <li>✓ contexts/DemoChatContext.tsx</li>
+                <li>✓ public/demo-chat-responses.json</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Demo Chat Preview -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t z-40 h-20">
+        <div class="h-full flex flex-col justify-center px-6">
+            <div class="mb-2 flex gap-2 flex-wrap justify-center">
+                <button class="text-sm px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors border border-gray-200">
+                    What's my portfolio performance?
+                </button>
+                <button class="text-sm px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors border border-gray-200">
+                    Show me top opportunities across prediction markets
+                </button>
+                <button class="text-sm px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors border border-gray-200">
+                    Is there any arbitrage across venues?
+                </button>
+                <button class="text-sm px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors border border-gray-200">
+                    Help me create a trading strategy
+                </button>
+            </div>
+            <div class="relative">
+                <input 
+                    placeholder="Ask AI Assistant about prediction markets..."
+                    class="w-full h-12 pl-4 pr-12 text-base bg-gray-50 border-gray-200 rounded-lg"
+                    readonly
+                />
+                <button class="absolute right-2 top-2 h-8 w-8">
+                    <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
