@@ -850,187 +850,334 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
             
-            {/* AI Chat */}
+            {/* News Feed */}
             <Card className="rounded-none border-b border-r border-gray-300" style={{minHeight: '500px'}}>
               <CardHeader className="px-6 pt-6 pb-4">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg font-normal flex items-center gap-2">
-                    <Bot className="h-5 w-5" />
-                    AI Assistant - Prediction Markets
+                    <Bell className="h-5 w-5" />
+                    News Feed
                   </CardTitle>
-                  <Badge variant="outline" className="bg-green-50 text-green-700">
-                    Demo Mode
-                  </Badge>
+                  <button className="text-sm text-blue-600 hover:underline">See All</button>
                 </div>
               </CardHeader>
-              <CardContent className="px-6 pb-6 h-[420px] flex flex-col">
-                <div className="flex-1 overflow-y-auto mb-4 space-y-3">
-                  {/* Demo Chat Messages */}
-                  <div className="flex gap-2">
-                    <div className="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center flex-shrink-0">
-                      <User className="w-4 h-4 text-white" />
-                    </div>
-                    <div className="flex-1 bg-gray-100 rounded-lg p-3">
-                      <p className="text-sm">Show me top opportunities across prediction markets right now.</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
-                      <Bot className="w-4 h-4 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="bg-white border border-gray-200 rounded-lg p-3 mb-2">
-                        <p className="text-sm whitespace-pre-line">Based on combined open interest and volume-weighted signal strength, here are the top binary contracts:
-
-1. Trump wins 2024 (Polymarket)  
-2. Rate hike by September (Kalshi)  
-3. ETH > $4k by Oct (Polymarket)</p>
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        <div className="font-medium mb-1">📦 Modules used:</div>
-                        <div className="pl-3 space-y-0.5">
-                          <div>• Data Source: PolymarketFeed</div>
-                          <div>• Data Source: KalshiAPI</div>
-                          <div>• Ranking Logic: SignalWeightedVolumeRanker</div>
+              <CardContent className="px-6 pb-6">
+                <div className="space-y-4">
+                  {news_feed && news_feed.length > 0 ? (
+                    news_feed.slice(0, 4).map((item, index) => (
+                      <div key={item.id || index} className="border-b border-gray-100 pb-3 last:border-b-0">
+                        <div className="flex items-start gap-3">
+                          <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
+                            item.is_critical ? 'bg-red-500' : 'bg-blue-500'
+                          }`}></div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <div className="text-xs text-gray-500">{item.source}</div>
+                              {item.is_critical && (
+                                <Badge variant="destructive" className="text-xs">Critical</Badge>
+                              )}
+                            </div>
+                            <div className="text-sm font-medium text-gray-900 mb-1">{item.title}</div>
+                            <div className="text-xs text-gray-600 mb-2 line-clamp-2">{item.summary}</div>
+                            <div className="flex items-center gap-2">
+                              <div className="text-xs text-gray-400">
+                                {new Date(item.timestamp).toLocaleTimeString()}
+                              </div>
+                              {item.relevance_score && (
+                                <div className="text-xs text-gray-400">
+                                  Relevance: {(item.relevance_score * 100).toFixed(0)}%
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
+                    ))
+                  ) : (
+                    <div className="text-center text-gray-500 py-8">
+                      <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p>No news items available</p>
                     </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <div className="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center flex-shrink-0">
-                      <User className="w-4 h-4 text-white" />
-                    </div>
-                    <div className="flex-1 bg-gray-100 rounded-lg p-3">
-                      <p className="text-sm">Is there any arbitrage across venues?</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
-                      <Bot className="w-4 h-4 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="bg-white border border-gray-200 rounded-lg p-3 mb-2">
-                        <p className="text-sm whitespace-pre-line">Yes. Kalshi's "No hike by Sept" = 64¢  
-Polymarket's equivalent = 71¢  
-Estimated edge after fees: 3.1%</p>
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        <div className="font-medium mb-1">📦 Modules used:</div>
-                        <div className="pl-3 space-y-0.5">
-                          <div>• Contract Matcher: CrossVenueEquivalenceMap</div>
-                          <div>• Arbitrage Engine: BinarySpreadScanner</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <div className="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center flex-shrink-0">
-                      <User className="w-4 h-4 text-white" />
-                    </div>
-                    <div className="flex-1 bg-gray-100 rounded-lg p-3">
-                      <p className="text-sm">Can you hedge this?</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
-                      <Bot className="w-4 h-4 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="bg-white border border-gray-200 rounded-lg p-3 mb-2">
-                        <p className="text-sm whitespace-pre-line">Constructed delta-neutral hedge using calendar spreads on Deribit.  
-✅ cVaR reduction: 23%  
-✅ Slippage impact: low</p>
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        <div className="font-medium mb-1">📦 Modules used:</div>
-                        <div className="pl-3 space-y-0.5">
-                          <div>• IV Surface: DeribitSSVI2024</div>
-                          <div>• Risk Engine: cVaRCalculator</div>
-                          <div>• Execution: DeribitHedger</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <div className="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center flex-shrink-0">
-                      <User className="w-4 h-4 text-white" />
-                    </div>
-                    <div className="flex-1 bg-gray-100 rounded-lg p-3">
-                      <p className="text-sm">Show volatility filters for ETH-based contracts.</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
-                      <Bot className="w-4 h-4 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="bg-white border border-gray-200 rounded-lg p-3 mb-2">
-                        <div className="text-sm">
-                          <table className="w-full text-xs">
-                            <thead>
-                              <tr className="border-b">
-                                <th className="text-left pb-1">Contract</th>
-                                <th className="text-left pb-1">IV Anomaly</th>
-                                <th className="text-left pb-1">Volume Spike</th>
-                                <th className="text-left pb-1">Action</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              <tr className="border-b">
-                                <td className="py-1">ETH &gt; $4k by Oct (Poly)</td>
-                                <td className="py-1 text-red-600">+2.7σ ATM skew</td>
-                                <td className="py-1 text-orange-600">+19%</td>
-                                <td className="py-1">🔍 Review</td>
-                              </tr>
-                              <tr>
-                                <td className="py-1">ETH &lt;$3k in Sept (Kalshi)</td>
-                                <td className="py-1 text-blue-600">-3.1σ wings</td>
-                                <td className="py-1 text-gray-600">Flat</td>
-                                <td className="py-1">✅ Stable</td>
-                              </tr>
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        <div className="font-medium mb-1">📦 Modules used:</div>
-                        <div className="pl-3 space-y-0.5">
-                          <div>• Volatility Filter: IVAnomalyDetector</div>
-                          <div>• Data Source: PolymarketFeed, KalshiAPI</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Input Area (Disabled) */}
-                <div className="border-t pt-3">
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Ask about prediction markets..."
-                      className="flex-1"
-                      disabled
-                    />
-                    <Button disabled size="icon">
-                      <Send className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-1 text-center">
-                    Demo mode - Input disabled
-                  </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
           </div>
         </div>
       </div>
+
+      {/* Fixed Bottom AI Chat */}
+      <DemoAIChat />
     </AppLayout>
   )
+}
+
+// Demo AI Chat Component
+function DemoAIChat() {
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [messages, setMessages] = useState<Array<{
+    role: 'user' | 'assistant'
+    content: string
+    modules?: string[]
+  }>>([])
+  const [inputValue, setInputValue] = useState('')
+  const [isTyping, setIsTyping] = useState(false)
+
+  const suggestions = [
+    "What's my portfolio performance?",
+    "Show me top opportunities across prediction markets",
+    "Is there any arbitrage across venues?",
+    "Analyze market volatility"
+  ]
+
+  // Predefined responses based on user input
+  const getDemoResponse = (userInput: string) => {
+    const input = userInput.toLowerCase()
+    
+    if (input.includes('opportunities') && input.includes('prediction market')) {
+      return {
+        content: `Based on combined open interest and volume-weighted signal strength, here are the top binary contracts:
+
+1. Trump wins 2024 (Polymarket)  
+2. Rate hike by September (Kalshi)  
+3. ETH > $4k by Oct (Polymarket)`,
+        modules: ['PolymarketFeed', 'KalshiAPI', 'SignalWeightedVolumeRanker']
+      }
+    } else if (input.includes('arbitrage') && input.includes('venues')) {
+      return {
+        content: `Yes. Kalshi's "No hike by Sept" = 64¢  
+Polymarket's equivalent = 71¢  
+Estimated edge after fees: 3.1%`,
+        modules: ['CrossVenueEquivalenceMap', 'BinarySpreadScanner']
+      }
+    } else if (input.includes('hedge')) {
+      return {
+        content: `Constructed delta-neutral hedge using calendar spreads on Deribit.  
+✅ cVaR reduction: 23%  
+✅ Slippage impact: low`,
+        modules: ['DeribitSSVI2024', 'cVaRCalculator', 'DeribitHedger']
+      }
+    } else if (input.includes('volatility') && input.includes('eth')) {
+      return {
+        content: `| Contract | IV Anomaly | Volume Spike | Action |
+|----------|------------|--------------|--------|
+| ETH > $4k by Oct (Poly) | +2.7σ ATM skew | +19% | 🔍 Review |
+| ETH <$3k in Sept (Kalshi) | -3.1σ wings | Flat | ✅ Stable |`,
+        modules: ['IVAnomalyDetector', 'PolymarketFeed', 'KalshiAPI']
+      }
+    } else if (input.includes('portfolio performance')) {
+      return {
+        content: `Your portfolio performance summary:
+
+📈 Total Return: +12.4% (30d)
+💰 Total P&L: $9,650
+📊 Sharpe Ratio: 0.51
+⚡ Max Drawdown: -8.2%
+
+Top performing strategies:
+1. Strategy-Alpha-01: +15.2%
+2. Direct Positions: +8.7%`,
+        modules: ['PortfolioAnalyzer', 'PerformanceCalculator', 'RiskMetrics']
+      }
+    } else {
+      return {
+        content: `I can help you with:
+• Portfolio performance analysis
+• Prediction market opportunities
+• Cross-venue arbitrage detection
+• Volatility analysis
+• Hedging strategies
+
+Please ask a specific question about any of these topics.`,
+        modules: ['HelpModule']
+      }
+    }
+  }
+
+  const handleSendMessage = () => {
+    if (!inputValue.trim()) return
+    
+    // Add user message
+    const userMessage = { role: 'user' as const, content: inputValue }
+    setMessages(prev => [...prev, userMessage])
+    setInputValue('')
+    setIsTyping(true)
+    
+    // Simulate typing delay
+    setTimeout(() => {
+      const response = getDemoResponse(inputValue)
+      const assistantMessage = { role: 'assistant' as const, ...response }
+      setMessages(prev => [...prev, assistantMessage])
+      setIsTyping(false)
+    }, 1500)
+  }
+
+  const handleSuggestionClick = (suggestion: string) => {
+    setInputValue(suggestion)
+    setIsExpanded(true)
+  }
+
+  // Auto-scroll to bottom when new messages are added
+  useEffect(() => {
+    if (isExpanded && messages.length > 0) {
+      const messagesContainer = document.querySelector('.messages-container')
+      if (messagesContainer) {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight
+      }
+    }
+  }, [messages, isExpanded])
+
+  return (
+    <>
+      {/* Collapsed State - Bottom Bar */}
+      {!isExpanded && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t z-40 h-20">
+          <div className="h-full flex flex-col justify-center px-6">
+            {/* Suggestions */}
+            <div className="mb-2 flex gap-2 flex-wrap">
+              {suggestions.map((suggestion) => (
+                <button
+                  key={suggestion}
+                  onClick={() => handleSuggestionClick(suggestion)}
+                  className="text-sm px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors border border-gray-200"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+            
+            {/* Input */}
+            <div className="relative">
+              <Input
+                placeholder="Ask AI Assistant about prediction markets..."
+                className="w-full h-12 pl-4 pr-12 text-base bg-gray-50 border-gray-200 rounded-lg"
+                onFocus={() => setIsExpanded(true)}
+                readOnly
+              />
+              <Button
+                size="icon"
+                variant="ghost"
+                className="absolute right-2 top-2 h-8 w-8"
+                onClick={() => setIsExpanded(true)}
+              >
+                <Send className="h-4 w-4 text-gray-500" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Expanded State - Chat Panel */}
+      {isExpanded && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t z-50 h-[600px] shadow-2xl">
+          <div className="h-full flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b">
+              <div className="flex items-center gap-3">
+                <Bot className="h-5 w-5 text-blue-500" />
+                <h3 className="font-semibold">AI Assistant - Prediction Markets</h3>
+                <Badge variant="outline" className="bg-green-50 text-green-700">
+                  Demo Mode
+                </Badge>
+              </div>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => setIsExpanded(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-6 messages-container">
+              <div className="max-w-4xl mx-auto space-y-4">
+                {messages.length === 0 && (
+                  <div className="text-center text-gray-500 py-12">
+                    <Bot className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium mb-2">Welcome to AI Assistant Demo</p>
+                    <p className="text-sm">Ask me about prediction markets, portfolio performance, or arbitrage opportunities!</p>
+                  </div>
+                )}
+                {messages.map((message, idx) => (
+                  <div key={idx} className="flex gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      message.role === 'user' ? 'bg-gray-500' : 'bg-blue-500'
+                    }`}>
+                      {message.role === 'user' ? (
+                        <User className="w-4 h-4 text-white" />
+                      ) : (
+                        <Bot className="w-4 h-4 text-white" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <div className={`rounded-lg p-3 ${
+                        message.role === 'user' ? 'bg-gray-100' : 'bg-white border border-gray-200'
+                      }`}>
+                        <p className="text-sm whitespace-pre-line">{message.content}</p>
+                      </div>
+                      {'modules' in message && message.modules && (
+                        <div className="text-xs text-gray-500 mt-2">
+                          <div className="font-medium mb-1">📦 Modules used:</div>
+                          <div className="pl-3 space-y-0.5">
+                            {message.modules.map((module, i) => (
+                              <div key={i}>• {module.includes(':') ? module : `${getModuleType(module)}: ${module}`}</div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {isTyping && (
+                  <div className="flex gap-3">
+                    <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                      <Bot className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="flex items-center gap-1 pt-3">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Input Area */}
+            <div className="border-t p-4">
+              <div className="max-w-4xl mx-auto">
+                <form onSubmit={(e) => {
+                  e.preventDefault()
+                  handleSendMessage()
+                }} className="flex gap-2">
+                  <Input
+                    placeholder="Ask about prediction markets..."
+                    className="flex-1"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    disabled={isTyping}
+                  />
+                  <Button type="submit" disabled={!inputValue.trim() || isTyping}>
+                    <Send className="h-4 w-4 mr-2" />
+                    Send
+                  </Button>
+                </form>
+                <p className="text-xs text-gray-400 mt-2 text-center">
+                  Demo mode - Responses are simulated based on your input
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+function getModuleType(module: string): string {
+  if (module.includes('Feed') || module.includes('API')) return 'Data Source'
+  if (module.includes('Scanner') || module.includes('Map')) return 'Analysis'
+  if (module.includes('Ranker')) return 'Ranking Logic'
+  return 'Module'
 }

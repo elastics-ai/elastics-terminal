@@ -20,7 +20,7 @@ import {
   User
 } from 'lucide-react'
 import { Header } from './header'
-import { FixedChatInput } from '@/components/chat/FixedChatInput'
+// import { FixedChatInput } from '@/components/chat/FixedChatInput'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -229,8 +229,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </main>
 
-      {/* Fixed Chat Input - Available on all pages */}
-      <FixedChatInput />
+      {/* Fixed Chat Input - Disabled for demo */}
+      {/* <FixedChatInput /> */}
     </div>
   )
 }
