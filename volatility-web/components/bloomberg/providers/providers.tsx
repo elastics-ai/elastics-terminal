@@ -6,6 +6,7 @@ import { ThemeProvider } from 'next-themes'
 import { useEffect } from 'react'
 import { wsClient } from '@/lib/websocket'
 import { FloatingChatProvider } from '@/contexts/FloatingChatContext'
+import { DemoChatProvider } from '@/contexts/DemoChatContext'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -32,7 +33,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
           enableSystem={false}
         >
           <FloatingChatProvider>
-            {children}
+            <DemoChatProvider>
+              {children}
+            </DemoChatProvider>
           </FloatingChatProvider>
         </ThemeProvider>
       </JotaiProvider>

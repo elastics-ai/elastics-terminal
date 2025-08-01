@@ -1,0 +1,98 @@
+{
+  "responses": [
+    {
+      "patterns": ["opportunities", "prediction market"],
+      "response": {
+        "content": "Based on combined open interest and volume-weighted signal strength, here are the top binary contracts:\n\n1. Trump wins 2024 (Polymarket)\n2. Rate hike by September (Kalshi)\n3. ETH > $4k by Oct (Polymarket)",
+        "modules": ["PolymarketFeed", "KalshiAPI", "SignalWeightedVolumeRanker"]
+      }
+    },
+    {
+      "patterns": ["arbitrage", "venues"],
+      "response": {
+        "content": "Yes. Kalshi's \"No hike by Sept\" = 64¢\nPolymarket's equivalent = 71¢\nEstimated edge after fees: 3.1%",
+        "modules": ["CrossVenueEquivalenceMap", "BinarySpreadScanner"]
+      }
+    },
+    {
+      "patterns": ["hedge"],
+      "response": {
+        "content": "Constructed delta-neutral hedge using calendar spreads on Deribit.\n✅ cVaR reduction: 23%\n✅ Slippage impact: low",
+        "modules": ["DeribitSSVI2024", "cVaRCalculator", "DeribitHedger"]
+      }
+    },
+    {
+      "patterns": ["volatility", "eth"],
+      "response": {
+        "content": "| Contract | IV Anomaly | Volume Spike | Action |\n|----------|------------|--------------|--------|\n| ETH > $4k by Oct (Poly) | +2.7σ ATM skew | +19% | 🔍 Review |\n| ETH <$3k in Sept (Kalshi) | -3.1σ wings | Flat | ✅ Stable |",
+        "modules": ["IVAnomalyDetector", "PolymarketFeed", "KalshiAPI"]
+      }
+    },
+    {
+      "patterns": ["portfolio performance"],
+      "response": {
+        "content": "Your portfolio performance summary:\n\n📈 Total Return: +12.4% (30d)\n💰 Total P&L: $9,650\n📊 Sharpe Ratio: 0.51\n⚡ Max Drawdown: -8.2%\n\nTop performing strategies:\n1. Strategy-Alpha-01: +15.2%\n2. Direct Positions: +8.7%",
+        "modules": ["PortfolioAnalyzer", "PerformanceCalculator", "RiskMetrics"]
+      }
+    },
+    {
+      "patterns": ["create", "strategy"],
+      "response": {
+        "content": "I can help you create a custom trading strategy! Based on your interest in prediction markets, here are some strategy templates:\n\n1. **Cross-Venue Arbitrage Bot**\n   - Monitors price discrepancies across Polymarket/Kalshi\n   - Auto-executes when spread > threshold\n   - Built-in risk limits\n\n2. **Volatility Skew Trader**\n   - Tracks IV anomalies in binary contracts\n   - Signals when skew exceeds historical norms\n   - Includes hedging logic\n\n3. **Event-Driven Momentum**\n   - Follows volume spikes in political/economic events\n   - Adaptive position sizing\n   - News sentiment integration",
+        "modules": ["StrategyBuilder", "TemplateLibrary", "BacktestEngine"],
+        "action": {
+          "type": "navigate",
+          "label": "Open Agent Builder",
+          "url": "/agents",
+          "params": {
+            "template": "cross-venue-arbitrage",
+            "market": "prediction-markets"
+          }
+        }
+      }
+    },
+    {
+      "patterns": ["build", "agent"],
+      "response": {
+        "content": "Let's build a custom agent for your trading needs! I can help you create:\n\n• **Data Collection Agents** - Gather real-time market data\n• **Analysis Agents** - Process signals and identify opportunities\n• **Execution Agents** - Automated order placement with risk controls\n• **Monitoring Agents** - Track performance and alert on anomalies\n\nEach agent can be customized with:\n- Custom data sources (APIs, websockets, RSS)\n- Processing logic (Python, SQL, or visual builder)\n- Action triggers and notifications\n- Backtesting capabilities",
+        "modules": ["AgentBuilder", "CodeGenerator", "VisualWorkflow"],
+        "action": {
+          "type": "navigate",
+          "label": "Start Building Agent",
+          "url": "/agents",
+          "params": {
+            "mode": "create",
+            "wizard": true
+          }
+        }
+      }
+    },
+    {
+      "patterns": ["implement", "trading", "strategy"],
+      "response": {
+        "content": "I'll help you implement a trading strategy. Here's how we can proceed:\n\n**Step 1: Define Strategy Logic**\n- Entry/exit conditions\n- Position sizing rules\n- Risk parameters\n\n**Step 2: Connect Data Sources**\n- Market data feeds\n- Alternative data sources\n- Technical indicators\n\n**Step 3: Backtest & Optimize**\n- Historical performance analysis\n- Parameter optimization\n- Risk/reward metrics\n\n**Step 4: Deploy & Monitor**\n- Live trading activation\n- Real-time monitoring\n- Performance tracking",
+        "modules": ["StrategyWizard", "DataConnector", "LiveTrader"],
+        "action": {
+          "type": "navigate",
+          "label": "Launch Strategy Builder",
+          "url": "/agents",
+          "params": {
+            "view": "strategy-wizard",
+            "step": 1
+          }
+        }
+      }
+    }
+  ],
+  "defaultResponse": {
+    "content": "I can help you with:\n• Portfolio performance analysis\n• Prediction market opportunities\n• Cross-venue arbitrage detection\n• Volatility analysis\n• Hedging strategies\n• Building custom trading agents\n\nPlease ask a specific question about any of these topics.",
+    "modules": ["HelpModule"]
+  },
+  "suggestions": [
+    "What's my portfolio performance?",
+    "Show me top opportunities across prediction markets",
+    "Is there any arbitrage across venues?",
+    "Help me create a trading strategy",
+    "I want to build an arbitrage agent"
+  ]
+}
